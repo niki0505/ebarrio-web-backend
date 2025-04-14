@@ -5,6 +5,7 @@ import OldUser from "../models/OldUsers.js";
 import Employee from "../models/Employees.js";
 import User from "../models/Users.js";
 import OldEmployee from "../models/OldEmployees.js";
+import moment from "moment";
 
 export const createUser = async (req, res) => {
   try {
@@ -270,6 +271,9 @@ export const updateResident = async (req, res) => {
 
     const { resID } = req.params;
 
+    const birthDate = moment(birthdate, "YYYY/MM/DD");
+    const age = moment().diff(birthDate, "years");
+
     const resident = await Resident.findOne({ _id: resID });
 
     const motherAsObjectId = mother
@@ -303,6 +307,7 @@ export const updateResident = async (req, res) => {
     resident.sex = sex;
     resident.gender = gender;
     resident.birthdate = birthdate;
+    resident.age = age;
     resident.birthplace = birthplace;
     resident.civilstatus = civilstatus;
     resident.bloodtype = bloodtype;
@@ -416,6 +421,9 @@ export const createResident = async (req, res) => {
       course,
     } = req.body;
 
+    const birthDate = moment(birthdate, "YYYY/MM/DD");
+    const age = moment().diff(birthDate, "years");
+
     const motherAsObjectId = mother
       ? new mongoose.Types.ObjectId(mother)
       : null;
@@ -448,6 +456,7 @@ export const createResident = async (req, res) => {
       sex,
       gender,
       birthdate,
+      age,
       birthplace,
       civilstatus,
       bloodtype,

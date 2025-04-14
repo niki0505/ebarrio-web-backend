@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import moment from "moment";
 
 const resSchema = new mongoose.Schema(
   {
@@ -39,6 +40,10 @@ const resSchema = new mongoose.Schema(
     },
     birthdate: {
       type: String,
+      required: true,
+    },
+    age: {
+      type: Number,
       required: true,
     },
     birthplace: {
@@ -134,7 +139,9 @@ const resSchema = new mongoose.Schema(
   },
   { versionKey: false }
 );
-
+resSchema.methods.updateAge = function () {
+  this.age = moment().diff(moment(this.birthdate), "years");
+};
 const Resident = mongoose.model("Resident", resSchema);
 
 export default Resident;
