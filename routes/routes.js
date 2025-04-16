@@ -14,6 +14,19 @@ import {
   updateResident,
   createUser,
 } from "../controllers/infoController.js";
+import {
+  checkIfEmployee,
+  checkUsername,
+  loginUser,
+  logoutUser,
+  registerUser,
+  sendOTP,
+} from "../controllers/authController.js";
+import { generateBrgyID, saveBrgyID } from "../controllers/brgyIDController.js";
+import {
+  generateEmployeeID,
+  saveEmployeeID,
+} from "../controllers/employeeIDController.js";
 
 const router = express.Router();
 
@@ -35,5 +48,23 @@ router.delete("/archiveemployee/:empID", archiveEmployee);
 router.get("/getusers", getAllUsers);
 router.get("/getoldusers", getAllOldUsers);
 router.post("/createuser", createUser);
+
+//SIGN UP
+router.post("/checkemployee", checkIfEmployee);
+router.post("/checkusername", checkUsername);
+router.post("/otp", sendOTP);
+router.post("/register", registerUser);
+
+//LOGIN
+router.post("/login", loginUser);
+router.post("/logout", logoutUser);
+
+//BRGY ID
+router.post("/generatebrgyID/:resID", generateBrgyID);
+router.put("/savebrgyID/:resID", saveBrgyID);
+
+//EMPLOYEE ID
+router.post("/generateemployeeID/:empID", generateEmployeeID);
+router.put("/saveemployeeID/:empID", saveEmployeeID);
 
 export default router;

@@ -20,6 +20,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
       enum: ["Resident", "Secretary", "Official", "Assistant Secretary"],
+      default: "Resident",
     },
     status: {
       type: String,

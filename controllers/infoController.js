@@ -6,6 +6,7 @@ import Employee from "../models/Employees.js";
 import User from "../models/Users.js";
 import OldEmployee from "../models/OldEmployees.js";
 import moment from "moment";
+import QRCode from "qrcode";
 
 export const createUser = async (req, res) => {
   try {

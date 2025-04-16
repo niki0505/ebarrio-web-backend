@@ -3,6 +3,27 @@ import moment from "moment";
 
 const resSchema = new mongoose.Schema(
   {
+    brgyID: [
+      {
+        _id: false,
+        idNumber: {
+          type: String,
+          required: true,
+        },
+        expirationDate: {
+          type: String,
+          required: true,
+        },
+        qrCode: {
+          type: String,
+          required: true,
+        },
+        qrToken: {
+          type: String,
+          required: true,
+        },
+      },
+    ],
     picture: {
       type: String,
       required: true,
@@ -139,6 +160,17 @@ const resSchema = new mongoose.Schema(
   },
   { versionKey: false }
 );
+
+// resSchema.pre("save", function (next) {
+//   if (this.isNew) {
+//     const base10 = BigInt("0x" + this._id.toString()).toString();
+//     const shortDigits = base10.slice(-10);
+//     const year = new Date().getFullYear();
+//     this.brgyID = `${year}${shortDigits}`;
+//   }
+//   next();
+// });
+
 resSchema.methods.updateAge = function () {
   this.age = moment().diff(moment(this.birthdate), "years");
 };
