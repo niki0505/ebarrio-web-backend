@@ -29,7 +29,7 @@ export const verifyQR = async (req, res) => {
     const brgyInfo = resident.brgyID.find((id) => id.qrToken === qrToken);
     const today = new Date().toISOString().split("T")[0];
 
-    const isExpired = today < brgyInfo.expirationDate;
+    const isExpired = today > brgyInfo.expirationDate;
 
     if (isExpired) {
       return res.send(`

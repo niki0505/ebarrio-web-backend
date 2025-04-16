@@ -136,7 +136,7 @@ export const createEmployee = async (req, res) => {
 
     resident.empID = employee._id;
     await resident.save();
-    res.status(200).json(employee);
+    res.status(200).json({ empID: employee._id });
   } catch (error) {
     console.log("Error creating employee", error);
     res.status(500).json({ message: "Failed to create employee" });
@@ -345,14 +345,37 @@ export const updateResident = async (req, res) => {
   }
 };
 
+export const getEmployee = async (req, res) => {
+  try {
+    const { empID } = req.params;
+    const employee = await Employee.findOne({ _id: empID }).populate("resID");
+    res.status(200).json(employee);
+  } catch (error) {
+    console.log("Error fetching employee", error);
+    res.status(500).json({ message: "Failed to fetch employee" });
+  }
+};
+
 export const getResident = async (req, res) => {
   try {
     const { resID } = req.params;
-    const residents = await Resident.findOne({ _id: resID });
+    const residents = await Resident.findOne({ _id: resID }).populate("brgyID");
     res.status(200).json(residents);
   } catch (error) {
     console.log("Error fetching residents", error);
     res.status(500).json({ message: "Failed to fetch residents" });
+  }
+};
+
+export const getCaptain = async (req, res) => {
+  try {
+    const employee = await Employee.findOne({ position: "Captain" }).populate(
+      "resID"
+    );
+    res.status(200).json(employee);
+  } catch (error) {
+    console.log("Error fetching barangay captain", error);
+    res.status(500).json({ message: "Failed to fetch barangay captain" });
   }
 };
 
@@ -488,7 +511,9 @@ export const createResident = async (req, res) => {
     });
     await resident.save();
     console.log("Resident successfully created!");
-    res.status(200).json({ message: "Resident successfully created" });
+    res
+      .status(200)
+      .json({ message: "Resident successfully created", resID: resident._id });
   } catch (error) {
     console.log("Error creating resident", error);
     res.status(500).json({ message: "Failed to create resident" });

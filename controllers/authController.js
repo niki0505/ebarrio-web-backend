@@ -4,21 +4,109 @@ import axios from "axios";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
+import crypto from "crypto";
+import Session from "../models/Session.js";
 
 import { configDotenv } from "dotenv";
 
 configDotenv();
 const ACCESS_SECRET = process.env.ACCESS_SECRET;
+const REFRESH_SECRET = process.env.REFRESH_SECRET;
+
+function generateSessionId() {
+  return crypto.randomBytes(16).toString("hex");
+}
+
+export const refreshAccessToken = async (req, res) => {
+  try {
+    const accessToken = req.cookies.accessToken;
+    const refreshToken = req.cookies.refreshToken;
+
+    if (!refreshToken) {
+      return res.status(401).json({ message: "Refresh token not found" });
+    }
+    jwt.verify(
+      refreshToken,
+      process.env.REFRESH_SECRET,
+      async (err, decodedRefresh) => {
+        if (err) {
+          return res.status(401).json({ message: "Invalid refresh token" });
+        }
+        const newAccessToken = jwt.sign(
+          {
+            userID: decodedRefresh.userID,
+            role: decodedRefresh.role,
+            name: decodedRefresh.name,
+            picture: decodedRefresh.picture,
+          },
+          process.env.ACCESS_SECRET,
+          {
+            expiresIn: "15m",
+          }
+        );
+
+        res.cookie("accessToken", newAccessToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "Strict",
+          maxAge: 15 * 60 * 1000,
+        });
+        console.log("Access token refreshed");
+        return res.status(200).json({
+          message: "Access token refreshed",
+          accessToken: newAccessToken,
+        });
+      }
+    );
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const checkRefreshToken = async (req, res) => {
+  try {
+    const refreshToken = req.cookies.refreshToken;
+
+    if (!refreshToken) {
+      return res.status(401).json({ message: "Refresh token not found" });
+    }
+
+    jwt.verify(
+      refreshToken,
+      process.env.REFRESH_SECRET,
+      async (err, decoded) => {
+        if (err) {
+          return res.status(401).json({ message: "Invalid refresh token" });
+        }
+        return res.status(200).json({
+          message: "Refresh token is still valid",
+          decoded,
+        });
+      }
+    );
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
 
 export const logoutUser = async (req, res) => {
   const { userID } = req.body;
-
-  const userIDasObjectId = new mongoose.Types.ObjectId(userID);
-
   try {
-    const user = await User.findById(userIDasObjectId);
+    const user = await User.findById(userID);
     if (!user) return res.status(404).json({ message: "User not found" });
 
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      secure: true,
+      sameSite: "Strict",
+    });
+    res.clearCookie("accessToken", {
+      httpOnly: true,
+      secure: true,
+      sameSite: "Strict",
+    });
     user.status = "Inactive";
     await user.save();
 
@@ -64,13 +152,41 @@ export const loginUser = async (req, res) => {
       }
     );
 
+    const refreshToken = jwt.sign(
+      {
+        userID: user._id.toString(),
+        role: user.role,
+        name: `${user.resID.firstname} ${user.resID.lastname}`,
+        picture: user.resID.picture,
+      },
+      REFRESH_SECRET,
+      {
+        expiresIn: "30d",
+      }
+    );
+
+    res.cookie("accessToken", accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
+      maxAge: 15 * 60 * 1000,
+    });
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+    });
+
+    console.log("✅ Saving refresh and access token...");
+
     user.status = "Active";
     await user.save();
 
     return res.json({
       exists: true,
       correctPassword: true,
-      accessToken,
     });
   } catch (error) {
     console.error("Error in loginUser:", error);

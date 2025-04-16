@@ -13,12 +13,16 @@ import {
   getResident,
   updateResident,
   createUser,
+  getCaptain,
+  getEmployee,
 } from "../controllers/infoController.js";
 import {
   checkIfEmployee,
+  checkRefreshToken,
   checkUsername,
   loginUser,
   logoutUser,
+  refreshAccessToken,
   registerUser,
   sendOTP,
 } from "../controllers/authController.js";
@@ -27,12 +31,17 @@ import {
   generateEmployeeID,
   saveEmployeeID,
 } from "../controllers/employeeIDController.js";
+import authMiddleware from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
+//BARANGAY CAPTAIN
+router.get("/getcaptain", getCaptain);
+router.get("/getemployee/:empID", getEmployee);
+
 //RESIDENTS
 router.post("/createresident", createResident);
-router.get("/getresidents", getAllResidents);
+router.get("/getresidents", authMiddleware, getAllResidents);
 router.get("/getresident/:resID", getResident);
 router.put("/updateresident/:resID", updateResident);
 router.delete("/archiveresident/:resID", archiveResident);
@@ -66,5 +75,9 @@ router.put("/savebrgyID/:resID", saveBrgyID);
 //EMPLOYEE ID
 router.post("/generateemployeeID/:empID", generateEmployeeID);
 router.put("/saveemployeeID/:empID", saveEmployeeID);
+
+//SESSION
+router.get("/checkrefreshtoken", checkRefreshToken);
+router.get("/refreshtoken", refreshAccessToken);
 
 export default router;
