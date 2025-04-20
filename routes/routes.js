@@ -32,6 +32,12 @@ import {
   saveEmployeeID,
 } from "../controllers/employeeIDController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
+import {
+  generateCertificate,
+  getCertificate,
+  getPrepared,
+  saveCertificate,
+} from "../controllers/certificatesController.js";
 
 const router = express.Router();
 
@@ -76,7 +82,13 @@ router.put("/savebrgyID/:resID", saveBrgyID);
 router.post("/generateemployeeID/:empID", generateEmployeeID);
 router.put("/saveemployeeID/:empID", saveEmployeeID);
 
-//SESSION
+//CERTIFICATE
+router.post("/generatecertificate/", generateCertificate);
+router.put("/savecertificate/:certID", saveCertificate);
+router.get("/getcertificate/:certID", getCertificate);
+router.get("/getprepared/:userID", getPrepared);
+
+//TOKENS
 router.get("/checkrefreshtoken", checkRefreshToken);
 router.get("/refreshtoken", refreshAccessToken);
 
