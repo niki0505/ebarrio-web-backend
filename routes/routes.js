@@ -34,12 +34,40 @@ import {
 import authMiddleware from "../middleware/authMiddleware.js";
 import {
   generateCertificate,
+  generateCertificateReq,
+  getAllCertificateRequests,
   getCertificate,
   getPrepared,
+  rejectCertificateReq,
   saveCertificate,
+  saveCertificateReq,
 } from "../controllers/certificatesController.js";
+import {
+  archiveEmergencyHotlines,
+  createEmergencyHotlines,
+  editEmergencyHotlines,
+  getEmergencyHotlines,
+} from "../controllers/emergencyHotlinesController.js";
+import {
+  createAnnouncement,
+  getAnnouncements,
+} from "../controllers/announcementController.js";
 
 const router = express.Router();
+
+//SIGN UP
+router.post("/checkemployee", checkIfEmployee);
+router.post("/checkusername", checkUsername);
+router.post("/otp", sendOTP);
+router.post("/register", registerUser);
+
+//LOGIN
+router.post("/login", loginUser);
+router.post("/logout", logoutUser);
+
+//TOKENS
+router.get("/checkrefreshtoken", checkRefreshToken);
+router.get("/refreshtoken", refreshAccessToken);
 
 //BARANGAY CAPTAIN
 router.get("/getcaptain", getCaptain);
@@ -54,25 +82,15 @@ router.delete("/archiveresident/:resID", archiveResident);
 router.get("/getoldresidents", getAllOldResidents);
 
 //EMPLOYEES
-router.get("/getemployees", getAllEmployees);
+router.get("/getemployees", authMiddleware, getAllEmployees);
 router.post("/createemployee", createEmployee);
 router.get("/positioncount", checkPositions);
 router.delete("/archiveemployee/:empID", archiveEmployee);
 
 //USERS
-router.get("/getusers", getAllUsers);
+router.get("/getusers", authMiddleware, getAllUsers);
 router.get("/getoldusers", getAllOldUsers);
 router.post("/createuser", createUser);
-
-//SIGN UP
-router.post("/checkemployee", checkIfEmployee);
-router.post("/checkusername", checkUsername);
-router.post("/otp", sendOTP);
-router.post("/register", registerUser);
-
-//LOGIN
-router.post("/login", loginUser);
-router.post("/logout", logoutUser);
 
 //BRGY ID
 router.post("/generatebrgyID/:resID", generateBrgyID);
@@ -88,8 +106,23 @@ router.put("/savecertificate/:certID", saveCertificate);
 router.get("/getcertificate/:certID", getCertificate);
 router.get("/getprepared/:userID", getPrepared);
 
-//TOKENS
-router.get("/checkrefreshtoken", checkRefreshToken);
-router.get("/refreshtoken", refreshAccessToken);
+//CERTIFICATE REQUESTS
+router.get("/getcertificates", getAllCertificateRequests);
+router.put("/generatecertificatereq/:certID", generateCertificateReq);
+router.put("/savecertificatereq/:certID", saveCertificateReq);
+router.put("/rejectcertificatereq/:certID", rejectCertificateReq);
+
+//EMERGENCY HOTLINES
+router.get("/getemergencyhotlines", getEmergencyHotlines);
+router.post("/createemergencyhotlines", createEmergencyHotlines);
+router.post("/editemergencyhotlines/:emergencyID", editEmergencyHotlines);
+router.delete(
+  "/archiveemergencyhotlines/:emergencyID",
+  archiveEmergencyHotlines
+);
+
+//ANNOUNCEMENT
+router.post("/createannouncement", createAnnouncement);
+router.get("/getannouncements", getAnnouncements);
 
 export default router;

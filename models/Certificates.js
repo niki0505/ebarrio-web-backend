@@ -4,21 +4,31 @@ const certSchema = new mongoose.Schema(
   {
     certID: {
       _id: false,
-      controlNumber: {
-        type: String,
-        required: true,
-      },
-      expirationDate: {
-        type: String,
-        required: true,
-      },
-      qrCode: {
-        type: String,
-        required: true,
-      },
-      qrToken: {
-        type: String,
-        required: true,
+      type: {
+        controlNumber: {
+          type: String,
+          required: function () {
+            return this.status !== "Pending";
+          },
+        },
+        expirationDate: {
+          type: String,
+          required: function () {
+            return this.status !== "Pending";
+          },
+        },
+        qrCode: {
+          type: String,
+          required: function () {
+            return this.status !== "Pending";
+          },
+        },
+        qrToken: {
+          type: String,
+          required: function () {
+            return this.status !== "Pending";
+          },
+        },
       },
     },
     resID: {
@@ -42,7 +52,10 @@ const certSchema = new mongoose.Schema(
     locationofbusiness: {
       type: String,
     },
-    orNumber: {
+    amount: {
+      type: String,
+    },
+    remarks: {
       type: String,
     },
     status: {

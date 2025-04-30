@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
 import crypto from "crypto";
 import Session from "../models/Session.js";
+import Employee from "../models/Employees.js";
 
 import { configDotenv } from "dotenv";
 
@@ -35,6 +36,7 @@ export const refreshAccessToken = async (req, res) => {
         const newAccessToken = jwt.sign(
           {
             userID: decodedRefresh.userID,
+            empID: decodedRefresh.empID,
             role: decodedRefresh.role,
             name: decodedRefresh.name,
             picture: decodedRefresh.picture,
@@ -122,7 +124,12 @@ export const loginUser = async (req, res) => {
     console.log("🔵 Login request:", req.body);
     const { username, password } = req.body;
 
-    const user = await User.findOne({ username }).populate("resID");
+    const user = await User.findOne({ username }).populate({
+      path: "empID",
+      populate: {
+        path: "resID",
+      },
+    });
     if (!user || user.role === "Resident") {
       console.log("❌ Account not found");
       return res.json({ exists: false });
@@ -142,9 +149,10 @@ export const loginUser = async (req, res) => {
     const accessToken = jwt.sign(
       {
         userID: user._id.toString(),
+        empID: user.empID._id.toString(),
         role: user.role,
-        name: `${user.resID.firstname} ${user.resID.lastname}`,
-        picture: user.resID.picture,
+        name: `${user.empID.resID.firstname} ${user.empID.resID.lastname}`,
+        picture: user.empID.resID.picture,
       },
       ACCESS_SECRET,
       {
@@ -155,9 +163,10 @@ export const loginUser = async (req, res) => {
     const refreshToken = jwt.sign(
       {
         userID: user._id.toString(),
+        empID: user.empID._id.toString(),
         role: user.role,
-        name: `${user.resID.firstname} ${user.resID.lastname}`,
-        picture: user.resID.picture,
+        name: `${user.empID.resID.firstname} ${user.empID.resID.lastname}`,
+        picture: user.empID.resID.picture,
       },
       REFRESH_SECRET,
       {
@@ -180,6 +189,7 @@ export const loginUser = async (req, res) => {
     });
 
     console.log("✅ Saving refresh and access token...");
+    console.log(user.empID._id);
 
     user.status = "Active";
     await user.save();
@@ -276,7 +286,7 @@ export const checkIfEmployee = async (req, res) => {
       }
 
       return res.json({
-        resID: resident._id,
+        empID: employee.empID._id,
         hasAccount: false,
         isSecretary: true,
         isEmployee: true,
@@ -292,21 +302,25 @@ export const checkIfEmployee = async (req, res) => {
 export const registerUser = async (req, res) => {
   try {
     console.log("🔵 Register request:", req.body);
-    const { username, password, resID, role } = req.body;
+    const { username, password, empID, role } = req.body;
 
-    const resident = await Resident.findOne({ _id: resID });
+    const employee = await Employee.findOne({ _id: empID });
+
+    if (!employee) {
+      return res.status(404).json({ message: "Employee not found" });
+    }
 
     const user = new User({
-      username,
-      password,
-      resID,
-      role,
+      username: username,
+      password: password,
+      empID: empID,
+      role: role,
     });
 
     await user.save();
 
-    resident.userID = user._id;
-    await resident.save();
+    employee.userID = user._id;
+    await employee.save();
     console.log("✅ User registered successfully");
     return res.json({ exists: true, message: "User registered successfully" });
   } catch (error) {

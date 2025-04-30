@@ -9,6 +9,117 @@ import Certificate from "../models/Certificates.js";
 import moment from "moment";
 import QRCode from "qrcode";
 
+export const rejectCertificateReq = async (req, res) => {
+  try {
+    const { certID } = req.params;
+    const { remarks } = req.body;
+    console.log(certID);
+
+    const cert = await Certificate.findById(certID);
+    if (!cert) {
+      return res.status(404).json({ message: "Certificate not found" });
+    }
+
+    cert.remarks = remarks;
+    cert.status = "Rejected";
+    await cert.save();
+
+    return res.status(200).json({
+      message: "Certificate is rejected successfully",
+    });
+  } catch (error) {
+    console.error("Error in rejecting certificate:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const saveCertificateReq = async (req, res) => {
+  try {
+    const { certID } = req.params;
+    const { qrCode } = req.body;
+
+    const cert = await Certificate.findById(certID);
+    if (!cert) {
+      return res.status(404).json({ message: "Certificate not found" });
+    }
+
+    cert.certID.qrCode = qrCode;
+    await cert.save();
+
+    return res.status(200).json({
+      message: "Certificate is saved successfully",
+    });
+  } catch (error) {
+    console.error("Error in saving certificate:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const generateCertificateReq = async (req, res) => {
+  try {
+    const { certID } = req.params;
+
+    const cert = await Certificate.findById(certID);
+
+    const base10 = BigInt("0x" + cert._id).toString();
+    const shortDigits = base10.slice(-10);
+    const year = new Date().getFullYear();
+    const controlNumber = `${year}${shortDigits}`;
+
+    const expirationDateObj = new Date();
+    expirationDateObj.setFullYear(expirationDateObj.getFullYear() + 1);
+    const expirationDate = expirationDateObj.toISOString().split("T")[0];
+
+    const qrToken = crypto.randomUUID();
+    const qrCodeUrl = `http://localhost:5000/verifyCertificate/${qrToken}`;
+    const qrCode = await QRCode.toDataURL(qrCodeUrl);
+
+    cert.certID = {
+      controlNumber: controlNumber,
+      expirationDate: expirationDate,
+      qrCode: qrCode,
+      qrToken: qrToken,
+    };
+
+    cert.status = "Issued";
+    await cert.save();
+
+    return res.status(200).json({
+      message: "QR code is generated successfully",
+      qrCode,
+    });
+  } catch (error) {
+    console.error("Error in generating certificate:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const getAllCertificateRequests = async (req, res) => {
+  try {
+    const certificate = await Certificate.find().populate("resID");
+    const formatDatePH = (date) => {
+      return new Date(date).toLocaleString("en-PH", {
+        timeZone: "Asia/Manila",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      });
+    };
+
+    const formattedCertificates = certificate.map((cert) => ({
+      ...cert.toObject(),
+      createdAt: formatDatePH(cert.createdAt),
+    }));
+    res.status(200).json(formattedCertificates);
+  } catch (error) {
+    console.log("Error fetching certificate requests", error);
+    res.status(500).json({ message: "Failed to fetch certificate requests" });
+  }
+};
+
 export const verifyCertificateQR = async (req, res) => {
   try {
     const { qrToken } = req.params;
@@ -86,7 +197,24 @@ export const getCertificate = async (req, res) => {
   try {
     const { certID } = req.params;
     const cert = await Certificate.findById(certID).populate("resID");
-    res.status(200).json(cert);
+
+    const formatDatePH = (date) => {
+      return new Date(date).toLocaleString("en-PH", {
+        timeZone: "Asia/Manila",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      });
+    };
+
+    const formattedCertificate = {
+      ...cert.toObject(),
+      updatedAt: formatDatePH(cert.updatedAt),
+    };
+    res.status(200).json(formattedCertificate);
   } catch (error) {
     console.log("Error fetching certificate", error);
     res.status(500).json({ message: "Failed to fetch certificate" });

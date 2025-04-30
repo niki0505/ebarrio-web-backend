@@ -16,6 +16,10 @@ const userSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Resident",
     },
+    empID: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Employee",
+    },
     role: {
       type: String,
       required: true,

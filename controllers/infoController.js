@@ -52,7 +52,14 @@ export const getAllOldUsers = async (req, res) => {
 
 export const getAllUsers = async (req, res) => {
   try {
-    const users = await User.find().populate("resID");
+    const users = await User.find()
+      .populate({
+        path: "empID",
+        populate: {
+          path: "resID",
+        },
+      })
+      .populate("resID");
     res.status(200).json(users);
   } catch (error) {
     console.log("Error fetching users", error);
