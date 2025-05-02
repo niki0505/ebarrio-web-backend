@@ -52,6 +52,10 @@ import {
   createAnnouncement,
   getAnnouncements,
 } from "../controllers/announcementController.js";
+import {
+  approveReservation,
+  getReservations,
+} from "../controllers/courtController.js";
 
 const router = express.Router();
 
@@ -124,5 +128,13 @@ router.delete(
 //ANNOUNCEMENT
 router.post("/createannouncement", createAnnouncement);
 router.get("/getannouncements", getAnnouncements);
+
+//COURT RESERVATION
+router.get("/getreservations", authMiddleware, getReservations);
+router.put(
+  "/approvereservation/:reservationID",
+  authMiddleware,
+  approveReservation
+);
 
 export default router;

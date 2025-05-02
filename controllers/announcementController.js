@@ -3,7 +3,14 @@ import mongoose from "mongoose";
 
 export const getAnnouncements = async (req, res) => {
   try {
-    const announcements = await Announcement.find();
+    const announcements = await Announcement.find().populate({
+      path: "uploadedby",
+      select: "position",
+      populate: {
+        path: "resID",
+        select: "firstname middlename lastname",
+      },
+    });
     return res.status(200).json(announcements);
   } catch (error) {
     console.error("Error in fetching certificate:", error);

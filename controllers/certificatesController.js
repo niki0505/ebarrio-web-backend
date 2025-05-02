@@ -180,16 +180,27 @@ export const getPrepared = async (req, res) => {
   try {
     const { userID } = req.params;
     const userIDasObjectID = new mongoose.Types.ObjectId(userID);
-    const user = await User.findById(userIDasObjectID).populate("resID");
+    const user = await User.findById(userIDasObjectID).populate({
+      path: "empID",
+      populate: {
+        path: "resID",
+        select: "firstname lastname signature",
+      },
+    });
+    if (!user) {
+      return res.status(404).json({ message: "User or Resident not found" });
+    }
 
     const userData = {
-      name: `${user.resID.firstname} ${user.resID.lastname}`,
-      signature: user.resID.signature,
+      name: `${user.empID.resID.firstname} ${user.empID.resID.lastname}`,
+      signature: user.empID.resID.signature,
     };
     res.status(200).json(userData);
   } catch (error) {
     console.log("Error fetching certificate", error);
-    res.status(500).json({ message: "Failed to fetch certificate" });
+    res
+      .status(500)
+      .json({ message: "Failed to fetch certificate", error: error.message });
   }
 };
 

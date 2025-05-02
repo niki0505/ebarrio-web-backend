@@ -23,7 +23,7 @@ const crSchema = new mongoose.Schema(
       type: String,
       enum: ["Pending", "Approved", "Rejected"],
       required: true,
-      default: "Pending",
+      default: "Approved",
     },
   },
   { versionKey: false, timestamps: true }
