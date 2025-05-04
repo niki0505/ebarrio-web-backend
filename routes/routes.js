@@ -49,13 +49,27 @@ import {
   getEmergencyHotlines,
 } from "../controllers/emergencyHotlinesController.js";
 import {
+  archiveAnnouncement,
   createAnnouncement,
   getAnnouncements,
+  pinAnnouncement,
+  unpinAnnouncement,
 } from "../controllers/announcementController.js";
 import {
   approveReservation,
+  createReservation,
   getReservations,
+  rejectCourtReq,
 } from "../controllers/courtController.js";
+import {
+  createBlotter,
+  editScheduleBlotter,
+  getBlotter,
+  getBlotters,
+  rejectBlotter,
+  scheduleBlotter,
+  settleBlotter,
+} from "../controllers/blotterControllers.js";
 
 const router = express.Router();
 
@@ -79,7 +93,7 @@ router.get("/getemployee/:empID", getEmployee);
 
 //RESIDENTS
 router.post("/createresident", createResident);
-router.get("/getresidents", authMiddleware, getAllResidents);
+router.get("/getresidents", getAllResidents);
 router.get("/getresident/:resID", getResident);
 router.put("/updateresident/:resID", updateResident);
 router.delete("/archiveresident/:resID", archiveResident);
@@ -111,7 +125,7 @@ router.get("/getcertificate/:certID", getCertificate);
 router.get("/getprepared/:userID", getPrepared);
 
 //CERTIFICATE REQUESTS
-router.get("/getcertificates", getAllCertificateRequests);
+router.get("/getcertificates", authMiddleware, getAllCertificateRequests);
 router.put("/generatecertificatereq/:certID", generateCertificateReq);
 router.put("/savecertificatereq/:certID", saveCertificateReq);
 router.put("/rejectcertificatereq/:certID", rejectCertificateReq);
@@ -128,6 +142,17 @@ router.delete(
 //ANNOUNCEMENT
 router.post("/createannouncement", createAnnouncement);
 router.get("/getannouncements", getAnnouncements);
+router.put("/pinannouncement/:announcementID", authMiddleware, pinAnnouncement);
+router.put(
+  "/unpinannouncement/:announcementID",
+  authMiddleware,
+  unpinAnnouncement
+);
+router.put(
+  "/archiveannouncement/:announcementID",
+  authMiddleware,
+  archiveAnnouncement
+);
 
 //COURT RESERVATION
 router.get("/getreservations", authMiddleware, getReservations);
@@ -136,5 +161,24 @@ router.put(
   authMiddleware,
   approveReservation
 );
+router.post("/createreservation", authMiddleware, createReservation);
+router.put(
+  "/rejectcourtreservation/:reservationID",
+  authMiddleware,
+  rejectCourtReq
+);
+
+//BLOTTER REPORTS
+router.post("/createblotter", authMiddleware, createBlotter);
+router.get("/getblotters", getBlotters);
+router.get("/getblotter/:blotterID", getBlotter);
+router.put("/scheduleblotter/:blotterID", authMiddleware, scheduleBlotter);
+router.put(
+  "/editscheduleblotter/:blotterID",
+  authMiddleware,
+  editScheduleBlotter
+);
+router.put("/settleblotter/:blotterID", authMiddleware, settleBlotter);
+router.put("/rejectblotter/:blotterID", authMiddleware, rejectBlotter);
 
 export default router;

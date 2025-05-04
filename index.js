@@ -7,6 +7,7 @@ import qrCodeRoute from "./routes/qrCodeRoute.js";
 import cookieParser from "cookie-parser";
 import http from "http";
 import { Server } from "socket.io";
+import { watchAllCollectionsChanges } from "./controllers/watchDB.js";
 
 configDotenv();
 
@@ -29,24 +30,14 @@ const io = new Server(server, {
   },
 });
 
-io.on("connection", (socket) => {
-  console.log("🟢 A user connected:", socket.id);
-
-  socket.on("updateData", (data) => {
-    console.log("📩 Data received:", data);
-    io.emit("dataUpdated", data);
-  });
-
-  socket.on("disconnect", () => {
-    console.log("🔴 A user disconnected:", socket.id);
-  });
-});
+app.set("socketio", io);
 
 app.use("/api", routes);
 app.use("/", qrCodeRoute);
 
 const PORT = process.env.PORT;
-server.listen(PORT, () => {
+server.listen(PORT, async () => {
   console.log(`Server is running on port ${PORT}`);
-  connectDB();
+  await connectDB();
+  watchAllCollectionsChanges(io);
 });

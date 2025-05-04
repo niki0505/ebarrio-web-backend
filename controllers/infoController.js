@@ -7,6 +7,11 @@ import User from "../models/Users.js";
 import OldEmployee from "../models/OldEmployees.js";
 import moment from "moment";
 import QRCode from "qrcode";
+import {
+  getEmployeesUtils,
+  getResidentsUtils,
+  getUsersUtils,
+} from "../utils/collectionUtils.js";
 
 export const createUser = async (req, res) => {
   try {
@@ -52,14 +57,7 @@ export const getAllOldUsers = async (req, res) => {
 
 export const getAllUsers = async (req, res) => {
   try {
-    const users = await User.find()
-      .populate({
-        path: "empID",
-        populate: {
-          path: "resID",
-        },
-      })
-      .populate("resID");
+    const users = await getUsersUtils();
     res.status(200).json(users);
   } catch (error) {
     console.log("Error fetching users", error);
@@ -152,7 +150,7 @@ export const createEmployee = async (req, res) => {
 
 export const getAllEmployees = async (req, res) => {
   try {
-    const employees = await Employee.find().populate("resID");
+    const employees = await getEmployeesUtils();
     res.status(200).json(employees);
   } catch (error) {
     console.log("Error fetching employees", error);
@@ -254,6 +252,7 @@ export const updateResident = async (req, res) => {
       religion,
       nationality,
       voter,
+      precinct,
       deceased,
       email,
       mobilenumber,
@@ -322,6 +321,7 @@ export const updateResident = async (req, res) => {
     resident.religion = religion;
     resident.nationality = nationality;
     resident.voter = voter;
+    resident.precinct = precinct;
     resident.deceased = deceased;
     resident.email = email;
     resident.mobilenumber = mobilenumber;
@@ -398,10 +398,7 @@ export const getAllOldResidents = async (req, res) => {
 
 export const getAllResidents = async (req, res) => {
   try {
-    const residents = await Resident.find()
-      .select("-empID") // Exclude empID field completely if not needed
-      .populate("empID") // Populate only if empID exists
-      .exec();
+    const residents = await getResidentsUtils();
     res.status(200).json(residents);
   } catch (error) {
     console.log("Error fetching residents", error);
@@ -429,6 +426,7 @@ export const createResident = async (req, res) => {
       religion,
       nationality,
       voter,
+      precinct,
       deceased,
       email,
       mobilenumber,
@@ -494,6 +492,7 @@ export const createResident = async (req, res) => {
       religion,
       nationality,
       voter,
+      precinct,
       deceased,
       email,
       mobilenumber,

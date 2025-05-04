@@ -8,6 +8,8 @@ import OldEmployee from "../models/OldEmployees.js";
 import Certificate from "../models/Certificates.js";
 import moment from "moment";
 import QRCode from "qrcode";
+import { emitDataUpdated } from "../utils/socketUtils.js";
+import { getFormattedCertificates } from "../utils/collectionUtils.js";
 
 export const rejectCertificateReq = async (req, res) => {
   try {
@@ -96,23 +98,24 @@ export const generateCertificateReq = async (req, res) => {
 
 export const getAllCertificateRequests = async (req, res) => {
   try {
-    const certificate = await Certificate.find().populate("resID");
-    const formatDatePH = (date) => {
-      return new Date(date).toLocaleString("en-PH", {
-        timeZone: "Asia/Manila",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true,
-      });
-    };
+    // const certificate = await Certificate.find().populate("resID");
+    // const formatDatePH = (date) => {
+    //   return new Date(date).toLocaleString("en-PH", {
+    //     timeZone: "Asia/Manila",
+    //     year: "numeric",
+    //     month: "long",
+    //     day: "numeric",
+    //     hour: "2-digit",
+    //     minute: "2-digit",
+    //     hour12: true,
+    //   });
+    // };
 
-    const formattedCertificates = certificate.map((cert) => ({
-      ...cert.toObject(),
-      createdAt: formatDatePH(cert.createdAt),
-    }));
+    // const formattedCertificates = certificate.map((cert) => ({
+    //   ...cert.toObject(),
+    //   createdAt: formatDatePH(cert.createdAt),
+    // }));
+    const formattedCertificates = await getFormattedCertificates();
     res.status(200).json(formattedCertificates);
   } catch (error) {
     console.log("Error fetching certificate requests", error);

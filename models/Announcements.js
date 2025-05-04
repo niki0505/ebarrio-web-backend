@@ -27,6 +27,16 @@ const aSchema = new mongoose.Schema(
     eventEnd: {
       type: Date,
     },
+    status: {
+      type: String,
+      enum: ["Pinned", "Not Pinned", "Archived"],
+      required: true,
+      default: "Not Pinned",
+    },
+    hearts: {
+      type: Number,
+      default: 0,
+    },
   },
   { versionKey: false, timestamps: true }
 );

@@ -11,8 +11,12 @@ const crSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    datetime: {
-      type: String,
+    starttime: {
+      type: Date,
+      required: true,
+    },
+    endtime: {
+      type: Date,
       required: true,
     },
     amount: {
@@ -24,6 +28,9 @@ const crSchema = new mongoose.Schema(
       enum: ["Pending", "Approved", "Rejected"],
       required: true,
       default: "Approved",
+    },
+    remarks: {
+      type: String,
     },
   },
   { versionKey: false, timestamps: true }

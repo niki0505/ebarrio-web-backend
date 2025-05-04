@@ -1,6 +1,7 @@
 import EmergencyHotline from "../models/EmergencyHotlines.js";
 import OldEmergencyHotline from "../models/OldEmergencyHotlines.js";
 import mongoose from "mongoose";
+import { getHotlinesUtils } from "../utils/collectionUtils.js";
 
 export const archiveEmergencyHotlines = async (req, res) => {
   try {
@@ -49,7 +50,7 @@ export const editEmergencyHotlines = async (req, res) => {
 
 export const getEmergencyHotlines = async (req, res) => {
   try {
-    const emergency = await EmergencyHotline.find();
+    const emergency = await getHotlinesUtils();
     return res.status(200).json(emergency);
   } catch (error) {
     console.error("Error in fetching emergency hotlines:", error);

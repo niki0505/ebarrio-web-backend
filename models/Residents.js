@@ -87,6 +87,9 @@ const resSchema = new mongoose.Schema(
     voter: {
       type: String,
     },
+    precinct: {
+      type: String,
+    },
     deceased: {
       type: String,
     },
