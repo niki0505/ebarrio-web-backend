@@ -12,80 +12,8 @@ import {
   getResidentsUtils,
   getUsersUtils,
 } from "../utils/collectionUtils.js";
-
-export const createUser = async (req, res) => {
-  try {
-    console.log("🔵 Register request:", req.body);
-    const { username, password, resID, role } = req.body;
-
-    const usernameExists = await User.findOne({ username });
-    if (usernameExists) {
-      console.log("❌ Username already exists");
-      return res.json({ usernameExists: true });
-    }
-
-    const resident = await Resident.findById(resID);
-    if (!resident) {
-      return res.status(404).json({ message: "Resident not found" });
-    }
-
-    let user;
-
-    if (resident.empID) {
-      user = new User({
-        username,
-        password,
-        empID: resident.empID,
-        role,
-      });
-    } else {
-      user = new User({
-        username,
-        password,
-        resID: resident._id,
-        role,
-      });
-    }
-
-    await user.save();
-
-    if (resident.empID) {
-      const employee = await Employee.findOne({ resID: resID });
-      employee.userID = user._id;
-      await employee.save();
-    } else {
-      const resident = await Resident.findOne({ _id: resID });
-      resident.userID = user._id;
-      await resident.save();
-    }
-
-    console.log("✅ User registered successfully");
-    return res.json({ exists: true, message: "User registered successfully" });
-  } catch (error) {
-    console.error("Error in registerUser:", error);
-    res.status(500).json({ message: "Internal server error" });
-  }
-};
-
-export const getAllOldUsers = async (req, res) => {
-  try {
-    const users = await OldUser.find();
-    res.status(200).json(users);
-  } catch (error) {
-    console.log("Error fetching old users", error);
-    res.status(500).json({ message: "Failed to fetch old users" });
-  }
-};
-
-export const getAllUsers = async (req, res) => {
-  try {
-    const users = await getUsersUtils();
-    res.status(200).json(users);
-  } catch (error) {
-    console.log("Error fetching users", error);
-    res.status(500).json({ message: "Failed to fetch users" });
-  }
-};
+import { rds } from "../index.js";
+import axios from "axios";
 
 export const archiveEmployee = async (req, res) => {
   try {

@@ -8,6 +8,7 @@ import cookieParser from "cookie-parser";
 import http from "http";
 import { Server } from "socket.io";
 import { watchAllCollectionsChanges } from "./controllers/watchDB.js";
+import Redis from "ioredis";
 
 configDotenv();
 
@@ -22,12 +23,31 @@ app.use(
   })
 );
 
+const rds = new Redis({
+  host: "127.0.0.1",
+  port: 6379,
+});
+
+export { rds };
+
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: "http://localhost:3000",
     credentials: true,
   },
+});
+
+rds.ping((err, result) => {
+  if (err) {
+    console.error("Error connecting to Redis:", err);
+  } else {
+    console.log("Connected to Redis:", result); // Should print 'PONG'
+  }
+});
+
+rds.on("error", (err) => {
+  console.error("Redis connection error: ", err);
 });
 
 app.set("socketio", io);

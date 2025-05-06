@@ -27,9 +27,9 @@ const userSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["Active", "Inactive", "Deactivated"],
+      enum: ["Active", "Inactive", "Deactivated", "Password Not Set"],
       required: true,
-      default: "Inactive",
+      default: "Password Not Set",
     },
   },
   { versionKey: false }

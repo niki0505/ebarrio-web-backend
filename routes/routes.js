@@ -7,24 +7,34 @@ import {
   createResident,
   getAllEmployees,
   getAllOldResidents,
-  getAllOldUsers,
   getAllResidents,
-  getAllUsers,
   getResident,
   updateResident,
-  createUser,
   getCaptain,
   getEmployee,
 } from "../controllers/infoController.js";
+
 import {
+  getAllOldUsers,
+  getAllUsers,
+  createUser,
+  resetPassword,
+  deactivateUser,
+  activateUser,
+} from "../controllers/userController.js";
+
+import {
+  checkCredentials,
   checkIfEmployee,
   checkRefreshToken,
   checkUsername,
+  getMobileNumber,
   loginUser,
   logoutUser,
   refreshAccessToken,
   registerUser,
   sendOTP,
+  verifyOTP,
 } from "../controllers/authController.js";
 import { generateBrgyID, saveBrgyID } from "../controllers/brgyIDController.js";
 import {
@@ -76,16 +86,24 @@ const router = express.Router();
 //SIGN UP
 router.post("/checkemployee", checkIfEmployee);
 router.post("/checkusername", checkUsername);
-router.post("/otp", sendOTP);
+router.post("/checkcredentials", checkCredentials);
+router.post("/sendotp", sendOTP);
+router.post("/verifyotp", verifyOTP);
 router.post("/register", registerUser);
+router.get("/getmobilenumber/:username", getMobileNumber);
 
 //LOGIN
-router.post("/login", loginUser);
+router.put("/login/:username", loginUser);
 router.post("/logout", logoutUser);
 
 //TOKENS
 router.get("/checkrefreshtoken", checkRefreshToken);
 router.get("/refreshtoken", refreshAccessToken);
+
+//USERS
+router.put("/resetpassword/:username", resetPassword);
+router.put("/deactivateuser/:userID", deactivateUser);
+router.put("/activateuser/:userID", activateUser);
 
 //BARANGAY CAPTAIN
 router.get("/getcaptain", getCaptain);

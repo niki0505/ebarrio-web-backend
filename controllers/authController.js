@@ -7,16 +7,13 @@ import mongoose from "mongoose";
 import crypto from "crypto";
 import Session from "../models/Session.js";
 import Employee from "../models/Employees.js";
+import { rds } from "../index.js";
 
 import { configDotenv } from "dotenv";
 
 configDotenv();
 const ACCESS_SECRET = process.env.ACCESS_SECRET;
 const REFRESH_SECRET = process.env.REFRESH_SECRET;
-
-function generateSessionId() {
-  return crypto.randomBytes(16).toString("hex");
-}
 
 export const refreshAccessToken = async (req, res) => {
   try {
@@ -122,7 +119,7 @@ export const logoutUser = async (req, res) => {
 export const loginUser = async (req, res) => {
   try {
     console.log("🔵 Login request:", req.body);
-    const { username, password } = req.body;
+    const { username } = req.params;
 
     const user = await User.findOne({ username }).populate({
       path: "empID",
@@ -130,22 +127,7 @@ export const loginUser = async (req, res) => {
         path: "resID",
       },
     });
-    if (!user || user.role === "Resident") {
-      console.log("❌ Account not found");
-      return res.json({ exists: false });
-    }
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      console.log("❌ Incorrect Password");
-      return res.json({
-        exists: true,
-        correctPassword: false,
-        isAuthorized: true,
-      });
-    }
-
-    console.log("✅ Account found, generating token...");
     const accessToken = jwt.sign(
       {
         userID: user._id.toString(),
@@ -188,32 +170,146 @@ export const loginUser = async (req, res) => {
       maxAge: 30 * 24 * 60 * 60 * 1000,
     });
 
-    console.log("✅ Saving refresh and access token...");
-    console.log(user.empID._id);
-
     user.status = "Active";
     await user.save();
 
-    return res.json({
-      exists: true,
-      correctPassword: true,
+    return res.status(200).json({
+      message: "Login successful!",
     });
   } catch (error) {
-    console.error("Error in loginUser:", error);
+    console.error("Error in logging in:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const checkCredentials = async (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    const user = await User.findOne({ username }).populate({
+      path: "empID",
+      populate: {
+        path: "resID",
+      },
+    });
+    if (!user || user.resID) {
+      console.log("❌ Account not found");
+      return res.status(404).json({
+        message: "Account not found",
+      });
+    }
+    if (user.status === "Deactivated") {
+      console.log("❌ Account is deactivated");
+      return res.status(403).json({
+        message: "Account is deactivated",
+      });
+    }
+
+    if (user.status === "Password Not Set") {
+      rds.get(`userID_${user._id}`, (err, storedToken) => {
+        if (err) {
+          console.error("Error retrieving token from Redis:", err);
+          return res.status(500).json({ message: "Failed to verify token" });
+        }
+
+        if (!storedToken) {
+          return res
+            .status(400)
+            .json({ message: "Token has expired or does not exist" });
+        }
+
+        if (storedToken === password) {
+          return res
+            .status(200)
+            .json({ message: "Token verified successfully!" });
+        } else {
+          return res.status(400).json({ message: "Invalid token" });
+        }
+      });
+      return;
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      console.log("❌ Incorrect Password");
+      return res.status(403).json({
+        message: "Incorrect password",
+      });
+    }
+    return res.status(200).json({
+      message: "Credentials verified",
+    });
+  } catch (error) {
+    console.error("Error in checking credentials:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const getMobileNumber = async (req, res) => {
+  try {
+    const { username } = req.params;
+
+    const user = await User.findOne({ username: username }).populate({
+      path: "empID",
+      select: "resID",
+      populate: {
+        path: "resID",
+        select: "mobilenumber",
+      },
+    });
+    if (!user) {
+      return res.status(404).json({ message: "Username not found!" });
+    }
+
+    return res.status(200).json(user);
+  } catch (error) {
+    console.error("Error in sending OTP:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const verifyOTP = async (req, res) => {
+  try {
+    const { username, OTP } = req.body;
+
+    console.log("Incoming verify request body:", req.body);
+
+    rds.get(`username_${username}`, (err, storedOTP) => {
+      if (err) {
+        console.error("Error retrieving OTP from Redis:", err);
+        return res.status(500).json({ message: "Failed to verify OTP" });
+      }
+
+      if (!storedOTP) {
+        return res
+          .status(400)
+          .json({ message: "OTP has expired or does not exist" });
+      }
+
+      if (storedOTP === OTP.toString()) {
+        return res.status(200).json({ message: "OTP verified successfully!" });
+      } else {
+        return res.status(400).json({ message: "Invalid OTP" });
+      }
+    });
+  } catch (error) {
+    console.error("Error in sending OTP:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };
 
 export const sendOTP = async (req, res) => {
   try {
-    const { mobilenumber } = req.body;
+    const { username, mobilenumber } = req.body;
     const response = await axios.post("https://api.semaphore.co/api/v4/otp", {
       apikey: "46d791fbe4e880554fcad1ee958bbf33",
       number: mobilenumber,
       message:
         "Your one time password is {otp}. Please use it within 5 minutes.",
     });
-    res.status(200).json({ otp: response.data[0]?.code });
+
+    rds.setex(`username_${username}`, 300, response.data[0]?.code.toString());
+    res.status(200).json({ message: "OTP sent successfully!" });
   } catch (error) {
     console.error("Error in sending OTP:", error);
     res.status(500).json({ message: "Internal server error" });
