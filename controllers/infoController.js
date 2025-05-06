@@ -24,19 +24,41 @@ export const createUser = async (req, res) => {
       return res.json({ usernameExists: true });
     }
 
-    const resident = await Resident.findOne({ _id: resID });
+    const resident = await Resident.findById(resID);
+    if (!resident) {
+      return res.status(404).json({ message: "Resident not found" });
+    }
 
-    const user = new User({
-      username,
-      password,
-      resID,
-      role,
-    });
+    let user;
+
+    if (resident.empID) {
+      user = new User({
+        username,
+        password,
+        empID: resident.empID,
+        role,
+      });
+    } else {
+      user = new User({
+        username,
+        password,
+        resID: resident._id,
+        role,
+      });
+    }
 
     await user.save();
 
-    resident.userID = user._id;
-    await resident.save();
+    if (resident.empID) {
+      const employee = await Employee.findOne({ resID: resID });
+      employee.userID = user._id;
+      await employee.save();
+    } else {
+      const resident = await Resident.findOne({ _id: resID });
+      resident.userID = user._id;
+      await resident.save();
+    }
+
     console.log("✅ User registered successfully");
     return res.json({ exists: true, message: "User registered successfully" });
   } catch (error) {
@@ -377,7 +399,8 @@ export const getResident = async (req, res) => {
 export const getCaptain = async (req, res) => {
   try {
     const employee = await Employee.findOne({ position: "Captain" }).populate(
-      "resID"
+      "resID",
+      "firstname middlename lastname signature"
     );
     res.status(200).json(employee);
   } catch (error) {

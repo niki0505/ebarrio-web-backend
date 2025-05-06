@@ -42,12 +42,16 @@ export const getUsersUtils = async () => {
   try {
     const users = await User.find()
       .populate({
+        path: "resID",
+        select: "firstname middlename lastname",
+      })
+      .populate({
         path: "empID",
         populate: {
           path: "resID",
+          select: "firstname middlename lastname",
         },
-      })
-      .populate("resID");
+      });
     return users;
   } catch (error) {
     throw new Error("Error fetching users: " + error.message);
@@ -100,7 +104,7 @@ export const getAnnouncementsUtils = async () => {
       select: "position",
       populate: {
         path: "resID",
-        select: "firstname middlename lastname",
+        select: "firstname middlename lastname picture",
       },
     });
     return announcements;
