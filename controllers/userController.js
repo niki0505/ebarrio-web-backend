@@ -46,10 +46,11 @@ export const deactivateUser = async (req, res) => {
 export const resetPassword = async (req, res) => {
   try {
     const { username } = req.params;
-    const { password } = req.body;
+    const { password, securityquestions } = req.body;
     const user = await User.findOne({ username: username });
 
     user.password = password;
+    user.securityquestions = securityquestions;
     user.status = "Inactive";
 
     await user.save();

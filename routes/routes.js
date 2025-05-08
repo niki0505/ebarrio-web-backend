@@ -80,12 +80,25 @@ import {
   scheduleBlotter,
   settleBlotter,
 } from "../controllers/blotterControllers.js";
+import {
+  checkOTP,
+  checkUser,
+  limitOTP,
+  newPassword,
+  verifySecurityQuestion,
+} from "../controllers/forgotPassController.js";
+import {
+  changePassword,
+  changeSecurityQuestions,
+  changeUsername,
+  getUserDetails,
+} from "../controllers/settingsController.js";
 
 const router = express.Router();
 
 //SIGN UP
 router.post("/checkemployee", checkIfEmployee);
-router.post("/checkusername", checkUsername);
+router.get("/checkusername/:username", checkUsername);
 router.post("/checkcredentials", checkCredentials);
 router.post("/sendotp", sendOTP);
 router.post("/verifyotp", verifyOTP);
@@ -95,6 +108,13 @@ router.get("/getmobilenumber/:username", getMobileNumber);
 //LOGIN
 router.put("/login/:username", loginUser);
 router.post("/logout", logoutUser);
+
+//FORGOT PASSWORD
+router.get("/checkuser/:username", checkUser);
+router.post("/verifyquestion/:username", verifySecurityQuestion);
+router.post("/newpassword/:username", newPassword);
+router.get("/limitotp/:username", limitOTP);
+router.get("/checkotp/:username", checkOTP);
 
 //TOKENS
 router.get("/checkrefreshtoken", checkRefreshToken);
@@ -198,5 +218,11 @@ router.put(
 );
 router.put("/settleblotter/:blotterID", authMiddleware, settleBlotter);
 router.put("/rejectblotter/:blotterID", authMiddleware, rejectBlotter);
+
+//ACCOUNT SETTINGS
+router.get("/getcurrentuser/:userID", getUserDetails);
+router.put("/changeusername/:userID", changeUsername);
+router.put("/changepassword/:userID", changePassword);
+router.put("/changesecurityquestions/:userID", changeSecurityQuestions);
 
 export default router;

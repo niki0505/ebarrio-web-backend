@@ -31,17 +31,42 @@ const userSchema = new mongoose.Schema(
       required: true,
       default: "Password Not Set",
     },
+    securityquestions: [
+      {
+        question: { type: String, required: true },
+        answer: { type: String, required: true },
+      },
+    ],
   },
   { versionKey: false }
 );
 
 userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
+  if (this.isModified("password")) {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+  }
 
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
+  if (this.isModified("securityquestions")) {
+    const salt = await bcrypt.genSalt(10);
+    this.securityquestions = await Promise.all(
+      this.securityquestions.map(async (q) => {
+        const hashedAnswer = await bcrypt.hash(q.answer, salt);
+        return { question: q.question, answer: hashedAnswer };
+      })
+    );
+  }
+
   next();
 });
+
+// userSchema.pre("save", async function (next) {
+//   if (!this.isModified("password")) return next();
+
+//   const salt = await bcrypt.genSalt(10);
+//   this.password = await bcrypt.hash(this.password, salt);
+//   next();
+// });
 
 const User = mongoose.model("User", userSchema);
 

@@ -34,6 +34,7 @@ export const refreshAccessToken = async (req, res) => {
           {
             userID: decodedRefresh.userID,
             empID: decodedRefresh.empID,
+            username: decodedRefresh.username,
             role: decodedRefresh.role,
             name: decodedRefresh.name,
             picture: decodedRefresh.picture,
@@ -131,6 +132,7 @@ export const loginUser = async (req, res) => {
     const accessToken = jwt.sign(
       {
         userID: user._id.toString(),
+        username: user.username,
         empID: user.empID._id.toString(),
         role: user.role,
         name: `${user.empID.resID.firstname} ${user.empID.resID.lastname}`,
@@ -145,6 +147,7 @@ export const loginUser = async (req, res) => {
     const refreshToken = jwt.sign(
       {
         userID: user._id.toString(),
+        username: user.username,
         empID: user.empID._id.toString(),
         role: user.role,
         name: `${user.empID.resID.firstname} ${user.empID.resID.lastname}`,
@@ -318,18 +321,14 @@ export const sendOTP = async (req, res) => {
 
 export const checkUsername = async (req, res) => {
   try {
-    console.log("🔍 Checking if username exists...", req.body);
-    const { username } = req.body;
+    const { username } = req.params;
 
     const user = await User.findOne({ username });
 
     if (user) {
-      console.log("❌ Username is already taken");
-      return res.json({ usernameExists: true });
+      return res.status(409).json({ message: "Username is already taken" });
     }
-
-    console.log("✅ Username is not found");
-    return res.json({ usernameExists: false });
+    return res.status(200).json({ message: "Username does not exist yet" });
   } catch (error) {
     console.error("Error in checkResident:", error);
     res.status(500).json({ message: "Internal server error" });
