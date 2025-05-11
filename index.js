@@ -23,10 +23,7 @@ app.use(
   })
 );
 
-const rds = new Redis({
-  host: "127.0.0.1",
-  port: 6379,
-});
+const rds = new Redis(process.env.REDIS_URL);
 
 export { rds };
 
