@@ -275,8 +275,6 @@ export const verifyOTP = async (req, res) => {
   try {
     const { username, OTP } = req.body;
 
-    console.log("Incoming verify request body:", req.body);
-
     rds.get(`username_${username}`, (err, storedOTP) => {
       if (err) {
         console.error("Error retrieving OTP from Redis:", err);
