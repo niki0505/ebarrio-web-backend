@@ -91,9 +91,34 @@ export const checkRefreshToken = async (req, res) => {
   }
 };
 
-export const logoutUser = async (req, res) => {
-  const { userID } = req.body;
+export const deactivatedUser = async (req, res) => {
   try {
+    const { userID } = req.params;
+    const user = await User.findById(userID);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      secure: true,
+      sameSite: "Strict",
+    });
+    res.clearCookie("accessToken", {
+      httpOnly: true,
+      secure: true,
+      sameSite: "Strict",
+    });
+    await user.save();
+
+    res.status(200).json({ message: "Logged out successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const logoutUser = async (req, res) => {
+  try {
+    const { userID } = req.body;
     const user = await User.findById(userID);
     if (!user) return res.status(404).json({ message: "User not found" });
 

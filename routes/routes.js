@@ -26,6 +26,7 @@ import {
   checkIfEmployee,
   checkRefreshToken,
   checkUsername,
+  deactivatedUser,
   getMobileNumber,
   loginUser,
   logoutUser,
@@ -113,6 +114,7 @@ router.get("/getmobilenumber/:username", getMobileNumber);
 //LOGIN
 router.put("/login/:username", loginUser);
 router.post("/logout", logoutUser);
+router.post("/deactivateduser/:userID", deactivatedUser);
 
 //FORGOT PASSWORD
 router.get("/checkuser/:username", checkUser);
