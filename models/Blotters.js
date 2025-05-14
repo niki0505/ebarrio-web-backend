@@ -25,6 +25,9 @@ const bSchema = new mongoose.Schema(
     complainantcontactno: {
       type: String,
     },
+    complainantsignature: {
+      type: String,
+    },
     subjectID: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Resident",
@@ -72,6 +75,7 @@ const bSchema = new mongoose.Schema(
       required: true,
       default: "Pending",
     },
+    scheduleAt: { type: Date },
   },
   { versionKey: false, timestamps: true }
 );

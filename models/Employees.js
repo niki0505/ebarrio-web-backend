@@ -32,6 +32,21 @@ const empSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    chairmanship: {
+      type: String,
+    },
+    assignedweeks: {
+      type: String,
+    },
+    assignedday: {
+      type: String,
+    },
+    status: {
+      type: String,
+      enum: ["Active", "Archived"],
+      required: true,
+      default: "Active",
+    },
     userID: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   },
   { versionKey: false }

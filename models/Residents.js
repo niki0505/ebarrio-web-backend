@@ -158,6 +158,12 @@ const resSchema = new mongoose.Schema(
     course: {
       type: String,
     },
+    status: {
+      type: String,
+      enum: ["Active", "Archived"],
+      required: true,
+      default: "Active",
+    },
     userID: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     empID: { type: mongoose.Schema.Types.ObjectId, ref: "Employee" },
   },

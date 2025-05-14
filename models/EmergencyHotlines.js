@@ -11,6 +11,12 @@ const ehSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    status: {
+      type: String,
+      enum: ["Active", "Archived"],
+      required: true,
+      default: "Active",
+    },
   },
   { versionKey: false }
 );

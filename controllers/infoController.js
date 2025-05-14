@@ -58,46 +58,6 @@ export const archiveEmployee = async (req, res) => {
   }
 };
 
-export const checkPositions = async (req, res) => {
-  try {
-    const counts = await Employee.aggregate([
-      {
-        $group: {
-          _id: { $toLower: "$position" },
-          count: { $sum: 1 },
-        },
-      },
-    ]);
-
-    const positionMap = {};
-    counts.forEach((pos) => {
-      positionMap[pos._id] = pos.count;
-    });
-
-    res.json(positionMap);
-  } catch (err) {
-    console.error("Error fetching position counts", err);
-    res.status(500).json({ message: "Failed to get position counts" });
-  }
-};
-
-export const createEmployee = async (req, res) => {
-  try {
-    const { resID, position } = req.body;
-    const resident = await Resident.findOne({ _id: resID });
-    const resIDasObjectId = new mongoose.Types.ObjectId(resID);
-    const employee = new Employee({ resID: resIDasObjectId, position });
-    await employee.save();
-
-    resident.empID = employee._id;
-    await resident.save();
-    res.status(200).json({ empID: employee._id });
-  } catch (error) {
-    console.log("Error creating employee", error);
-    res.status(500).json({ message: "Failed to create employee" });
-  }
-};
-
 export const getAllEmployees = async (req, res) => {
   try {
     const employees = await getEmployeesUtils();

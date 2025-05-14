@@ -2,8 +2,6 @@ import express from "express";
 import {
   archiveEmployee,
   archiveResident,
-  checkPositions,
-  createEmployee,
   createResident,
   getAllEmployees,
   getAllOldResidents,
@@ -61,6 +59,8 @@ import {
 import {
   archiveAnnouncement,
   createAnnouncement,
+  editAnnouncement,
+  getAnnouncement,
   getAnnouncements,
   pinAnnouncement,
   unpinAnnouncement,
@@ -93,6 +93,11 @@ import {
   changeUsername,
   getUserDetails,
 } from "../controllers/settingsController.js";
+import {
+  checkPositions,
+  checkWeeks,
+  createEmployee,
+} from "../controllers/employeeController.js";
 
 const router = express.Router();
 
@@ -124,6 +129,9 @@ router.get("/refreshtoken", refreshAccessToken);
 router.put("/resetpassword/:username", resetPassword);
 router.put("/deactivateuser/:userID", deactivateUser);
 router.put("/activateuser/:userID", activateUser);
+router.get("/getusers", authMiddleware, getAllUsers);
+router.get("/getoldusers", getAllOldUsers);
+router.post("/createuser", createUser);
 
 //BARANGAY CAPTAIN
 router.get("/getcaptain", getCaptain);
@@ -141,12 +149,8 @@ router.get("/getoldresidents", getAllOldResidents);
 router.get("/getemployees", authMiddleware, getAllEmployees);
 router.post("/createemployee", createEmployee);
 router.get("/positioncount", checkPositions);
+router.get("/weekscount", checkWeeks);
 router.delete("/archiveemployee/:empID", archiveEmployee);
-
-//USERS
-router.get("/getusers", authMiddleware, getAllUsers);
-router.get("/getoldusers", getAllOldUsers);
-router.post("/createuser", createUser);
 
 //BRGY ID
 router.post("/generatebrgyID/:resID", generateBrgyID);
@@ -191,6 +195,8 @@ router.put(
   authMiddleware,
   archiveAnnouncement
 );
+router.get("/getannouncement/:announcementID", getAnnouncement);
+router.post("/editannouncement/:announcementID", editAnnouncement);
 
 //COURT RESERVATION
 router.get("/getreservations", authMiddleware, getReservations);

@@ -19,7 +19,7 @@ export const activateUser = async (req, res) => {
   try {
     const { userID } = req.params;
     const user = await User.findById(userID);
-    user.status = "Activated";
+    user.status = "Inactive";
 
     await user.save();
     res.status(200).json({ message: "User activated successfully!" });
@@ -75,7 +75,6 @@ export const resetPassword = async (req, res) => {
 
 export const createUser = async (req, res) => {
   try {
-    console.log("🔵 Register request:", req.body);
     const { username, password, resID, role } = req.body;
 
     const usernameExists = await User.findOne({ username });

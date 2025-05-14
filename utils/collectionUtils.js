@@ -43,13 +43,13 @@ export const getUsersUtils = async () => {
     const users = await User.find()
       .populate({
         path: "resID",
-        select: "firstname middlename lastname",
+        select: "firstname middlename lastname picture",
       })
       .populate({
         path: "empID",
         populate: {
           path: "resID",
-          select: "firstname middlename lastname",
+          select: "firstname middlename lastname picture",
         },
       });
     return users;
@@ -132,6 +132,7 @@ export const getFormattedCertificates = async () => {
     return certificates.map((cert) => ({
       ...cert.toObject(),
       createdAt: formatDatePH(cert.createdAt),
+      updatedAt: formatDatePH(cert.updatedAt),
     }));
   } catch (error) {
     throw new Error("Error fetching certificates: " + error.message);

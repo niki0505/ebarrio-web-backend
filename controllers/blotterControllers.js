@@ -60,7 +60,9 @@ export const editScheduleBlotter = async (req, res) => {
 
     blotter.starttime = scheduleForm.starttime;
     blotter.endtime = scheduleForm.endtime;
+
     await blotter.save();
+
     return res
       .status(200)
       .json({ message: "Blotter's schedule successfully updated!" });
@@ -79,6 +81,10 @@ export const scheduleBlotter = async (req, res) => {
     blotter.starttime = scheduleForm.starttime;
     blotter.endtime = scheduleForm.endtime;
     blotter.status = "Scheduled";
+
+    await blotter.save();
+    blotter.scheduleAt = blotter.updatedAt;
+
     await blotter.save();
     return res.status(200).json({ message: "Blotter successfully scheduled!" });
   } catch (error) {
@@ -114,6 +120,7 @@ export const getBlotter = async (req, res) => {
       ...blotter.toObject(),
       createdAt: formatDatePH(blotter.createdAt),
       updatedAt: formatDatePH(blotter.updatedAt),
+      scheduleAt: formatDatePH(blotter.scheduleAt),
     };
 
     return res.status(200).json(formattedBlotter);
