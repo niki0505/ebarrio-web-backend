@@ -220,7 +220,7 @@ export const checkCredentials = async (req, res) => {
         path: "resID",
       },
     });
-    if (!user || user.resID) {
+    if (!user || user.resID || user.role === "Official") {
       console.log("❌ Account not found");
       return res.status(404).json({
         message: "Account not found",
