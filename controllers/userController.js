@@ -15,6 +15,79 @@ import {
 import { rds } from "../index.js";
 import axios from "axios";
 
+export const editUser = async (req, res) => {
+  try {
+    const { userID } = req.params;
+    const { userForm } = req.body;
+
+    const user = await User.findById(userID);
+
+    let mobilenumber;
+
+    if (user.resID) {
+      const resident = await Resident.findOne({ userID: userID });
+      mobilenumber = resident.mobilenumber;
+    } else if (user.empID) {
+      const employee = await Employee.findOne({ userID: userID }).populate({
+        path: "resID",
+        select: "mobilenumber",
+      });
+      mobilenumber = employee.resID.mobilenumber;
+    }
+
+    if (userForm.password) {
+      rds.setex(`userID_${user._id}`, 86400, userForm.password);
+
+      await axios.post("https://api.semaphore.co/api/v4/priority", {
+        apikey: "46d791fbe4e880554fcad1ee958bbf33",
+        number: mobilenumber,
+        message: `Your barangay account is created. Use this temporary token as your password to log in: ${userForm.password}. 
+       Please log in to the app and set your new password. This token will expire in 24 hours.`,
+      });
+
+      user.status = "Password Not Set";
+      user.password = userForm.password;
+      await user.save();
+    } else if (userForm.username) {
+      const usernameExists = await User.findOne({
+        username: userForm.username,
+      });
+      if (usernameExists) {
+        return res.status(409).json({ message: "Username already exists" });
+      }
+      user.username = userForm.username;
+      await user.save();
+    } else {
+      const usernameExists = await User.findOne({
+        username: userForm.username,
+      });
+      if (usernameExists) {
+        return res.status(409).json({ message: "Username already exists" });
+      }
+      rds.setex(`userID_${user._id}`, 86400, userForm.password);
+
+      await axios.post("https://api.semaphore.co/api/v4/priority", {
+        apikey: "46d791fbe4e880554fcad1ee958bbf33",
+        number: mobilenumber,
+        message: `Your barangay account is created. Use this temporary token as your password to log in: ${userForm.password}. 
+       Please log in to the app and set your new password. This token will expire in 24 hours.`,
+      });
+
+      user.username = userForm.username;
+      user.status = "Password Not Set";
+      user.password = userForm.password;
+      await user.save();
+    }
+
+    return res
+      .status(200)
+      .json({ exists: true, message: "User updated successfully" });
+  } catch (error) {
+    console.error("Error in updating user:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 export const activateUser = async (req, res) => {
   try {
     const { userID } = req.params;

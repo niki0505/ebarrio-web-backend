@@ -19,6 +19,7 @@ import {
   resetPassword,
   deactivateUser,
   activateUser,
+  editUser,
 } from "../controllers/userController.js";
 
 import {
@@ -134,6 +135,7 @@ router.put("/activateuser/:userID", activateUser);
 router.get("/getusers", authMiddleware, getAllUsers);
 router.get("/getoldusers", getAllOldUsers);
 router.post("/createuser", createUser);
+router.put("/edituser/:userID", editUser);
 
 //BARANGAY CAPTAIN
 router.get("/getcaptain", getCaptain);
