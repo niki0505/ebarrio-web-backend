@@ -1,6 +1,10 @@
 import Announcement from "../models/Announcements.js";
 import mongoose from "mongoose";
 import { getAnnouncementsUtils } from "../utils/collectionUtils.js";
+import { connectedUsers } from "../utils/socket.js";
+import Employee from "../models/Employees.js";
+import Notification from "../models/Notifications.js";
+import User from "../models/Users.js";
 
 export const editAnnouncement = async (req, res) => {
   try {
@@ -93,8 +97,38 @@ export const createAnnouncement = async (req, res) => {
     const { announcementForm } = req.body;
 
     const announcement = new Announcement(announcementForm);
+    const userID = await Employee.findById(announcementForm.uploadedby).select(
+      "userID"
+    );
 
     await announcement.save();
+
+    const io = req.app.get("socketio");
+
+    const senderSocketId = connectedUsers.get(userID.userID.toString());
+
+    io.except(senderSocketId).to("announcements").emit("announcement", {
+      title: announcement.title,
+      message: announcement.content,
+      timestamp: announcement.createdAt,
+    });
+
+    const allUsers = await User.find(
+      {
+        status: { $in: ["Active", "Inactive"] },
+        _id: { $ne: userID.userID },
+      },
+      "_id"
+    );
+
+    const notifications = allUsers.map((user) => ({
+      userID: user._id,
+      title: announcement.title,
+      message: announcement.content,
+      redirectTo: "Announcements",
+    }));
+
+    await Notification.insertMany(notifications);
 
     return res.status(200).json({
       message: "Announcement is created successfully",

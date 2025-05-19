@@ -8,7 +8,6 @@ import OldEmployee from "../models/OldEmployees.js";
 import Certificate from "../models/Certificates.js";
 import moment from "moment";
 import QRCode from "qrcode";
-import { emitDataUpdated } from "../utils/socketUtils.js";
 import { getFormattedCertificates } from "../utils/collectionUtils.js";
 
 export const rejectCertificateReq = async (req, res) => {

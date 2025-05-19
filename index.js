@@ -9,6 +9,8 @@ import http from "http";
 import { Server } from "socket.io";
 import { watchAllCollectionsChanges } from "./controllers/watchDB.js";
 import Redis from "ioredis";
+import { registerSocketEvents, connectedUsers } from "./utils/socket.js";
+import { createAdapter } from "@socket.io/redis-adapter";
 
 configDotenv();
 
@@ -24,6 +26,7 @@ app.use(
 );
 
 const rds = new Redis(process.env.REDIS_URL);
+const subClient = rds.duplicate();
 
 export { rds };
 
@@ -34,6 +37,8 @@ const io = new Server(server, {
     credentials: true,
   },
 });
+
+io.adapter(createAdapter(rds, subClient));
 
 rds.ping((err, result) => {
   if (err) {
@@ -48,13 +53,19 @@ rds.on("error", (err) => {
 });
 
 app.set("socketio", io);
+app.set("connectedUsers", connectedUsers);
 
 app.use("/api", routes);
 app.use("/", qrCodeRoute);
 
 const PORT = process.env.PORT;
 server.listen(PORT, async () => {
-  console.log(`Server is running on port ${PORT}`);
-  await connectDB();
-  watchAllCollectionsChanges(io);
+  try {
+    console.log(`Server is running on port ${PORT}`);
+    await connectDB();
+    registerSocketEvents(io);
+    watchAllCollectionsChanges(io);
+  } catch (error) {
+    console.log("Error during startup:", error);
+  }
 });
