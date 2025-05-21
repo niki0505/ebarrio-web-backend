@@ -1,6 +1,44 @@
 import Employee from "../models/Employees.js";
 import Resident from "../models/Residents.js";
 import mongoose from "mongoose";
+import User from "../models/Users.js";
+
+export const editEmployee = async (req, res) => {
+  try {
+    const { empID } = req.params;
+    const { position, chairmanship } = req.body;
+    const employee = await Employee.findById(empID);
+
+    if (!employee) {
+      return res.status(404).json({ message: "Employee not found" });
+    }
+
+    employee.position = position;
+    if (chairmanship) {
+      employee.chairmanship = chairmanship;
+    }
+    await employee.save();
+
+    if (employee.userID) {
+      const user = await User.findById(employee.userID);
+      if (user) {
+        const positionRoleMap = {
+          Secretary: "Secretary",
+          Clerk: "Clerk",
+          Justice: "Justice",
+        };
+        user.role = positionRoleMap[position] || "Official";
+        await user.save();
+      }
+    }
+    res
+      .status(200)
+      .json({ message: "Employee position updated successfully!" });
+  } catch (error) {
+    console.log("Error updating employee", error);
+    res.status(500).json({ message: "Failed to update employee" });
+  }
+};
 
 export const createEmployee = async (req, res) => {
   try {

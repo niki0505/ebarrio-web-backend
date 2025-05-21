@@ -99,6 +99,7 @@ import {
   checkPositions,
   checkWeeks,
   createEmployee,
+  editEmployee,
 } from "../controllers/employeeController.js";
 
 const router = express.Router();
@@ -155,6 +156,7 @@ router.post("/createemployee", createEmployee);
 router.get("/positioncount", checkPositions);
 router.get("/weekscount", checkWeeks);
 router.delete("/archiveemployee/:empID", archiveEmployee);
+router.put("/editemployee/:empID", editEmployee);
 
 //BRGY ID
 router.post("/generatebrgyID/:resID", generateBrgyID);
