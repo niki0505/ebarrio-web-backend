@@ -48,7 +48,7 @@ export const refreshAccessToken = async (req, res) => {
         res.cookie("accessToken", newAccessToken, {
           httpOnly: true,
           secure: process.env.NODE_ENV === "production",
-          sameSite: "Strict",
+          sameSite: "none",
           maxAge: 15 * 60 * 1000,
         });
         console.log("Access token refreshed");
@@ -100,12 +100,12 @@ export const deactivatedUser = async (req, res) => {
     res.clearCookie("refreshToken", {
       httpOnly: true,
       secure: true,
-      sameSite: "Strict",
+      sameSite: "none",
     });
     res.clearCookie("accessToken", {
       httpOnly: true,
       secure: true,
-      sameSite: "Strict",
+      sameSite: "none",
     });
     await user.save();
 
@@ -125,12 +125,12 @@ export const logoutUser = async (req, res) => {
     res.clearCookie("refreshToken", {
       httpOnly: true,
       secure: true,
-      sameSite: "Strict",
+      sameSite: "none",
     });
     res.clearCookie("accessToken", {
       httpOnly: true,
       secure: true,
-      sameSite: "Strict",
+      sameSite: "none",
     });
     user.status = "Inactive";
     await user.save();
@@ -187,14 +187,14 @@ export const loginUser = async (req, res) => {
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "Strict",
+      sameSite: "none",
       maxAge: 15 * 60 * 1000,
     });
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "Strict",
+      sameSite: "none",
       maxAge: 30 * 24 * 60 * 60 * 1000,
     });
 
