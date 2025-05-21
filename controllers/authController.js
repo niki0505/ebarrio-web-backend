@@ -47,7 +47,7 @@ export const refreshAccessToken = async (req, res) => {
 
         res.cookie("accessToken", newAccessToken, {
           httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
+          secure: false,
           sameSite: "lax",
           maxAge: 15 * 60 * 1000,
         });
@@ -99,12 +99,12 @@ export const deactivatedUser = async (req, res) => {
 
     res.clearCookie("refreshToken", {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: false,
       sameSite: "lax",
     });
     res.clearCookie("accessToken", {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: false,
       sameSite: "lax",
     });
     await user.save();
@@ -124,12 +124,12 @@ export const logoutUser = async (req, res) => {
 
     res.clearCookie("refreshToken", {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: false,
       sameSite: "lax",
     });
     res.clearCookie("accessToken", {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: false,
       sameSite: "lax",
     });
     user.status = "Inactive";
@@ -186,14 +186,14 @@ export const loginUser = async (req, res) => {
 
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: false,
       sameSite: "lax",
       maxAge: 15 * 60 * 1000,
     });
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: false,
       sameSite: "lax",
       maxAge: 30 * 24 * 60 * 60 * 1000,
     });
