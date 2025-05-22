@@ -50,6 +50,7 @@ export const refreshAccessToken = async (req, res) => {
           secure: true,
           sameSite: "None",
           maxAge: 15 * 60 * 1000,
+          domain: "ebarrio-web-backend-test.onrender.com",
         });
         console.log("Access token refreshed");
         return res.status(200).json({
@@ -112,11 +113,13 @@ export const deactivatedUser = async (req, res) => {
       httpOnly: true,
       secure: true,
       sameSite: "None",
+      domain: "ebarrio-web-backend-test.onrender.com",
     });
     res.clearCookie("accessToken", {
       httpOnly: true,
       secure: true,
       sameSite: "None",
+      domain: "ebarrio-web-backend-test.onrender.com",
     });
     await user.save();
 
@@ -148,11 +151,13 @@ export const logoutUser = async (req, res) => {
       httpOnly: true,
       secure: true,
       sameSite: "None",
+      domain: "ebarrio-web-backend-test.onrender.com",
     });
     res.clearCookie("accessToken", {
       httpOnly: true,
       secure: true,
       sameSite: "None",
+      domain: "ebarrio-web-backend-test.onrender.com",
     });
     user.status = "Inactive";
     await user.save();
@@ -225,6 +230,7 @@ export const loginUser = async (req, res) => {
       secure: true,
       sameSite: "None",
       maxAge: 15 * 60 * 1000,
+      domain: "ebarrio-web-backend-test.onrender.com",
     });
 
     res.cookie("refreshToken", refreshToken, {
@@ -232,6 +238,7 @@ export const loginUser = async (req, res) => {
       secure: true,
       sameSite: "None",
       maxAge: 30 * 24 * 60 * 60 * 1000,
+      domain: "ebarrio-web-backend-test.onrender.com",
     });
 
     user.status = "Active";
