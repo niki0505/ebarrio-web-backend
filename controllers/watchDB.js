@@ -124,13 +124,12 @@ export const watchAllCollectionsChanges = (io) => {
       change.operationType === "insert"
     ) {
       const formattedCertificates = await getFormattedCertificates();
-      io.emit("dbChange", {
+      io.in("certificates").emit("dbChange", {
         type: "certificates",
-        source: "adminWatcher",
         data: formattedCertificates,
       });
     } else if (change.operationType === "delete") {
-      io.emit("dbChange", {
+      io.in("certificates").emit("dbChange", {
         type: "certificates",
         source: "adminWatcher",
         deleted: true,

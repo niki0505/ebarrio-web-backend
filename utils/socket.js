@@ -14,6 +14,11 @@ export const registerSocketEvents = (io) => {
       console.log(`Socket ${socket.id} joined announcements room`);
     });
 
+    socket.on("join_certificates", () => {
+      socket.join("certificates");
+      console.log(`Socket ${socket.id} joined announcements room`);
+    });
+
     socket.on("disconnect", () => {
       connectedUsers.forEach((id, userID) => {
         if (id === socket.id) {
