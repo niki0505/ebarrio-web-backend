@@ -60,7 +60,7 @@ const certSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["Pending", "Issued", "Rejected"],
+      enum: ["Pending", "Issued", "Rejected", "Cancelled"],
       required: true,
       default: "Issued",
     },
