@@ -47,8 +47,8 @@ export const refreshAccessToken = async (req, res) => {
 
         res.cookie("accessToken", newAccessToken, {
           httpOnly: true,
-          secure: true,
-          sameSite: "None",
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "Strict",
           maxAge: 15 * 60 * 1000,
         });
         console.log("Access token refreshed");
@@ -97,27 +97,27 @@ export const deactivatedUser = async (req, res) => {
     const user = await User.findById(userID);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    // res.clearCookie("refreshToken", {
-    //   httpOnly: true,
-    //   secure: process.env.NODE_ENV === "production",
-    //   sameSite: "Strict",
-    // });
-    // res.clearCookie("accessToken", {
-    //   httpOnly: true,
-    //   secure: process.env.NODE_ENV === "production",
-    //   sameSite: "Strict",
-    // });
-
     res.clearCookie("refreshToken", {
       httpOnly: true,
-      secure: true,
-      sameSite: "None",
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
     });
     res.clearCookie("accessToken", {
       httpOnly: true,
-      secure: true,
-      sameSite: "None",
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
     });
+
+    // res.clearCookie("refreshToken", {
+    //   httpOnly: true,
+    //   secure: true,
+    //   sameSite: "None",
+    // });
+    // res.clearCookie("accessToken", {
+    //   httpOnly: true,
+    //   secure: true,
+    //   sameSite: "None",
+    // });
     await user.save();
 
     res.status(200).json({ message: "Logged out successfully" });
@@ -133,27 +133,27 @@ export const logoutUser = async (req, res) => {
     const user = await User.findById(userID);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    // res.clearCookie("refreshToken", {
-    //   httpOnly: true,
-    //   secure: process.env.NODE_ENV === "production",
-    //   sameSite: "Strict",
-    // });
-    // res.clearCookie("accessToken", {
-    //   httpOnly: true,
-    //   secure: process.env.NODE_ENV === "production",
-    //   sameSite: "Strict",
-    // });
-
     res.clearCookie("refreshToken", {
       httpOnly: true,
-      secure: true,
-      sameSite: "None",
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
     });
     res.clearCookie("accessToken", {
       httpOnly: true,
-      secure: true,
-      sameSite: "None",
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
     });
+
+    // res.clearCookie("refreshToken", {
+    //   httpOnly: true,
+    //   secure: true,
+    //   sameSite: "None",
+    // });
+    // res.clearCookie("accessToken", {
+    //   httpOnly: true,
+    //   secure: true,
+    //   sameSite: "None",
+    // });
     user.status = "Inactive";
     await user.save();
 
@@ -206,33 +206,33 @@ export const loginUser = async (req, res) => {
       }
     );
 
-    // res.cookie("accessToken", accessToken, {
-    //   httpOnly: true,
-    //   secure: process.env.NODE_ENV === "production",
-    //   sameSite: "Strict",
-    //   maxAge: 15 * 60 * 1000,
-    // });
-
-    // res.cookie("refreshToken", refreshToken, {
-    //   httpOnly: true,
-    //   secure: process.env.NODE_ENV === "production",
-    //   sameSite: "Strict",
-    //   maxAge: 30 * 24 * 60 * 60 * 1000,
-    // });
-
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
-      secure: true,
-      sameSite: "None",
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
       maxAge: 15 * 60 * 1000,
     });
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      secure: true,
-      sameSite: "None",
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
       maxAge: 30 * 24 * 60 * 60 * 1000,
     });
+
+    // res.cookie("accessToken", accessToken, {
+    //   httpOnly: true,
+    //   secure: true,
+    //   sameSite: "None",
+    //   maxAge: 15 * 60 * 1000,
+    // });
+
+    // res.cookie("refreshToken", refreshToken, {
+    //   httpOnly: true,
+    //   secure: true,
+    //   sameSite: "None",
+    //   maxAge: 30 * 24 * 60 * 60 * 1000,
+    // });
 
     user.status = "Active";
     await user.save();
