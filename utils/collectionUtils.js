@@ -6,6 +6,33 @@ import CourtReservation from "../models/CourtReservations.js";
 import EmergencyHotline from "../models/EmergencyHotlines.js";
 import User from "../models/Users.js";
 import Blotter from "../models/Blotters.js";
+import axios from "axios";
+import Notification from "../models/Notifications.js";
+
+export const sendNotificationUpdate = async (userID, io) => {
+  const notifications = await Notification.find({ userID });
+  io.to(userID).emit("notificationUpdate", notifications);
+};
+
+export const sendPushNotification = async (pushtoken, title, body, screen) => {
+  if (!pushtoken?.startsWith("ExponentPushToken")) {
+    console.error("Invalid Expo push token:", pushtoken);
+    return;
+  }
+
+  try {
+    const response = await axios.post("https://exp.host/--/api/v2/push/send", {
+      to: pushtoken,
+      sound: "default",
+      title,
+      body,
+      data: { screen: screen },
+    });
+    console.log("✅ Push notification sent! Response:", response.data);
+  } catch (error) {
+    console.error("❌ Failed to send push notification:", error.message);
+  }
+};
 
 export const getBlottersUtils = async () => {
   try {

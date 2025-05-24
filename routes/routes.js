@@ -101,6 +101,10 @@ import {
   createEmployee,
   editEmployee,
 } from "../controllers/employeeController.js";
+import {
+  getAllNotifications,
+  markAsRead,
+} from "../controllers/notificationController.js";
 
 const router = express.Router();
 
@@ -236,5 +240,9 @@ router.get("/getcurrentuser/:userID", getUserDetails);
 router.put("/changeusername/:userID", changeUsername);
 router.put("/changepassword/:userID", changePassword);
 router.put("/changesecurityquestions/:userID", changeSecurityQuestions);
+
+//NOTIFICATIONS
+router.get("/getnotifications", authMiddleware, getAllNotifications);
+router.put("/readnotification/:notifID", authMiddleware, markAsRead);
 
 export default router;

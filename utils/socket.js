@@ -14,6 +14,21 @@ export const registerSocketEvents = (io) => {
       console.log(`Socket ${socket.id} joined announcements room`);
     });
 
+    socket.on("join_certificates", () => {
+      socket.join("certificates");
+      console.log(`Socket ${socket.id} joined certificates room`);
+    });
+
+    socket.on("join_courtreservations", () => {
+      socket.join("courtreservations");
+      console.log(`Socket ${socket.id} joined court reservations room`);
+    });
+
+    socket.on("join_blotterreports", () => {
+      socket.join("blotterreports");
+      console.log(`Socket ${socket.id} joined blotter reports room`);
+    });
+
     socket.on("disconnect", () => {
       connectedUsers.forEach((id, userID) => {
         if (id === socket.id) {

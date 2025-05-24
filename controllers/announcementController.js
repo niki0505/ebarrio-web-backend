@@ -1,6 +1,9 @@
 import Announcement from "../models/Announcements.js";
 import mongoose from "mongoose";
-import { getAnnouncementsUtils } from "../utils/collectionUtils.js";
+import {
+  getAnnouncementsUtils,
+  sendPushNotification,
+} from "../utils/collectionUtils.js";
 import { connectedUsers } from "../utils/socket.js";
 import Employee from "../models/Employees.js";
 import Notification from "../models/Notifications.js";
@@ -96,6 +99,8 @@ export const createAnnouncement = async (req, res) => {
   try {
     const { announcementForm } = req.body;
 
+    const user = await User.find().select("pushtoken");
+
     const announcement = new Announcement(announcementForm);
     const userID = await Employee.findById(announcementForm.uploadedby).select(
       "userID"
@@ -129,6 +134,17 @@ export const createAnnouncement = async (req, res) => {
     }));
 
     await Notification.insertMany(notifications);
+
+    for (const element of user) {
+      if (element?.pushtoken) {
+        await sendPushNotification(
+          element.pushtoken,
+          `📢 ${announcement.title}`,
+          `${announcement.content}`,
+          "Announcement"
+        );
+      }
+    }
 
     return res.status(200).json({
       message: "Announcement is created successfully",

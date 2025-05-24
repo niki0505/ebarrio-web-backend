@@ -31,6 +31,9 @@ const userSchema = new mongoose.Schema(
       required: true,
       default: "Password Not Set",
     },
+    pushtoken: {
+      type: String,
+    },
     securityquestions: [
       {
         question: { type: String, required: true },

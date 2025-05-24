@@ -8,15 +8,24 @@ import OldEmployee from "../models/OldEmployees.js";
 import Certificate from "../models/Certificates.js";
 import moment from "moment";
 import QRCode from "qrcode";
-import { getFormattedCertificates } from "../utils/collectionUtils.js";
+import {
+  getFormattedCertificates,
+  sendNotificationUpdate,
+  sendPushNotification,
+} from "../utils/collectionUtils.js";
+import { connectedUsers } from "../utils/socket.js";
+import Notification from "../models/Notifications.js";
 
 export const rejectCertificateReq = async (req, res) => {
   try {
     const { certID } = req.params;
     const { remarks } = req.body;
-    console.log(certID);
 
     const cert = await Certificate.findById(certID);
+
+    const resident = await Resident.findById(cert.resID);
+
+    const user = await User.findById(resident.userID);
     if (!cert) {
       return res.status(404).json({ message: "Certificate not found" });
     }
@@ -24,6 +33,33 @@ export const rejectCertificateReq = async (req, res) => {
     cert.remarks = remarks;
     cert.status = "Rejected";
     await cert.save();
+
+    const io = req.app.get("socketio");
+    io.to(user._id).emit("certificateUpdate", {
+      title: `📄 ${cert.typeofcertificate} Rejected`,
+      message: `Your document request has been rejected. Kindly see the remarks for the reason.`,
+      timestamp: cert.updatedAt,
+    });
+
+    if (user?.pushtoken) {
+      await sendPushNotification(
+        user.pushtoken,
+        `📄 ${cert.typeofcertificate} Rejected`,
+        `Your document request has been rejected. Kindly see the remarks for the reason.`,
+        "Status"
+      );
+    } else {
+      console.log("⚠️ No push token found for user:", user.username);
+    }
+
+    await Notification.insertOne({
+      userID: user._id,
+      title: `📄 ${cert.typeofcertificate} Rejected`,
+      message: `Your document request has been rejected. Kindly see the remarks for the reason.`,
+      redirectTo: "Status",
+    });
+
+    sendNotificationUpdate(user._id.toString(), io);
 
     return res.status(200).json({
       message: "Certificate is rejected successfully",
@@ -62,6 +98,10 @@ export const generateCertificateReq = async (req, res) => {
 
     const cert = await Certificate.findById(certID);
 
+    const resident = await Resident.findById(cert.resID);
+
+    const user = await User.findById(resident.userID);
+
     const base10 = BigInt("0x" + cert._id).toString();
     const shortDigits = base10.slice(-10);
     const year = new Date().getFullYear();
@@ -84,6 +124,31 @@ export const generateCertificateReq = async (req, res) => {
 
     cert.status = "Issued";
     await cert.save();
+
+    const io = req.app.get("socketio");
+    io.to(user._id).emit("certificateUpdate", {
+      title: `📄 ${cert.typeofcertificate} Issued`,
+      message: `Your document request has been processed and is now available for pick up at the barangay hall. Kindly pay the fee of ${cert.amount} upon claiming.`,
+      timestamp: cert.updatedAt,
+    });
+
+    if (user?.pushtoken) {
+      await sendPushNotification(
+        user.pushtoken,
+        `📄 ${cert.typeofcertificate} Issued`,
+        `Your document request has been processed and is now available for pick up at the barangay hall. Kindly pay the fee of ${cert.amount} upon claiming.`,
+        "Status"
+      );
+    } else {
+      console.log("⚠️ No push token found for user:", user.username);
+    }
+
+    await Notification.insertOne({
+      userID: user._id,
+      title: `📄 ${cert.typeofcertificate} Issued`,
+      message: `Your document request has been processed and is now available for pick up at the barangay hall. Kindly pay the fee of ${cert.amount} upon claiming.`,
+      redirectTo: "Status",
+    });
 
     return res.status(200).json({
       message: "QR code is generated successfully",
