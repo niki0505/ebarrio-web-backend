@@ -36,7 +36,7 @@ export const rejectCertificateReq = async (req, res) => {
 
     const io = req.app.get("socketio");
     io.to(user._id).emit("certificateUpdate", {
-      title: `📄 ${cert.typeofcertificate} Rejected`,
+      title: `❌ ${cert.typeofcertificate} Rejected`,
       message: `Your document request has been rejected. Kindly see the remarks for the reason.`,
       timestamp: cert.updatedAt,
     });
@@ -44,7 +44,7 @@ export const rejectCertificateReq = async (req, res) => {
     if (user?.pushtoken) {
       await sendPushNotification(
         user.pushtoken,
-        `📄 ${cert.typeofcertificate} Rejected`,
+        `❌ ${cert.typeofcertificate} Rejected`,
         `Your document request has been rejected. Kindly see the remarks for the reason.`,
         "Status"
       );
@@ -54,7 +54,7 @@ export const rejectCertificateReq = async (req, res) => {
 
     await Notification.insertOne({
       userID: user._id,
-      title: `📄 ${cert.typeofcertificate} Rejected`,
+      title: `❌ ${cert.typeofcertificate} Rejected`,
       message: `Your document request has been rejected. Kindly see the remarks for the reason.`,
       redirectTo: "Status",
     });

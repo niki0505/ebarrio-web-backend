@@ -44,12 +44,16 @@ rds.ping((err, result) => {
   if (err) {
     console.error("Error connecting to Redis:", err);
   } else {
-    console.log("Connected to Redis:", result); // Should print 'PONG'
+    console.log("Connected to Redis:", result);
   }
 });
 
 rds.on("error", (err) => {
   console.error("Redis connection error: ", err);
+});
+
+rds.on("reconnecting", (time) => {
+  console.log(`Redis reconnecting in ${time} ms`);
 });
 
 app.set("socketio", io);

@@ -8,6 +8,7 @@ import { connectedUsers } from "../utils/socket.js";
 import Employee from "../models/Employees.js";
 import Notification from "../models/Notifications.js";
 import User from "../models/Users.js";
+import { sendNotificationUpdate } from "../utils/collectionUtils.js";
 
 export const editAnnouncement = async (req, res) => {
   try {
@@ -112,11 +113,13 @@ export const createAnnouncement = async (req, res) => {
 
     const senderSocketId = connectedUsers.get(userID.userID.toString());
 
-    io.except(senderSocketId).to("announcements").emit("announcement", {
-      title: announcement.title,
-      message: announcement.content,
-      timestamp: announcement.createdAt,
-    });
+    io.except(senderSocketId)
+      .to("announcements")
+      .emit("announcement", {
+        title: `📢 ${announcement.title}`,
+        message: announcement.content,
+        timestamp: announcement.createdAt,
+      });
 
     const allUsers = await User.find(
       {
@@ -128,7 +131,7 @@ export const createAnnouncement = async (req, res) => {
 
     const notifications = allUsers.map((user) => ({
       userID: user._id,
-      title: announcement.title,
+      title: `📢 ${announcement.title}`,
       message: announcement.content,
       redirectTo: "Announcements",
     }));
@@ -144,6 +147,7 @@ export const createAnnouncement = async (req, res) => {
           "Announcement"
         );
       }
+      sendNotificationUpdate(element._id.toString(), io);
     }
 
     return res.status(200).json({
