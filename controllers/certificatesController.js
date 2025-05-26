@@ -1,19 +1,13 @@
 import Resident from "../models/Residents.js";
 import mongoose from "mongoose";
-import OldResident from "../models/OldResidents.js";
-import OldUser from "../models/OldUsers.js";
-import Employee from "../models/Employees.js";
 import User from "../models/Users.js";
-import OldEmployee from "../models/OldEmployees.js";
 import Certificate from "../models/Certificates.js";
-import moment from "moment";
 import QRCode from "qrcode";
 import {
   getFormattedCertificates,
   sendNotificationUpdate,
   sendPushNotification,
 } from "../utils/collectionUtils.js";
-import { connectedUsers } from "../utils/socket.js";
 import Notification from "../models/Notifications.js";
 
 export const rejectCertificateReq = async (req, res) => {

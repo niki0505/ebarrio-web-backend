@@ -91,6 +91,29 @@ export const checkRefreshToken = async (req, res) => {
   }
 };
 
+export const archivedUser = async (req, res) => {
+  try {
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
+    });
+    res.clearCookie("accessToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
+    });
+
+    res.status(200).json({
+      message:
+        "You've been logged out because your account has been archived. If this is unexpected, please contact the admin.",
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 export const deactivatedUser = async (req, res) => {
   try {
     const { userID } = req.params;
@@ -120,7 +143,10 @@ export const deactivatedUser = async (req, res) => {
     // });
     await user.save();
 
-    res.status(200).json({ message: "Logged out successfully" });
+    res.status(200).json({
+      message:
+        "You've been logged out because your account has been deactivated. If this is unexpected, please contact the admin.",
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error" });
@@ -256,7 +282,12 @@ export const checkCredentials = async (req, res) => {
         path: "resID",
       },
     });
-    if (!user || user.resID || user.role === "Official") {
+    if (
+      !user ||
+      user.resID ||
+      user.role === "Official" ||
+      user.status === "Archived"
+    ) {
       console.log("❌ Account not found");
       return res.status(404).json({
         message: "Account not found",

@@ -9,6 +9,11 @@ export const registerSocketEvents = (io) => {
       socket.join(userID); // Personal rooms
     });
 
+    socket.on("unregister", (userID) => {
+      socket.leave(userID);
+      connectedUsers.delete(userID);
+    });
+
     socket.on("join_announcements", () => {
       socket.join("announcements");
       console.log(`Socket ${socket.id} joined announcements room`);

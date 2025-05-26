@@ -35,12 +35,6 @@ const empSchema = new mongoose.Schema(
     chairmanship: {
       type: String,
     },
-    // assignedweeks: {
-    //   type: String,
-    // },
-    // assignedday: {
-    //   type: String,
-    // },
     status: {
       type: String,
       enum: ["Active", "Archived"],

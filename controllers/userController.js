@@ -1,17 +1,8 @@
 import Resident from "../models/Residents.js";
-import mongoose from "mongoose";
-import OldResident from "../models/OldResidents.js";
 import OldUser from "../models/OldUsers.js";
 import Employee from "../models/Employees.js";
 import User from "../models/Users.js";
-import OldEmployee from "../models/OldEmployees.js";
-import moment from "moment";
-import QRCode from "qrcode";
-import {
-  getEmployeesUtils,
-  getResidentsUtils,
-  getUsersUtils,
-} from "../utils/collectionUtils.js";
+import { getUsersUtils } from "../utils/collectionUtils.js";
 import { rds } from "../index.js";
 import axios from "axios";
 

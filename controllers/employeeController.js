@@ -3,6 +3,88 @@ import Resident from "../models/Residents.js";
 import mongoose from "mongoose";
 import User from "../models/Users.js";
 
+export const recoverEmployee = async (req, res) => {
+  try {
+    const { empID } = req.params;
+
+    const emp = await Employee.findById(empID);
+
+    const existing = await Employee.findOne({
+      resID: emp.resID,
+      status: { $in: "Active" },
+    });
+    if (existing) {
+      return res
+        .status(409)
+        .json({ message: "This person is already an active employee." });
+    }
+
+    const resident = await Resident.findById(emp.resID);
+
+    if (resident.userID) {
+      const user = await User.findById(resident.userID);
+      user.status = "Archived";
+      await user.save();
+      resident.set("userID", undefined);
+      await resident.save();
+    }
+
+    if (emp.userID) {
+      const user = await User.findById(emp.userID);
+      user.status = "Inactive";
+      await user.save();
+    }
+
+    resident.set("empID", emp._id);
+    await resident.save();
+
+    emp.status = "Active";
+
+    await emp.save();
+
+    return res.status(200).json({
+      message: "Employee has been successfully recovered.",
+    });
+  } catch (error) {
+    console.error("Error in recovering employee:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const archiveEmployee = async (req, res) => {
+  try {
+    const { empID } = req.params;
+
+    const emp = await Employee.findById(empID);
+    if (!emp) {
+      return res.status(404).json({ message: "Employee not found." });
+    }
+
+    const resident = await Resident.findById(emp.resID);
+
+    if (emp.userID) {
+      const user = await User.findById(emp.userID);
+      user.status = "Archived";
+      await user.save();
+    }
+
+    resident.set("empID", undefined);
+    await resident.save();
+
+    emp.status = "Archived";
+    emp.set("employeeID", undefined);
+
+    await emp.save();
+
+    return res.status(200).json({
+      message: "Employee has been successfully archived.",
+    });
+  } catch (error) {
+    console.error("Error in archiving employee:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 export const editEmployee = async (req, res) => {
   try {
     const { empID } = req.params;
@@ -56,6 +138,13 @@ export const createEmployee = async (req, res) => {
       ...formattedEmployeeForm,
     });
     await employee.save();
+
+    if (resident.userID) {
+      const user = await User.findById(resident.userID);
+      user.status = "Archived";
+      await user.save();
+      resident.set("userID", undefined);
+    }
 
     resident.empID = employee._id;
     await resident.save();

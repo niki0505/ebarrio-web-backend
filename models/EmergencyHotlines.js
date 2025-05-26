@@ -5,7 +5,6 @@ const ehSchema = new mongoose.Schema(
     name: {
       type: String,
       required: true,
-      unique: true,
     },
     contactnumber: {
       type: String,

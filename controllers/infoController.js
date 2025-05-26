@@ -4,59 +4,11 @@ import OldResident from "../models/OldResidents.js";
 import OldUser from "../models/OldUsers.js";
 import Employee from "../models/Employees.js";
 import User from "../models/Users.js";
-import OldEmployee from "../models/OldEmployees.js";
 import moment from "moment";
-import QRCode from "qrcode";
 import {
   getEmployeesUtils,
   getResidentsUtils,
-  getUsersUtils,
 } from "../utils/collectionUtils.js";
-import { rds } from "../index.js";
-import axios from "axios";
-
-export const archiveEmployee = async (req, res) => {
-  try {
-    const { empID } = req.params;
-    const employee = await Employee.findById(empID);
-    if (!employee) {
-      return res.status(404).json({ message: "Employee not found" });
-    }
-
-    if (employee.userID) {
-      const user = await User.findById(employee.userID);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      const archivedUser = new OldUser({
-        ...user.toObject(),
-        archivedAt: new Date(),
-      });
-      console.log("User account successfully archived!");
-      await archivedUser.save();
-
-      await User.findByIdAndDelete(employee.userID);
-    }
-
-    const archivedEmployee = new OldEmployee({
-      ...employee.toObject(),
-      archivedAt: new Date(),
-    });
-    await archivedEmployee.save();
-
-    await Resident.updateOne(
-      { _id: employee.resID },
-      { $unset: { empID: "" } }
-    );
-    await Employee.findByIdAndDelete(empID);
-
-    console.log("Employee successfully archived!");
-    res.status(200).json({ message: "Employee successfully archived" });
-  } catch (error) {
-    console.log("Error archiving employee", error);
-    res.status(500).json({ message: "Failed to archive employee" });
-  }
-};
 
 export const getAllEmployees = async (req, res) => {
   try {

@@ -1,6 +1,5 @@
 import express from "express";
 import {
-  archiveEmployee,
   archiveResident,
   createResident,
   getAllEmployees,
@@ -23,6 +22,7 @@ import {
 } from "../controllers/userController.js";
 
 import {
+  archivedUser,
   checkCredentials,
   checkIfEmployee,
   checkRefreshToken,
@@ -57,6 +57,7 @@ import {
   createEmergencyHotlines,
   editEmergencyHotlines,
   getEmergencyHotlines,
+  recoverEmergencyHotlines,
 } from "../controllers/emergencyHotlinesController.js";
 import {
   archiveAnnouncement,
@@ -96,10 +97,12 @@ import {
   getUserDetails,
 } from "../controllers/settingsController.js";
 import {
+  archiveEmployee,
   checkPositions,
   checkWeeks,
   createEmployee,
   editEmployee,
+  recoverEmployee,
 } from "../controllers/employeeController.js";
 import {
   getAllNotifications,
@@ -121,6 +124,7 @@ router.get("/getmobilenumber/:username", getMobileNumber);
 router.put("/login/:username", loginUser);
 router.post("/logout", logoutUser);
 router.post("/deactivateduser/:userID", deactivatedUser);
+router.post("/archiveduser", archivedUser);
 
 //FORGOT PASSWORD
 router.get("/checkuser/:username", checkUser);
@@ -159,8 +163,9 @@ router.get("/getemployees", authMiddleware, getAllEmployees);
 router.post("/createemployee", createEmployee);
 router.get("/positioncount", checkPositions);
 router.get("/weekscount", checkWeeks);
-router.delete("/archiveemployee/:empID", archiveEmployee);
+router.put("/archiveemployee/:empID", archiveEmployee);
 router.put("/editemployee/:empID", editEmployee);
+router.put("/recoveremployee/:empID", recoverEmployee);
 
 //BRGY ID
 router.post("/generatebrgyID/:resID", generateBrgyID);
@@ -186,10 +191,8 @@ router.put("/rejectcertificatereq/:certID", rejectCertificateReq);
 router.get("/getemergencyhotlines", getEmergencyHotlines);
 router.post("/createemergencyhotlines", createEmergencyHotlines);
 router.post("/editemergencyhotlines/:emergencyID", editEmergencyHotlines);
-router.delete(
-  "/archiveemergencyhotlines/:emergencyID",
-  archiveEmergencyHotlines
-);
+router.put("/archiveemergencyhotlines/:emergencyID", archiveEmergencyHotlines);
+router.put("/recoveremergencyhotlines/:emergencyID", recoverEmergencyHotlines);
 
 //ANNOUNCEMENT
 router.post("/createannouncement", createAnnouncement);
