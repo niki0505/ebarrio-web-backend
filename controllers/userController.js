@@ -32,8 +32,7 @@ export const editUser = async (req, res) => {
       await axios.post("https://api.semaphore.co/api/v4/priority", {
         apikey: "46d791fbe4e880554fcad1ee958bbf33",
         number: mobilenumber,
-        message: `Your barangay account is created. Use this temporary token as your password to log in: ${userForm.password}. 
-       Please log in to the app and set your new password. This token will expire in 24 hours.`,
+        message: `Your barangay account has been updated.\nUsername: ${user.username}\nTemporary Password: ${userForm.password}\nPlease log in to the app and set your new password. This token will expire in 24 hours.`,
       });
 
       user.status = "Password Not Set";
@@ -60,8 +59,7 @@ export const editUser = async (req, res) => {
       await axios.post("https://api.semaphore.co/api/v4/priority", {
         apikey: "46d791fbe4e880554fcad1ee958bbf33",
         number: mobilenumber,
-        message: `Your barangay account is created. Use this temporary token as your password to log in: ${userForm.password}. 
-       Please log in to the app and set your new password. This token will expire in 24 hours.`,
+        message: `Your barangay account has been updated.\nUsername: ${userForm.username}\nTemporary Password: ${userForm.password}\nPlease log in to the app and set your new password. This token will expire in 24 hours.`,
       });
 
       user.username = userForm.username;
@@ -110,11 +108,10 @@ export const deactivateUser = async (req, res) => {
 export const resetPassword = async (req, res) => {
   try {
     const { username } = req.params;
-    const { password, securityquestions } = req.body;
+    const { password } = req.body;
     const user = await User.findOne({ username: username });
 
     user.password = password;
-    user.securityquestions = securityquestions;
     user.status = "Inactive";
 
     await user.save();
@@ -141,10 +138,11 @@ export const createUser = async (req, res) => {
   try {
     const { username, password, resID, role } = req.body;
 
-    const usernameExists = await User.findOne({ username });
+    const usernameExists = await User.findOne({
+      username,
+    });
     if (usernameExists) {
-      console.log("❌ Username already exists");
-      return res.json({ usernameExists: true });
+      return res.status(409).json({ message: "Username already exists." });
     }
 
     const resident = await Resident.findById(resID);
@@ -191,12 +189,12 @@ export const createUser = async (req, res) => {
        Please log in to the app and set your new password. This token will expire in 24 hours.`,
     });
 
-    console.log("✅ User created successfully");
-    return res
-      .status(200)
-      .json({ exists: true, message: "User registered successfully" });
+    return res.status(200).json({
+      exists: true,
+      message: "Account has been created successfully.",
+    });
   } catch (error) {
-    console.error("Error in registerUser:", error);
+    console.error("Error in creating acccount:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };

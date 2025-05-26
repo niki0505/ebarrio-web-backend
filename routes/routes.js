@@ -1,6 +1,5 @@
 import express from "express";
 import {
-  archiveResident,
   createResident,
   getAllEmployees,
   getAllOldResidents,
@@ -108,6 +107,10 @@ import {
   getAllNotifications,
   markAsRead,
 } from "../controllers/notificationController.js";
+import {
+  archiveResident,
+  recoverResident,
+} from "../controllers/residentsController.js";
 
 const router = express.Router();
 
@@ -155,7 +158,8 @@ router.post("/createresident", createResident);
 router.get("/getresidents", getAllResidents);
 router.get("/getresident/:resID", getResident);
 router.put("/updateresident/:resID", updateResident);
-router.delete("/archiveresident/:resID", archiveResident);
+router.put("/archiveresident/:resID", archiveResident);
+router.put("/recoverresident/:resID", recoverResident);
 router.get("/getoldresidents", getAllOldResidents);
 
 //EMPLOYEES

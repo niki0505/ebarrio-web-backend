@@ -290,13 +290,13 @@ export const checkCredentials = async (req, res) => {
     ) {
       console.log("❌ Account not found");
       return res.status(404).json({
-        message: "Account not found",
+        message: "Account not found.",
       });
     }
     if (user.status === "Deactivated") {
       console.log("❌ Account is deactivated");
       return res.status(403).json({
-        message: "Account is deactivated",
+        message: "Account is currently deactivated.",
       });
     }
 
@@ -304,19 +304,19 @@ export const checkCredentials = async (req, res) => {
       rds.get(`userID_${user._id}`, (err, storedToken) => {
         if (err) {
           console.error("Error retrieving token from Redis:", err);
-          return res.status(500).json({ message: "Failed to verify token" });
+          return res.status(500).json({ message: "Failed to verify token." });
         }
 
         if (!storedToken) {
           return res
             .status(400)
-            .json({ message: "Token has expired or does not exist" });
+            .json({ message: "Token has expired or does not exist." });
         }
 
         if (storedToken === password) {
           return res
             .status(200)
-            .json({ message: "Token verified successfully!" });
+            .json({ message: "Token verified successfully." });
         } else {
           return res.status(400).json({ message: "Invalid token" });
         }
@@ -326,9 +326,8 @@ export const checkCredentials = async (req, res) => {
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      console.log("❌ Incorrect Password");
       return res.status(403).json({
-        message: "Incorrect password",
+        message: "Invalid credentials.",
       });
     }
     return res.status(200).json({
