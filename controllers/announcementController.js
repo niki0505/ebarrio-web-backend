@@ -10,6 +10,21 @@ import Notification from "../models/Notifications.js";
 import User from "../models/Users.js";
 import { sendNotificationUpdate } from "../utils/collectionUtils.js";
 
+export const recoverAnnouncement = async (req, res) => {
+  try {
+    const { announcementID } = req.params;
+    const announcement = await Announcement.findById(announcementID);
+    announcement.status = "Not Pinned";
+    await announcement.save();
+    return res
+      .status(200)
+      .json({ message: "Announcement successfully recovered." });
+  } catch (error) {
+    console.error("Error in recovering announcement:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 export const editAnnouncement = async (req, res) => {
   try {
     const { announcementID } = req.params;

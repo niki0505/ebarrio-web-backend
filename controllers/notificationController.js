@@ -1,6 +1,27 @@
 import Notification from "../models/Notifications.js";
 import { sendNotificationUpdate } from "../utils/collectionUtils.js";
 
+export const markAllAsRead = async (req, res) => {
+  try {
+    const { userID } = req.user;
+
+    await Notification.updateMany(
+      { userID: userID, read: false },
+      { $set: { read: true } }
+    );
+
+    const io = req.app.get("socketio");
+    sendNotificationUpdate(userID, io);
+
+    res
+      .status(200)
+      .json({ message: "All notification mark as read successfully" });
+  } catch (error) {
+    console.log("Error fetching marking all as read", error);
+    res.status(500).json({ message: "Failed to fetch mark as read" });
+  }
+};
+
 export const markAsRead = async (req, res) => {
   try {
     const { notifID } = req.params;

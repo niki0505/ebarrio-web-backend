@@ -65,6 +65,7 @@ import {
   getAnnouncement,
   getAnnouncements,
   pinAnnouncement,
+  recoverAnnouncement,
   unpinAnnouncement,
 } from "../controllers/announcementController.js";
 import {
@@ -105,6 +106,7 @@ import {
 } from "../controllers/employeeController.js";
 import {
   getAllNotifications,
+  markAllAsRead,
   markAsRead,
 } from "../controllers/notificationController.js";
 import {
@@ -212,6 +214,11 @@ router.put(
   authMiddleware,
   archiveAnnouncement
 );
+router.put(
+  "/recoverannouncement/:announcementID",
+  authMiddleware,
+  recoverAnnouncement
+);
 router.get("/getannouncement/:announcementID", getAnnouncement);
 router.post("/editannouncement/:announcementID", editAnnouncement);
 
@@ -251,5 +258,6 @@ router.put("/changesecurityquestions/:userID", changeSecurityQuestions);
 //NOTIFICATIONS
 router.get("/getnotifications", authMiddleware, getAllNotifications);
 router.put("/readnotification/:notifID", authMiddleware, markAsRead);
+router.put("/readnotifications", authMiddleware, markAllAsRead);
 
 export default router;
