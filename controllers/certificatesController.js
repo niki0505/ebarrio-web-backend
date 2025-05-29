@@ -12,9 +12,11 @@ import Notification from "../models/Notifications.js";
 const bgUrl = "http://localhost:5000/qr-bg.png";
 const aniban2logoUrl = "http://localhost:5000/aniban2logo.jpg";
 const verifiedUrl = "http://localhost:5000/verified.png";
+import ActivityLog from "../models/ActivityLogs.js";
 
 export const rejectCertificateReq = async (req, res) => {
   try {
+    const { userID } = req.user;
     const { certID } = req.params;
     const { remarks } = req.body;
 
@@ -58,6 +60,14 @@ export const rejectCertificateReq = async (req, res) => {
 
     sendNotificationUpdate(user._id.toString(), io);
 
+    await ActivityLog.insertOne({
+      userID: userID,
+      action: "Document Requests",
+      description: `User rejected the ${cert.typeofcertificate.toLowerCase()} request of ${
+        resident.lastname
+      }, ${resident.firstname}.`,
+    });
+
     return res.status(200).json({
       message: "Certificate is rejected successfully",
     });
@@ -69,16 +79,28 @@ export const rejectCertificateReq = async (req, res) => {
 
 export const saveCertificateReq = async (req, res) => {
   try {
+    const { userID } = req.user;
     const { certID } = req.params;
     const { qrCode } = req.body;
 
-    const cert = await Certificate.findById(certID);
+    const cert = await Certificate.findById(certID).populate({
+      path: "resID",
+      select: "firstname lastname",
+    });
     if (!cert) {
       return res.status(404).json({ message: "Certificate not found" });
     }
 
     cert.certID.qrCode = qrCode;
     await cert.save();
+
+    await ActivityLog.insertOne({
+      userID: userID,
+      action: "Document Requests",
+      description: `User issued the ${cert.typeofcertificate.toLowerCase()} request of ${
+        cert.resID.lastname
+      }, ${cert.resID.firstname}.`,
+    });
 
     return res.status(200).json({
       message: "Certificate is saved successfully",
@@ -446,7 +468,6 @@ export const saveCertificate = async (req, res) => {
 
     cert.certID.qrCode = qrCode;
     await cert.save();
-
     return res.status(200).json({
       message: "Certificate is saved successfully",
     });

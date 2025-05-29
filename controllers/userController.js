@@ -5,25 +5,30 @@ import User from "../models/Users.js";
 import { getUsersUtils } from "../utils/collectionUtils.js";
 import { rds } from "../index.js";
 import axios from "axios";
+import ActivityLog from "../models/ActivityLogs.js";
 
 export const editUser = async (req, res) => {
   try {
+    const { userID: adminID } = req.user;
     const { userID } = req.params;
     const { userForm } = req.body;
 
     const user = await User.findById(userID);
 
     let mobilenumber;
+    let name;
 
     if (user.resID) {
       const resident = await Resident.findOne({ userID: userID });
       mobilenumber = resident.mobilenumber;
+      name = `${resident.lastname}, ${resident.firstname}`;
     } else if (user.empID) {
       const employee = await Employee.findOne({ userID: userID }).populate({
         path: "resID",
-        select: "mobilenumber",
+        select: "firstname lastname mobilenumber",
       });
       mobilenumber = employee.resID.mobilenumber;
+      name = `${employee.resID.lastname}, ${employee.resID.firstname}`;
     }
 
     if (userForm.password) {
@@ -68,6 +73,12 @@ export const editUser = async (req, res) => {
       await user.save();
     }
 
+    await ActivityLog.insertOne({
+      userID: adminID,
+      action: "Accounts",
+      description: `User updated ${name}'s account credentials.`,
+    });
+
     return res
       .status(200)
       .json({ exists: true, message: "User updated successfully" });
@@ -79,9 +90,34 @@ export const editUser = async (req, res) => {
 
 export const activateUser = async (req, res) => {
   try {
+    const { userID: adminID } = req.user;
     const { userID } = req.params;
-    const user = await User.findById(userID);
+    const user = await User.findById(userID)
+      .populate({
+        path: "empID",
+        select: "resID",
+        populate: {
+          path: "resID",
+          select: "firstname lastname",
+        },
+      })
+      .populate({
+        path: "resID",
+        select: "firstname lastname",
+      });
     user.status = "Inactive";
+
+    const name = user.empID?.resID
+      ? `${user.empID.resID.lastname}, ${user.empID.resID.firstname}`
+      : user.resID
+      ? `${user.resID.lastname}, ${user.resID.firstname}`
+      : "Unknown User";
+
+    await ActivityLog.insertOne({
+      userID: adminID,
+      action: "Accounts",
+      description: `User deactivated ${name}'s account.`,
+    });
 
     await user.save();
     res.status(200).json({ message: "User activated successfully!" });
@@ -93,11 +129,37 @@ export const activateUser = async (req, res) => {
 
 export const deactivateUser = async (req, res) => {
   try {
+    const { userID: adminID } = req.user;
     const { userID } = req.params;
-    const user = await User.findById(userID);
+    const user = await User.findById(userID)
+      .populate({
+        path: "empID",
+        select: "resID",
+        populate: {
+          path: "resID",
+          select: "firstname lastname",
+        },
+      })
+      .populate({
+        path: "resID",
+        select: "firstname lastname",
+      });
+
     user.status = "Deactivated";
 
+    const name = user.empID?.resID
+      ? `${user.empID.resID.lastname}, ${user.empID.resID.firstname}`
+      : user.resID
+      ? `${user.resID.lastname}, ${user.resID.firstname}`
+      : "Unknown User";
+
     await user.save();
+
+    await ActivityLog.insertOne({
+      userID: adminID,
+      action: "Accounts",
+      description: `User deactivated ${name}'s account.`,
+    });
     res.status(200).json({ message: "User deactivated successfully!" });
   } catch (error) {
     console.log("Error deactivating user", error);
@@ -113,6 +175,7 @@ export const resetPassword = async (req, res) => {
 
     user.password = password;
     user.status = "Inactive";
+    user.set("passwordistoken", undefined);
 
     await user.save();
 
@@ -124,7 +187,11 @@ export const resetPassword = async (req, res) => {
       }
     });
 
-    console.log("✅ User reset password successfully!");
+    await ActivityLog.insertOne({
+      userID: user._id,
+      action: "Login",
+      description: `User set their password successfully.`,
+    });
     return res
       .status(200)
       .json({ exists: true, message: "User reset password successfully" });
@@ -136,6 +203,7 @@ export const resetPassword = async (req, res) => {
 
 export const createUser = async (req, res) => {
   try {
+    const { userID } = req.user;
     const { username, password, resID, role } = req.body;
 
     const usernameExists = await User.findOne({
@@ -151,6 +219,7 @@ export const createUser = async (req, res) => {
     }
 
     let user;
+    let name;
 
     if (resident.empID) {
       user = new User({
@@ -173,9 +242,11 @@ export const createUser = async (req, res) => {
     if (resident.empID) {
       const employee = await Employee.findOne({ resID: resID });
       employee.userID = user._id;
+      name = `${resident.empID.lastname}, ${resident.firstname}`;
       await employee.save();
     } else {
       const resident = await Resident.findOne({ _id: resID });
+      name = `${resident.lastname}, ${resident.firstname}`;
       resident.userID = user._id;
       await resident.save();
     }
@@ -187,6 +258,12 @@ export const createUser = async (req, res) => {
       number: resident.mobilenumber,
       message: `Your barangay account is created. Use this temporary token as your password to log in: ${password}. 
        Please log in to the app and set your new password. This token will expire in 24 hours.`,
+    });
+
+    await ActivityLog.insertOne({
+      userID: userID,
+      action: "Accounts",
+      description: `User created an account for ${name}.`,
     });
 
     return res.status(200).json({

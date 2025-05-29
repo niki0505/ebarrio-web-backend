@@ -1,8 +1,10 @@
 import EmergencyHotline from "../models/EmergencyHotlines.js";
 import { getHotlinesUtils } from "../utils/collectionUtils.js";
+import ActivityLog from "../models/ActivityLogs.js";
 
 export const recoverEmergencyHotlines = async (req, res) => {
   try {
+    const { userID } = req.user;
     const { emergencyID } = req.params;
 
     const emergency = await EmergencyHotline.findById(emergencyID);
@@ -45,6 +47,12 @@ export const recoverEmergencyHotlines = async (req, res) => {
 
     await emergency.save();
 
+    await ActivityLog.insertOne({
+      userID: userID,
+      action: "Emergency Hotlines",
+      description: `User recovered ${emergency.name}'s contact details.`,
+    });
+
     return res.status(200).json({
       message: "Emergency hotline has been successfully recovered.",
     });
@@ -56,6 +64,7 @@ export const recoverEmergencyHotlines = async (req, res) => {
 
 export const archiveEmergencyHotlines = async (req, res) => {
   try {
+    const { userID } = req.user;
     const { emergencyID } = req.params;
 
     const emergency = await EmergencyHotline.findById(emergencyID);
@@ -68,6 +77,12 @@ export const archiveEmergencyHotlines = async (req, res) => {
 
     await emergency.save();
 
+    await ActivityLog.insertOne({
+      userID: userID,
+      action: "Emergency Hotlines",
+      description: `User archived ${emergency.name}'s contact details.`,
+    });
+
     return res.status(200).json({
       message: "Emergency hotline has been successfully archived.",
     });
@@ -79,6 +94,7 @@ export const archiveEmergencyHotlines = async (req, res) => {
 
 export const editEmergencyHotlines = async (req, res) => {
   try {
+    const { userID } = req.user;
     const { name, contactNumber } = req.body;
     const { emergencyID } = req.params;
 
@@ -118,6 +134,12 @@ export const editEmergencyHotlines = async (req, res) => {
 
     await emergency.save();
 
+    await ActivityLog.insertOne({
+      userID: userID,
+      action: "Emergency Hotlines",
+      description: `User updated ${emergency.name}'s contact details.`,
+    });
+
     return res.status(200).json({
       message: "Emergency hotlines is updated successfully",
     });
@@ -139,6 +161,7 @@ export const getEmergencyHotlines = async (req, res) => {
 
 export const createEmergencyHotlines = async (req, res) => {
   try {
+    const { userID } = req.user;
     const { name, contactNumber } = req.body;
 
     const existingName = await EmergencyHotline.findOne({
@@ -174,6 +197,12 @@ export const createEmergencyHotlines = async (req, res) => {
     });
 
     await emergency.save();
+
+    await ActivityLog.insertOne({
+      userID: userID,
+      action: "Emergency Hotlines",
+      description: `User added ${emergency.name}'s contact details.`,
+    });
 
     return res.status(200).json({
       message: "Emergency hotlines is created successfully",

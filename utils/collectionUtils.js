@@ -8,6 +8,47 @@ import User from "../models/Users.js";
 import Blotter from "../models/Blotters.js";
 import axios from "axios";
 import Notification from "../models/Notifications.js";
+import ActivityLog from "../models/ActivityLogs.js";
+
+export const getActivityLogs = async () => {
+  try {
+    const formatDatePH = (date) => {
+      return new Date(date).toLocaleString("en-PH", {
+        timeZone: "Asia/Manila",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      });
+    };
+    const logs = await ActivityLog.find().populate({
+      path: "userID",
+      select: "username empID resID",
+      populate: [
+        {
+          path: "empID",
+          select: "position resID",
+          populate: {
+            path: "resID",
+            select: "firstname lastname picture",
+          },
+        },
+        {
+          path: "resID",
+          select: "firstname lastname picture",
+        },
+      ],
+    });
+    return logs.map((log) => ({
+      ...log.toObject(),
+      createdAt: formatDatePH(log.createdAt),
+    }));
+  } catch (error) {
+    throw new Error("Error fetching activity logs: " + error.message);
+  }
+};
 
 export const sendNotificationUpdate = async (userID, io) => {
   const notifications = await Notification.find({ userID });
@@ -79,6 +120,24 @@ export const getUsersUtils = async () => {
           select: "firstname middlename lastname picture",
         },
       });
+    const formatDatePH = (date) => {
+      return new Date(date).toLocaleString("en-PH", {
+        timeZone: "Asia/Manila",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      });
+    };
+
+    return users.map((user) => ({
+      ...user.toObject(),
+      createdAt: formatDatePH(user.createdAt),
+      updatedAt: formatDatePH(user.updatedAt),
+    }));
+
     return users;
   } catch (error) {
     throw new Error("Error fetching users: " + error.message);

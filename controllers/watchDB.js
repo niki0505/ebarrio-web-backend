@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import Certificate from "../models/Certificates.js";
 import {
+  getActivityLogs,
   getAnnouncementsUtils,
   getBlottersUtils,
   getEmployeesUtils,
@@ -235,6 +236,31 @@ export const watchAllCollectionsChanges = (io) => {
   });
   usersChangeStream.on("error", (error) => {
     console.error("Error in users change stream:", error);
+  });
+
+  //ACTIVITY LOGS
+  const activitylogsChangeStream = db.collection("activitylogs").watch();
+  activitylogsChangeStream.on("change", async (change) => {
+    console.log("Employees change detected:", change);
+    if (
+      change.operationType === "update" ||
+      change.operationType === "insert"
+    ) {
+      const activitylogs = await getActivityLogs();
+      websiteNamespace.emit("dbChange", {
+        type: "activitylogs",
+        data: activitylogs,
+      });
+    } else if (change.operationType === "delete") {
+      websiteNamespace.emit("dbChange", {
+        type: "activitylogs",
+        deleted: true,
+        id: change.documentKey._id,
+      });
+    }
+  });
+  activitylogsChangeStream.on("error", (error) => {
+    console.error("Error in activity logs change stream:", error);
   });
 
   console.log("Watching all collections for changes...");

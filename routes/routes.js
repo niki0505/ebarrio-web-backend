@@ -33,6 +33,7 @@ import {
   refreshAccessToken,
   registerUser,
   sendOTP,
+  updatedUser,
   verifyOTP,
 } from "../controllers/authController.js";
 import { generateBrgyID, saveBrgyID } from "../controllers/brgyIDController.js";
@@ -111,8 +112,12 @@ import {
 } from "../controllers/notificationController.js";
 import {
   archiveResident,
+  issueDocument,
+  printBrgyID,
   recoverResident,
+  viewResidentDetails,
 } from "../controllers/residentsController.js";
+import { getLogs } from "../controllers/activityLogsController.js";
 
 const router = express.Router();
 
@@ -130,6 +135,7 @@ router.put("/login/:username", loginUser);
 router.post("/logout", logoutUser);
 router.post("/deactivateduser/:userID", deactivatedUser);
 router.post("/archiveduser", archivedUser);
+router.post("/updateduser", authMiddleware, updatedUser);
 
 //FORGOT PASSWORD
 router.get("/checkuser/:username", checkUser);
@@ -144,12 +150,12 @@ router.get("/refreshtoken", refreshAccessToken);
 
 //USERS
 router.put("/resetpassword/:username", resetPassword);
-router.put("/deactivateuser/:userID", deactivateUser);
-router.put("/activateuser/:userID", activateUser);
+router.put("/deactivateuser/:userID", authMiddleware, deactivateUser);
+router.put("/activateuser/:userID", authMiddleware, activateUser);
 router.get("/getusers", authMiddleware, getAllUsers);
 router.get("/getoldusers", getAllOldUsers);
-router.post("/createuser", createUser);
-router.put("/edituser/:userID", editUser);
+router.post("/createuser", authMiddleware, createUser);
+router.put("/edituser/:userID", authMiddleware, editUser);
 
 //BARANGAY CAPTAIN
 router.get("/getcaptain", getCaptain);
@@ -159,10 +165,13 @@ router.get("/getemployee/:empID", getEmployee);
 router.post("/createresident", createResident);
 router.get("/getresidents", getAllResidents);
 router.get("/getresident/:resID", getResident);
-router.put("/updateresident/:resID", updateResident);
-router.put("/archiveresident/:resID", archiveResident);
-router.put("/recoverresident/:resID", recoverResident);
+router.put("/updateresident/:resID", authMiddleware, updateResident);
+router.put("/archiveresident/:resID", authMiddleware, archiveResident);
+router.put("/recoverresident/:resID", authMiddleware, recoverResident);
 router.get("/getoldresidents", getAllOldResidents);
+router.post("/viewresidentdetails/:resID", authMiddleware, viewResidentDetails);
+router.post("/printcurrentbrgyid/:resID", authMiddleware, printBrgyID);
+router.post("/issuedocument/:resID", authMiddleware, issueDocument);
 
 //EMPLOYEES
 router.get("/getemployees", authMiddleware, getAllEmployees);
@@ -174,8 +183,8 @@ router.put("/editemployee/:empID", editEmployee);
 router.put("/recoveremployee/:empID", recoverEmployee);
 
 //BRGY ID
-router.post("/generatebrgyID/:resID", generateBrgyID);
-router.put("/savebrgyID/:resID", saveBrgyID);
+router.post("/generatebrgyID/:resID", authMiddleware, generateBrgyID);
+router.put("/savebrgyID/:resID", authMiddleware, saveBrgyID);
 
 //EMPLOYEE ID
 router.post("/generateemployeeID/:empID", generateEmployeeID);
@@ -190,15 +199,35 @@ router.get("/getprepared/:userID", getPrepared);
 //CERTIFICATE REQUESTS
 router.get("/getcertificates", authMiddleware, getAllCertificateRequests);
 router.put("/generatecertificatereq/:certID", generateCertificateReq);
-router.put("/savecertificatereq/:certID", saveCertificateReq);
-router.put("/rejectcertificatereq/:certID", rejectCertificateReq);
+router.put("/savecertificatereq/:certID", authMiddleware, saveCertificateReq);
+router.put(
+  "/rejectcertificatereq/:certID",
+  authMiddleware,
+  rejectCertificateReq
+);
 
 //EMERGENCY HOTLINES
 router.get("/getemergencyhotlines", getEmergencyHotlines);
-router.post("/createemergencyhotlines", createEmergencyHotlines);
-router.post("/editemergencyhotlines/:emergencyID", editEmergencyHotlines);
-router.put("/archiveemergencyhotlines/:emergencyID", archiveEmergencyHotlines);
-router.put("/recoveremergencyhotlines/:emergencyID", recoverEmergencyHotlines);
+router.post(
+  "/createemergencyhotlines",
+  authMiddleware,
+  createEmergencyHotlines
+);
+router.post(
+  "/editemergencyhotlines/:emergencyID",
+  authMiddleware,
+  editEmergencyHotlines
+);
+router.put(
+  "/archiveemergencyhotlines/:emergencyID",
+  authMiddleware,
+  archiveEmergencyHotlines
+);
+router.put(
+  "/recoveremergencyhotlines/:emergencyID",
+  authMiddleware,
+  recoverEmergencyHotlines
+);
 
 //ANNOUNCEMENT
 router.post("/createannouncement", createAnnouncement);
@@ -250,14 +279,21 @@ router.put("/settleblotter/:blotterID", authMiddleware, settleBlotter);
 router.put("/rejectblotter/:blotterID", authMiddleware, rejectBlotter);
 
 //ACCOUNT SETTINGS
-router.get("/getcurrentuser/:userID", getUserDetails);
-router.put("/changeusername/:userID", changeUsername);
-router.put("/changepassword/:userID", changePassword);
-router.put("/changesecurityquestions/:userID", changeSecurityQuestions);
+router.get("/getcurrentuser/:userID", authMiddleware, getUserDetails);
+router.put("/changeusername/:userID", authMiddleware, changeUsername);
+router.put("/changepassword/:userID", authMiddleware, changePassword);
+router.put(
+  "/changesecurityquestions/:userID",
+  authMiddleware,
+  changeSecurityQuestions
+);
 
 //NOTIFICATIONS
 router.get("/getnotifications", authMiddleware, getAllNotifications);
 router.put("/readnotification/:notifID", authMiddleware, markAsRead);
 router.put("/readnotifications", authMiddleware, markAllAsRead);
+
+//ACTIVITY LOGS
+router.get("/getactivitylogs", authMiddleware, getLogs);
 
 export default router;

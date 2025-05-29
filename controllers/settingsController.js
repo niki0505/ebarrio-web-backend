@@ -1,5 +1,6 @@
 import User from "../models/Users.js";
 import bcrypt from "bcryptjs";
+import ActivityLog from "../models/ActivityLogs.js";
 
 export const changeSecurityQuestions = async (req, res) => {
   try {
@@ -22,6 +23,12 @@ export const changeSecurityQuestions = async (req, res) => {
     }
 
     await user.save();
+
+    await ActivityLog.insertOne({
+      userID: userID,
+      action: "Account Settings",
+      description: `User updated their security questions.`,
+    });
 
     res
       .status(200)
@@ -47,6 +54,12 @@ export const changePassword = async (req, res) => {
     user.password = newpassword;
     await user.save();
 
+    await ActivityLog.insertOne({
+      userID: userID,
+      action: "Account Settings",
+      description: `User updated their password.`,
+    });
+
     res.status(200).json({ message: "Password changed successfully!" });
   } catch (error) {
     console.log("Error changing password", error);
@@ -68,6 +81,12 @@ export const changeUsername = async (req, res) => {
 
     user.username = username;
     await user.save();
+
+    await ActivityLog.insertOne({
+      userID: userID,
+      action: "Account Settings",
+      description: `User updated their username.`,
+    });
 
     res.status(200).json({ message: "Username changed successfully!" });
   } catch (error) {
