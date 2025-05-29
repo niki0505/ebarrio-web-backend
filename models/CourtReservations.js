@@ -11,12 +11,20 @@ const crSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    starttime: {
-      type: Date,
-      required: true,
-    },
-    endtime: {
-      type: Date,
+    // starttime: {
+    //   type: Date,
+    //   required: true,
+    // },
+    // endtime: {
+    //   type: Date,
+    //   required: true,
+    // },
+    times: {
+      type: Map,
+      of: new mongoose.Schema({
+        starttime: { type: Date, required: true },
+        endtime: { type: Date, required: true },
+      }),
       required: true,
     },
     amount: {

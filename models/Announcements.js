@@ -21,11 +21,13 @@ const aSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Employee",
     },
-    eventStart: {
-      type: Date,
-    },
-    eventEnd: {
-      type: Date,
+    times: {
+      type: Map,
+      of: new mongoose.Schema({
+        starttime: { type: Date, required: true },
+        endtime: { type: Date, required: true },
+      }),
+      required: true,
     },
     status: {
       type: String,
