@@ -114,6 +114,8 @@ export const getAnnouncements = async (req, res) => {
 export const createAnnouncement = async (req, res) => {
   try {
     const { announcementForm } = req.body;
+    const { userID: adminID, empID } = req.user;
+    announcementForm.uploadedby = empID;
 
     const user = await User.find().select("pushtoken");
 

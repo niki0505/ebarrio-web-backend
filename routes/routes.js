@@ -230,7 +230,7 @@ router.put(
 );
 
 //ANNOUNCEMENT
-router.post("/createannouncement", createAnnouncement);
+router.post("/createannouncement", authMiddleware, createAnnouncement);
 router.get("/getannouncements", getAnnouncements);
 router.put("/pinannouncement/:announcementID", authMiddleware, pinAnnouncement);
 router.put(
