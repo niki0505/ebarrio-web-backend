@@ -34,7 +34,7 @@ export const verifyQR = async (req, res) => {
         font-family: sans-serif;
         text-align: center;
         background-image: url('${bgUrl}');
-        background-size: contain;
+        background-size: cover;
         background-position: center;
         background-repeat: no-repeat;
         display: flex;
@@ -81,7 +81,7 @@ export const verifyQR = async (req, res) => {
       return res.send(`
         <html>
       <head>
-        <title>Employee ID Verification</title>
+        <title>Barangay ID Verification</title>
         <style>
           html, body {
             margin: 0;
@@ -103,7 +103,7 @@ export const verifyQR = async (req, res) => {
         font-family: sans-serif;
         text-align: center;
         background-image: url('${bgUrl}');
-        background-size: contain;
+        background-size: cover;
         background-position: center;
         background-repeat: no-repeat;
         display: flex;
@@ -165,7 +165,7 @@ export const verifyQR = async (req, res) => {
         font-family: sans-serif;
         text-align: center;
         background-image: url('${bgUrl}');
-        background-size: contain;
+        background-size: cover;
         background-position: center;
         background-repeat: no-repeat;
         display: flex;

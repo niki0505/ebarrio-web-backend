@@ -221,7 +221,7 @@ export const verifyCertificateQR = async (req, res) => {
         font-family: sans-serif;
         text-align: center;
         background-image: url('${bgUrl}');
-        background-size: contain;
+        background-size: cover;
         background-position: center;
         background-repeat: no-repeat;
         display: flex;
@@ -289,7 +289,7 @@ export const verifyCertificateQR = async (req, res) => {
         font-family: sans-serif;
         text-align: center;
         background-image: url('${bgUrl}');
-        background-size: contain;
+        background-size: cover;
         background-position: center;
         background-repeat: no-repeat;
         display: flex;
@@ -352,7 +352,7 @@ export const verifyCertificateQR = async (req, res) => {
         font-family: sans-serif;
         text-align: center;
         background-image: url('${bgUrl}');
-        background-size: contain;
+        background-size: cover;
         background-position: center;
         background-repeat: no-repeat;
         display: flex;
