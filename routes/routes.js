@@ -8,6 +8,7 @@ import {
   updateResident,
   getCaptain,
   getEmployee,
+  logExport,
 } from "../controllers/infoController.js";
 
 import {
@@ -249,7 +250,11 @@ router.put(
   recoverAnnouncement
 );
 router.get("/getannouncement/:announcementID", getAnnouncement);
-router.post("/editannouncement/:announcementID", editAnnouncement);
+router.post(
+  "/editannouncement/:announcementID",
+  authMiddleware,
+  editAnnouncement
+);
 
 //COURT RESERVATION
 router.get("/getreservations", authMiddleware, getReservations);
@@ -295,5 +300,8 @@ router.put("/readnotifications", authMiddleware, markAllAsRead);
 
 //ACTIVITY LOGS
 router.get("/getactivitylogs", authMiddleware, getLogs);
+
+//EXPORT
+router.post("/logexport", authMiddleware, logExport);
 
 export default router;

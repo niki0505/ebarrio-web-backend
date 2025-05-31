@@ -348,6 +348,11 @@ export const loginUser = async (req, res) => {
       action: "Login",
       description: "User logged in successfully.",
     });
+    rds.del(`login_attempts_${user._id}`, (err) => {
+      if (err) {
+        console.error("Error deleting login attempts key:", err);
+      }
+    });
 
     return res.status(200).json({
       message: "Login successful!",
@@ -420,7 +425,7 @@ export const checkCredentials = async (req, res) => {
         }
 
         if (attempts === 1) {
-          rds.expire(key, 3600);
+          rds.expire(key, 30);
         }
 
         await ActivityLog.insertOne({

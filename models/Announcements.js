@@ -29,6 +29,9 @@ const aSchema = new mongoose.Schema(
       }),
       required: true,
     },
+    eventdetails: {
+      type: "String",
+    },
     status: {
       type: String,
       enum: ["Pinned", "Not Pinned", "Archived"],
