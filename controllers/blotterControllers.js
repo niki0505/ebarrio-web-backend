@@ -69,15 +69,9 @@ export const settleBlotter = async (req, res) => {
       return res.status(404).json({ message: "Blotter not found" });
     }
 
-    const blotter = await Blotter.findByIdAndUpdate(
-      blotterID,
-      {
-        ...prev.toObject(),
-        status: "Settled",
-        ...updatedForm,
-      },
-      { new: true }
-    );
+    const blotter = await Blotter.findById(blotterID);
+    Object.assign(blotter, updatedForm);
+    blotter.status = "Settled";
 
     await blotter.save();
 

@@ -1,12 +1,81 @@
 import Employee from "../models/Employees.js";
 import Resident from "../models/Residents.js";
-import mongoose from "mongoose";
+import ActivityLog from "../models/ActivityLogs.js";
 import User from "../models/Users.js";
+
+export const issueDocument = async (req, res) => {
+  try {
+    const { resID } = req.params;
+    const { typeofcertificate } = req.body;
+    const { userID } = req.user;
+
+    const resident = await Resident.findById(resID);
+
+    await ActivityLog.insertOne({
+      userID: userID,
+      action: "Residents",
+      description: `User issued ${resident.lastname}, ${
+        resident.firstname
+      } a ${typeofcertificate.toLowerCase()}.`,
+    });
+
+    return res.status(200).json({
+      message: "Admin issued a document.",
+    });
+  } catch (error) {
+    console.error("Error in issuing a document:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const printBrgyID = async (req, res) => {
+  try {
+    const { resID } = req.params;
+    const { userID } = req.user;
+
+    const resident = await Resident.findById(resID);
+
+    await ActivityLog.insertOne({
+      userID: userID,
+      action: "Residents",
+      description: `User viewed the current barangay ID of ${resident.lastname}, ${resident.firstname}.`,
+    });
+
+    return res.status(200).json({
+      message: "Admin print the current barangay ID.",
+    });
+  } catch (error) {
+    console.error("Error in printing current barangay ID:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const viewResidentDetails = async (req, res) => {
+  try {
+    const { resID } = req.params;
+    const { userID } = req.user;
+
+    const resident = await Resident.findById(resID);
+
+    await ActivityLog.insertOne({
+      userID: userID,
+      action: "Residents",
+      description: `User viewed the details of ${resident.lastname}, ${resident.firstname}.`,
+    });
+
+    return res.status(200).json({
+      message: "Admin viewed resident details.",
+    });
+  } catch (error) {
+    console.error("Error in recovering resident:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
 
 export const recoverResident = async (req, res) => {
   try {
     const { resID } = req.params;
-
+    const { userID } = req.user;
     const resident = await Resident.findById(resID);
     const existing = await Resident.findOne({
       firstname: resident.firstname,
@@ -27,13 +96,21 @@ export const recoverResident = async (req, res) => {
 
     const user = await User.findOne({ resID: resident._id });
 
-    if (user) {
+    if (!user.passwordistoken) {
       user.status = "Inactive";
-      await user.save();
+    } else {
+      user.status = "Password Not Set";
     }
 
+    await user.save();
     resident.status = "Active";
     await resident.save();
+
+    await ActivityLog.insertOne({
+      userID: userID,
+      action: "Residents",
+      description: `User recovered the resident profile of ${resident.lastname}, ${resident.firstname}.`,
+    });
 
     return res.status(200).json({
       message: "Resident has been successfully recovered.",
@@ -47,6 +124,7 @@ export const recoverResident = async (req, res) => {
 export const archiveResident = async (req, res) => {
   try {
     const { resID } = req.params;
+    const { userID } = req.user;
 
     const resident = await Resident.findById(resID);
     if (!resident) {
@@ -110,6 +188,12 @@ export const archiveResident = async (req, res) => {
     resident.set("brgyID", undefined);
     resident.status = "Archived";
     await resident.save();
+
+    await ActivityLog.insertOne({
+      userID: userID,
+      action: "Residents",
+      description: `User archived the resident profile of ${resident.lastname}, ${resident.firstname}.`,
+    });
 
     return res.status(200).json({
       message: "Resident has been successfully archived.",

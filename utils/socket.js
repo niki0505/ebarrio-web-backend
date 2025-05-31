@@ -1,4 +1,17 @@
-export const connectedUsers = new Map(); // key: userId, value: socket.id
+import User from "../models/Users.js";
+export const connectedUsers = new Map();
+
+async function markUserActive(userId) {
+  await User.findByIdAndUpdate(userId, { status: "Active" });
+}
+
+async function markUserInactive(userId) {
+  const user = await User.findById(userId);
+  if (user.status === "Active") {
+    user.status = "Inactive";
+    await user.save();
+  }
+}
 
 export const registerSocketEvents = (io) => {
   io.on("connection", (socket) => {
@@ -6,11 +19,14 @@ export const registerSocketEvents = (io) => {
 
     socket.on("register", (userID) => {
       connectedUsers.set(userID, socket.id);
-      socket.join(userID); // Personal rooms
+      socket.userID = userID;
+      markUserActive(userID);
+      socket.join(userID);
     });
 
     socket.on("unregister", (userID) => {
       socket.leave(userID);
+      markUserInactive(userID);
       connectedUsers.delete(userID);
     });
 
@@ -38,6 +54,7 @@ export const registerSocketEvents = (io) => {
       connectedUsers.forEach((id, userID) => {
         if (id === socket.id) {
           connectedUsers.delete(userID);
+          markUserInactive(socket.userID);
           console.log(`User ${userID} removed from connectedUsers`);
         }
       });

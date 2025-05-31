@@ -1,14 +1,29 @@
 import Resident from "../models/Residents.js";
 import mongoose from "mongoose";
 import OldResident from "../models/OldResidents.js";
-import OldUser from "../models/OldUsers.js";
 import Employee from "../models/Employees.js";
-import User from "../models/Users.js";
+import ActivityLog from "../models/ActivityLogs.js";
 import moment from "moment";
 import {
   getEmployeesUtils,
   getResidentsUtils,
 } from "../utils/collectionUtils.js";
+import User from "../models/Users.js";
+
+export const logExport = async (req, res) => {
+  try {
+    const { userID } = req.user;
+    const { action, description } = req.body;
+    await ActivityLog.insertOne({
+      userID: userID,
+      action: action,
+      description: description,
+    });
+  } catch (error) {
+    console.log("Error fetching employees", error);
+    res.status(500).json({ message: "Failed to fetch employees" });
+  }
+};
 
 export const getAllEmployees = async (req, res) => {
   try {
@@ -22,6 +37,7 @@ export const getAllEmployees = async (req, res) => {
 
 export const updateResident = async (req, res) => {
   try {
+    const { userID } = req.user;
     const {
       picture,
       signature,
@@ -70,6 +86,14 @@ export const updateResident = async (req, res) => {
     const age = moment().diff(birthDate, "years");
 
     const resident = await Resident.findOne({ _id: resID });
+    const user = await User.findById(userID).populate({
+      path: "empID",
+      select: "resID",
+      populate: {
+        path: "resID",
+        select: "_id",
+      },
+    });
 
     const motherAsObjectId = mother
       ? new mongoose.Types.ObjectId(mother)
@@ -132,7 +156,22 @@ export const updateResident = async (req, res) => {
     resident.typeofschool = typeofschool;
     resident.course = course;
     await resident.save();
-    console.log("Resident successfully updated!");
+
+    console.log("ResID", user.empID.resID._id, resident._id);
+    if (user.empID.resID._id.toString() === resident._id.toString()) {
+      await ActivityLog.insertOne({
+        userID: userID,
+        action: "Residents",
+        description: `User updated their resident profile.`,
+      });
+    } else {
+      await ActivityLog.insertOne({
+        userID: userID,
+        action: "Residents",
+        description: `User updated the details of ${resident.lastname}, ${resident.firstname}.`,
+      });
+    }
+
     res.status(200).json({ message: "Resident successfully updated" });
   } catch (error) {
     console.log("Error updating resident", error);

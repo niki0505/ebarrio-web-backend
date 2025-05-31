@@ -8,12 +8,62 @@ import crypto from "crypto";
 import Session from "../models/Session.js";
 import Employee from "../models/Employees.js";
 import { rds } from "../index.js";
+import ActivityLog from "../models/ActivityLogs.js";
 
 import { configDotenv } from "dotenv";
 
 configDotenv();
 const ACCESS_SECRET = process.env.ACCESS_SECRET;
 const REFRESH_SECRET = process.env.REFRESH_SECRET;
+
+export const detectSession = async (req, res) => {
+  try {
+    const accessToken = req.cookies.accessToken;
+    const refreshToken = req.cookies.refreshToken;
+
+    if (!refreshToken) {
+      return res.status(401).json({ message: "Refresh token not found" });
+    }
+    jwt.verify(
+      refreshToken,
+      process.env.REFRESH_SECRET,
+      async (err, decodedRefresh) => {
+        if (err) {
+          return res.status(401).json({ message: "Invalid refresh token" });
+        }
+        const newAccessToken = jwt.sign(
+          {
+            userID: decodedRefresh.userID,
+            empID: decodedRefresh.empID,
+            username: decodedRefresh.username,
+            role: decodedRefresh.role,
+            name: decodedRefresh.name,
+            picture: decodedRefresh.picture,
+          },
+          process.env.ACCESS_SECRET,
+          {
+            expiresIn: "15m",
+          }
+        );
+
+        res.cookie("accessToken", newAccessToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "Strict",
+          maxAge: 15 * 60 * 1000,
+        });
+        console.log("Access token refreshed");
+        return res.status(200).json({
+          message: "Access token refreshed",
+          accessToken: newAccessToken,
+        });
+      }
+    );
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
 
 export const refreshAccessToken = async (req, res) => {
   try {
@@ -85,6 +135,35 @@ export const checkRefreshToken = async (req, res) => {
         });
       }
     );
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const updatedUser = async (req, res) => {
+  try {
+    const { userID } = req.user;
+
+    const user = await User.findById(userID);
+    user.status = "Password Not Set";
+    user.passwordistoken = true;
+    await user.save();
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
+    });
+    res.clearCookie("accessToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
+    });
+
+    res.status(200).json({
+      message:
+        "You've been logged out because your account credentials has been updated. If this is unexpected, please contact the admin.",
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error" });
@@ -180,8 +259,12 @@ export const logoutUser = async (req, res) => {
     //   secure: true,
     //   sameSite: "None",
     // });
-    user.status = "Inactive";
-    await user.save();
+
+    await ActivityLog.insertOne({
+      userID: user._id,
+      action: "Logout",
+      description: "User logged out successfully.",
+    });
 
     res.status(200).json({ message: "Logged out successfully" });
   } catch (error) {
@@ -260,8 +343,16 @@ export const loginUser = async (req, res) => {
     //   maxAge: 30 * 24 * 60 * 60 * 1000,
     // });
 
-    user.status = "Active";
-    await user.save();
+    await ActivityLog.insertOne({
+      userID: user._id,
+      action: "Login",
+      description: "User logged in successfully.",
+    });
+    rds.del(`login_attempts_${user._id}`, (err) => {
+      if (err) {
+        console.error("Error deleting login attempts key:", err);
+      }
+    });
 
     return res.status(200).json({
       message: "Login successful!",
@@ -324,11 +415,44 @@ export const checkCredentials = async (req, res) => {
       return;
     }
 
+    const key = `login_attempts_${user._id}`;
+
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(403).json({
-        message: "Invalid credentials.",
+      rds.incr(key, async (err, attempts) => {
+        if (err) {
+          console.error("Redis error:", err);
+        }
+
+        if (attempts === 1) {
+          rds.expire(key, 30);
+        }
+
+        await ActivityLog.insertOne({
+          userID: user._id,
+          action: "Login",
+          description: "The login attempt failed due to an incorrect password.",
+        });
+
+        if (attempts > 5) {
+          await ActivityLog.insertOne({
+            userID: user._id,
+            action: "Login",
+            description:
+              "User was locked out due to many failed login attempts.",
+          });
+          return res.status(429).json({
+            message:
+              "Too many failed login attempts. Please try again after 1 hour.",
+          });
+        }
+
+        return res.status(403).json({
+          message: "Invalid credentials.",
+        });
       });
+
+      return;
     }
     return res.status(200).json({
       message: "Credentials verified",

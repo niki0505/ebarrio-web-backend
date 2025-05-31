@@ -1,5 +1,8 @@
 import Resident from "../models/Residents.js";
 import QRCode from "qrcode";
+const bgUrl = "http://localhost:5000/qr-bg.png";
+const aniban2logoUrl = "http://localhost:5000/aniban2logo.jpg";
+const verifiedUrl = "http://localhost:5000/verified.png";
 
 export const verifyQR = async (req, res) => {
   try {
@@ -8,14 +11,64 @@ export const verifyQR = async (req, res) => {
     if (!resident) {
       return res.send(`
         <html>
-          <head><title>Barangay ID Verification</title></head>
-          <body style="font-family: sans-serif; text-align: center; padding-top: 50px;">
-            <p style="color: red">
-              <strong>INVALID BARANGAY ID</strong> 
-            </p>
-            <p style="color: gray;">The Barangay ID you provided is not valid. Please ensure the ID is correct or contact the Barangay office for assistance.</p>
-          </body>
-        </html>
+      <head>
+        <title>Employee ID Verification</title>
+        <style>
+          html, body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            font-family: sans-serif;
+            text-align: center;
+          }
+        </style>
+      </head>
+      <body
+        style="
+        margin: 0;
+        height: 100vh;
+        width: 100vw;
+        overflow: hidden;
+        font-family: sans-serif;
+        text-align: center;
+        background-image: url('${bgUrl}');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      "
+      >
+        <div
+          style="
+            background-color: rgba(255, 255, 255, 1);
+            display: inline-block;
+            padding: 20px 40px;
+            border-radius: 10px;
+            width: 30%;
+            max-height: 100%;
+          
+          "
+        >
+          <p style="color: black; font-size: 20px;"><strong>Barangay Management System</strong></p>
+
+          <div
+            style="display: flex; flex-direction: row; justify-content: center; align-items: center; width: 100%; gap: 20px;"
+          >
+            <img style="width: 80px; height: 80px;" src="${aniban2logoUrl}" />
+
+          </div>
+
+          <p style="color: red"><strong>INVALID BARANGAY ID</strong></p>
+          <hr style="width: 100%; border: 1px solid red;" />
+          
+          <p style="color: gray;">The Barangay ID you provided is not valid. Please ensure the ID is correct or contact the Barangay office for assistance.</p>
+        </div>
+      </body>
+    </html>
       `);
     }
 
@@ -27,28 +80,134 @@ export const verifyQR = async (req, res) => {
     if (isExpired) {
       return res.send(`
         <html>
-          <head><title>Barangay ID Verification</title></head>
-          <body style="font-family: sans-serif; text-align: center; padding-top: 50px;">
-            <p style="color: red">
-              <strong>EXPIRED BARANGAY ID</strong> 
-            </p>
-            <p style="color: gray;">The Barangay ID you provided is already expired. Please ensure the ID is correct or contact the Barangay office for assistance.</p>
-          </body>
-        </html>
+      <head>
+        <title>Barangay ID Verification</title>
+        <style>
+          html, body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            font-family: sans-serif;
+            text-align: center;
+          }
+        </style>
+      </head>
+      <body
+        style="
+        margin: 0;
+        height: 100vh;
+        width: 100vw;
+        overflow: hidden;
+        font-family: sans-serif;
+        text-align: center;
+        background-image: url('${bgUrl}');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      "
+      >
+        <div
+          style="
+            background-color: rgba(255, 255, 255, 1);
+            display: inline-block;
+            padding: 20px 40px;
+            border-radius: 10px;
+            width: 30%;
+            max-height: 100%;
+          
+          "
+        >
+          <p style="color: black; font-size: 20px;"><strong>Barangay Management System</strong></p>
+
+          <div
+            style="display: flex; flex-direction: row; justify-content: center; align-items: center; width: 100%; gap: 20px;"
+          >
+            <img style="width: 80px; height: 80px;" src="${aniban2logoUrl}" />
+
+          </div>
+
+          <p style="color: red"><strong>EXPIRED BARANGAY ID</strong></p>
+          <hr style="width: 100%; border: 1px solid red;" />
+          
+           <p style="color: gray;">The Barangay ID you provided is already expired. Please ensure the ID is correct or contact the Barangay office for assistance.</p>
+        </div>
+      </body>
+    </html>
       `);
     } else {
       return res.send(`
-        <html>
-          <head><title>Barangay ID Verification</title></head>
-          <body style="font-family: sans-serif; text-align: center; padding-top: 50px;">
-            <p style="color: green">
-              <strong>VERIFIED RESIDENT</strong> 
-            </p>
-            <img style="width: 300px; height: 400px" src=${resident.picture}/>
-            <p><strong>Name:</strong> ${resident.firstname} ${resident.lastname}</p>
-            <p><strong>Address</strong> ${resident.address}</p>
-          </body>
-        </html>
+         <html>
+      <head>
+        <title>Barangay ID Verification</title>
+        <style>
+          html, body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            font-family: sans-serif;
+            text-align: center;
+          }
+        </style>
+      </head>
+      <body
+        style="
+        margin: 0;
+        height: 100vh;
+        width: 100vw;
+        overflow: hidden;
+        font-family: sans-serif;
+        text-align: center;
+        background-image: url('${bgUrl}');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      "
+      >
+        <div
+          style="
+            background-color: rgba(255, 255, 255, 1);
+            display: inline-block;
+            padding: 20px 40px;
+            border-radius: 10px;
+            width: 30%;
+            max-height: 100%;
+          "
+        >
+          <p style="color: black; font-size: 20px;"><strong>Barangay Management System</strong></p>
+
+          <div
+            style="display: flex; flex-direction: row; justify-content: center; align-items: center; width: 100%; gap: 20px;"
+          >
+            <img style="width: 80px; height: 80px;" src="${aniban2logoUrl}" />
+            <img style="width: 100px; height: 100px;" src="${verifiedUrl}" />
+          </div>
+
+          <p style="color: green"><strong>VERIFIED RESIDENT</strong></p>
+          <hr style="width: 100%; border: 1px solid green;" />
+
+          <img
+            style="width: 160px; height: 160px; border-radius: 10px;"
+            src=${resident.picture}"
+          />
+          <p style="font-size: 14px; text-transform: uppercase;">
+            <strong>Position:</strong> ${resident.firstname} ${resident.lastname}
+          </p>
+          <p style="font-size: 14px; text-transform: uppercase;">
+            <strong>Address:</strong> ${resident.address}
+          </p>
+        </div>
+      </body>
+    </html>
       `);
     }
   } catch (error) {
@@ -59,6 +218,7 @@ export const verifyQR = async (req, res) => {
 export const saveBrgyID = async (req, res) => {
   try {
     const { resID } = req.params;
+    const { userID } = req.user;
     const { idNumber, expirationDate, qrCode, qrToken } = req.body;
     const resident = await Resident.findById(resID);
     if (!resident) {
@@ -74,6 +234,12 @@ export const saveBrgyID = async (req, res) => {
     });
 
     await resident.save();
+
+    await ActivityLog.insertOne({
+      userID: userID,
+      action: "Residents",
+      description: `User generated a new barangay ID of ${resident.lastname}, ${resident.firstname}.`,
+    });
 
     return res.status(200).json({
       message: "Barangay ID is saved successfully",

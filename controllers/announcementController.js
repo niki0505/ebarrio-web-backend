@@ -9,9 +9,33 @@ import Employee from "../models/Employees.js";
 import Notification from "../models/Notifications.js";
 import User from "../models/Users.js";
 import { sendNotificationUpdate } from "../utils/collectionUtils.js";
+import ActivityLog from "../models/ActivityLogs.js";
+
+export const recoverAnnouncement = async (req, res) => {
+  try {
+    const { userID } = req.user;
+    const { announcementID } = req.params;
+    const announcement = await Announcement.findById(announcementID);
+    announcement.status = "Not Pinned";
+    await announcement.save();
+
+    await ActivityLog.insertOne({
+      userID: userID,
+      action: "Announcements",
+      description: `User recovered an announcement titled ${announcement.title}`,
+    });
+    return res
+      .status(200)
+      .json({ message: "Announcement successfully recovered." });
+  } catch (error) {
+    console.error("Error in recovering announcement:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
 
 export const editAnnouncement = async (req, res) => {
   try {
+    const { userID } = req.user;
     const { announcementID } = req.params;
     const { announcementForm } = req.body;
 
@@ -20,6 +44,12 @@ export const editAnnouncement = async (req, res) => {
       announcementForm,
       { new: true }
     );
+
+    await ActivityLog.insertOne({
+      userID: userID,
+      action: "Announcements",
+      description: `User updated an announcement titled ${updatedAnnouncement.title}`,
+    });
 
     return res.status(200).json({
       message: "Announcement is updated successfully",
@@ -43,10 +73,17 @@ export const getAnnouncement = async (req, res) => {
 
 export const archiveAnnouncement = async (req, res) => {
   try {
+    const { userID } = req.user;
     const { announcementID } = req.params;
     const announcement = await Announcement.findById(announcementID);
     announcement.status = "Archived";
     await announcement.save();
+
+    await ActivityLog.insertOne({
+      userID: userID,
+      action: "Announcements",
+      description: `User archived an announcement titled ${announcement.title}`,
+    });
     return res
       .status(200)
       .json({ message: "Announcement successfully archived!" });
@@ -58,10 +95,17 @@ export const archiveAnnouncement = async (req, res) => {
 
 export const unpinAnnouncement = async (req, res) => {
   try {
+    const { userID } = req.user;
     const { announcementID } = req.params;
     const announcement = await Announcement.findById(announcementID);
     announcement.status = "Not Pinned";
     await announcement.save();
+
+    await ActivityLog.insertOne({
+      userID: userID,
+      action: "Announcements",
+      description: `User unpinned an announcement titled ${announcement.title}`,
+    });
     return res
       .status(200)
       .json({ message: "Announcement successfully unpinned!" });
@@ -73,10 +117,17 @@ export const unpinAnnouncement = async (req, res) => {
 
 export const pinAnnouncement = async (req, res) => {
   try {
+    const { userID } = req.user;
     const { announcementID } = req.params;
     const announcement = await Announcement.findById(announcementID);
     announcement.status = "Pinned";
     await announcement.save();
+
+    await ActivityLog.insertOne({
+      userID: userID,
+      action: "Announcements",
+      description: `User pinned an announcement titled ${announcement.title}`,
+    });
     return res
       .status(200)
       .json({ message: "Announcement successfully pinned!" });
@@ -99,6 +150,8 @@ export const getAnnouncements = async (req, res) => {
 export const createAnnouncement = async (req, res) => {
   try {
     const { announcementForm } = req.body;
+    const { userID: adminID, empID } = req.user;
+    announcementForm.uploadedby = empID;
 
     const user = await User.find().select("pushtoken");
 
@@ -149,6 +202,12 @@ export const createAnnouncement = async (req, res) => {
       }
       sendNotificationUpdate(element._id.toString(), io);
     }
+
+    await ActivityLog.insertOne({
+      userID: adminID,
+      action: "Announcements",
+      description: `User posted an announcement titled ${announcement.title}`,
+    });
 
     return res.status(200).json({
       message: "Announcement is created successfully",

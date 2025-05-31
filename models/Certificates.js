@@ -1,7 +1,18 @@
 import mongoose from "mongoose";
 
+const CertificateCounterSchema = new mongoose.Schema({
+  _id: String,
+  seq: Number,
+});
+
+const CertificateCounter = mongoose.model(
+  "CertificateCounter",
+  CertificateCounterSchema
+);
+
 const certSchema = new mongoose.Schema(
   {
+    certno: { type: Number, unique: true, sparse: true },
     certID: {
       _id: false,
       type: {
@@ -67,6 +78,36 @@ const certSchema = new mongoose.Schema(
   },
   { versionKey: false, timestamps: true }
 );
+
+async function assignCertNo(doc) {
+  if (!doc.certno && doc.status === "Issued") {
+    const counter = await CertificateCounter.findByIdAndUpdate(
+      { _id: "certno" },
+      { $inc: { seq: 1 } },
+      { new: true, upsert: true }
+    );
+    doc.certno = counter.seq;
+  }
+}
+
+// Pre-save hook
+certSchema.pre("save", async function (next) {
+  try {
+    // If new document or status changed to "Issued" and certno not assigned yet
+    if (this.isNew) {
+      await assignCertNo(this);
+    } else if (
+      this.isModified("status") &&
+      this.status === "Issued" &&
+      !this.certno
+    ) {
+      await assignCertNo(this);
+    }
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
 
 const Certificate = mongoose.model("Certificate", certSchema);
 

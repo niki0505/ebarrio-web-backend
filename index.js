@@ -25,6 +25,8 @@ app.use(
   })
 );
 
+app.use(express.static("public"));
+
 const rds = new Redis(process.env.REDIS_URL);
 const subClient = rds.duplicate();
 
