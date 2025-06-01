@@ -178,12 +178,12 @@ router.post("/issuedocument/:resID", authMiddleware, issueDocument);
 
 //EMPLOYEES
 router.get("/getemployees", authMiddleware, getAllEmployees);
-router.post("/createemployee", createEmployee);
-router.get("/positioncount", checkPositions);
+router.post("/createemployee", authMiddleware, createEmployee);
+router.get("/positioncount", authMiddleware, checkPositions);
 router.get("/weekscount", checkWeeks);
-router.put("/archiveemployee/:empID", archiveEmployee);
-router.put("/editemployee/:empID", editEmployee);
-router.put("/recoveremployee/:empID", recoverEmployee);
+router.put("/archiveemployee/:empID", authMiddleware, archiveEmployee);
+router.put("/editemployee/:empID", authMiddleware, editEmployee);
+router.put("/recoveremployee/:empID", authMiddleware, recoverEmployee);
 
 //BRGY ID
 router.post("/generatebrgyID/:resID", authMiddleware, generateBrgyID);

@@ -2,10 +2,12 @@ import Employee from "../models/Employees.js";
 import Resident from "../models/Residents.js";
 import mongoose from "mongoose";
 import User from "../models/Users.js";
+import ActivityLog from "../models/ActivityLogs.js";
 
 export const recoverEmployee = async (req, res) => {
   try {
     const { empID } = req.params;
+    const { userID } = req.user;
 
     const emp = await Employee.findById(empID);
 
@@ -42,6 +44,12 @@ export const recoverEmployee = async (req, res) => {
 
     await emp.save();
 
+    await ActivityLog.insertOne({
+      userID: userID,
+      action: "Employees",
+      description: `User recovered ${resident.lastname}, ${resident.firstname}'s as employee.`,
+    });
+
     return res.status(200).json({
       message: "Employee has been successfully recovered.",
     });
@@ -54,6 +62,7 @@ export const recoverEmployee = async (req, res) => {
 export const archiveEmployee = async (req, res) => {
   try {
     const { empID } = req.params;
+    const { userID } = req.user;
 
     const emp = await Employee.findById(empID);
     if (!emp) {
@@ -76,6 +85,12 @@ export const archiveEmployee = async (req, res) => {
 
     await emp.save();
 
+    await ActivityLog.insertOne({
+      userID: userID,
+      action: "Employees",
+      description: `User archived ${resident.lastname}, ${resident.firstname}'s as employee.`,
+    });
+
     return res.status(200).json({
       message: "Employee has been successfully archived.",
     });
@@ -88,8 +103,12 @@ export const archiveEmployee = async (req, res) => {
 export const editEmployee = async (req, res) => {
   try {
     const { empID } = req.params;
+    const { userID } = req.user;
     const { position, chairmanship } = req.body;
-    const employee = await Employee.findById(empID);
+    const employee = await Employee.findById(empID).populate({
+      path: "resID",
+      select: "firstname lastname",
+    });
 
     if (!employee) {
       return res.status(404).json({ message: "Employee not found" });
@@ -113,6 +132,12 @@ export const editEmployee = async (req, res) => {
         await user.save();
       }
     }
+
+    await ActivityLog.insertOne({
+      userID: userID,
+      action: "Employees",
+      description: `User updated ${employee.resID.lastname}, ${employee.resID.firstname}'s employee profile.`,
+    });
     res
       .status(200)
       .json({ message: "Employee position updated successfully!" });
@@ -124,6 +149,7 @@ export const editEmployee = async (req, res) => {
 
 export const createEmployee = async (req, res) => {
   try {
+    const { userID } = req.user;
     const { formattedEmployeeForm } = req.body;
     const resident = await Resident.findOne({
       _id: formattedEmployeeForm.resID,
@@ -148,6 +174,12 @@ export const createEmployee = async (req, res) => {
 
     resident.empID = employee._id;
     await resident.save();
+
+    await ActivityLog.insertOne({
+      userID: userID,
+      action: "Employees",
+      description: `User added ${resident.lastname}, ${resident.firstname} as employee.`,
+    });
     res.status(200).json({ empID: employee._id });
   } catch (error) {
     console.log("Error creating employee", error);
@@ -181,6 +213,11 @@ export const checkWeeks = async (req, res) => {
 export const checkPositions = async (req, res) => {
   try {
     const counts = await Employee.aggregate([
+      {
+        $match: {
+          status: { $ne: "Archived" }, // Exclude 'Archived' status
+        },
+      },
       {
         $group: {
           _id: { $toLower: "$position" },

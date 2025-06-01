@@ -86,7 +86,10 @@ const certSchema = new mongoose.Schema(
 );
 
 async function assignCertNo(doc) {
-  if (!doc.certno && doc.status === "Not Yet Collected") {
+  if (
+    (!doc.certno && doc.status === "Not Yet Collected") ||
+    doc.status === "Collected"
+  ) {
     const counter = await CertificateCounter.findByIdAndUpdate(
       { _id: "certno" },
       { $inc: { seq: 1 } },
@@ -102,9 +105,8 @@ certSchema.pre("save", async function (next) {
     if (this.isNew) {
       await assignCertNo(this);
     } else if (
-      this.isModified("status") &&
-      this.status === "Not Yet Collected" &&
-      !this.certno
+      (this.isModified("status") && this.status === "Not Yet Collected") ||
+      (doc.status === "Collected" && !this.certno)
     ) {
       await assignCertNo(this);
     }

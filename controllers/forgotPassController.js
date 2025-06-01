@@ -2,6 +2,7 @@ import User from "../models/Users.js";
 import { getAllUsers } from "./userController.js";
 import bcrypt from "bcryptjs";
 import { rds } from "../index.js";
+import ActivityLog from "../models/ActivityLogs.js";
 
 export const checkOTP = async (req, res) => {
   try {
@@ -41,6 +42,12 @@ export const newPassword = async (req, res) => {
 
     user.password = newPassword;
     await user.save();
+
+    await ActivityLog.insertOne({
+      userID: user._id,
+      action: "Forgot Password",
+      description: `User has completed password reset process.`,
+    });
 
     res.status(200).json({ message: "Password successfully changed" });
   } catch (error) {
