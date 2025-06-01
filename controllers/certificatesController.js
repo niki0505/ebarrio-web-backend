@@ -14,6 +14,112 @@ const aniban2logoUrl = "http://localhost:5000/aniban2logo.jpg";
 const verifiedUrl = "http://localhost:5000/verified.png";
 import ActivityLog from "../models/ActivityLogs.js";
 
+export const collectedCert = async (req, res) => {
+  try {
+    const { userID } = req.user;
+    const { certID } = req.params;
+
+    const cert = await Certificate.findById(certID).populate({
+      path: "resID",
+      select: "_id",
+    });
+
+    if (!cert) {
+      return res.status(404).json({ message: "Certificate not found" });
+    }
+
+    cert.status = "Collected";
+
+    await cert.save();
+
+    const user = await User.findOne({ resID: cert.resID._id });
+
+    const io = req.app.get("socketio");
+    io.to(user._id).emit("certificateUpdate", {
+      title: `📄 ${cert.typeofcertificate} Collected`,
+      message: `Your document has been collected. Thank you for your time.`,
+      timestamp: cert.updatedAt,
+    });
+
+    if (user?.pushtoken) {
+      await sendPushNotification(
+        user.pushtoken,
+        `📄 ${cert.typeofcertificate} Collected`,
+        `Your document has been collected. Thank you for your time.`,
+        "Status"
+      );
+    } else {
+      console.log("⚠️ No push token found for user:", user.username);
+    }
+
+    await Notification.insertOne({
+      userID: user._id,
+      title: `📄 ${cert.typeofcertificate} Collected`,
+      message: `Your document request has been processed and is now available for pick up at the barangay hall. Kindly pay the fee of ${cert.amount} upon claiming.`,
+      redirectTo: "Status",
+    });
+
+    return res.status(200).json({
+      message:
+        "Resident has been successfully notified about the document availability",
+    });
+  } catch (error) {
+    console.error("Error in notifying resident:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const notifyCert = async (req, res) => {
+  try {
+    const { userID } = req.user;
+    const { certID } = req.params;
+
+    const cert = await Certificate.findById(certID).populate({
+      path: "resID",
+      select: "_id",
+    });
+
+    if (!cert) {
+      return res.status(404).json({ message: "Certificate not found" });
+    }
+
+    const user = await User.findOne({ resID: cert.resID._id });
+
+    const io = req.app.get("socketio");
+    io.to(user._id).emit("certificateUpdate", {
+      title: `📄 ${cert.typeofcertificate} Issued`,
+      message: `Your document request has been processed and is now available for pick up at the barangay hall. Kindly pay the fee of ${cert.amount} upon claiming.`,
+      timestamp: cert.updatedAt,
+    });
+
+    if (user?.pushtoken) {
+      await sendPushNotification(
+        user.pushtoken,
+        `📄 ${cert.typeofcertificate} Issued`,
+        `Your document request has been processed and is now available for pick up at the barangay hall. Kindly pay the fee of ${cert.amount} upon claiming.`,
+        "Status"
+      );
+    } else {
+      console.log("⚠️ No push token found for user:", user.username);
+    }
+
+    await Notification.insertOne({
+      userID: user._id,
+      title: `📄 ${cert.typeofcertificate} Issued`,
+      message: `Your document request has been processed and is now available for pick up at the barangay hall. Kindly pay the fee of ${cert.amount} upon claiming.`,
+      redirectTo: "Status",
+    });
+
+    return res.status(200).json({
+      message:
+        "Resident has been successfully notified about the document availability",
+    });
+  } catch (error) {
+    console.error("Error in notifying resident:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 export const rejectCertificateReq = async (req, res) => {
   try {
     const { userID } = req.user;
@@ -141,7 +247,7 @@ export const generateCertificateReq = async (req, res) => {
       qrToken: qrToken,
     };
 
-    cert.status = "Issued";
+    cert.status = "Not Yet Collected";
     await cert.save();
 
     const io = req.app.get("socketio");

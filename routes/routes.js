@@ -44,11 +44,13 @@ import {
 } from "../controllers/employeeIDController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 import {
+  collectedCert,
   generateCertificate,
   generateCertificateReq,
   getAllCertificateRequests,
   getCertificate,
   getPrepared,
+  notifyCert,
   rejectCertificateReq,
   saveCertificate,
   saveCertificateReq,
@@ -206,6 +208,9 @@ router.put(
   authMiddleware,
   rejectCertificateReq
 );
+
+router.put("/notifycert/:certID", authMiddleware, notifyCert);
+router.put("/collectedcert/:certID", authMiddleware, collectedCert);
 
 //EMERGENCY HOTLINES
 router.get("/getemergencyhotlines", getEmergencyHotlines);
