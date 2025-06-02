@@ -303,6 +303,11 @@ export const getBlotters = async (req, res) => {
 export const createBlotter = async (req, res) => {
   try {
     const { updatedForm } = req.body;
+    if (updatedForm.starttime && updatedForm.starttime !== "") {
+      updatedForm.status = "Scheduled";
+    } else {
+      updatedForm.status = "Pending";
+    }
 
     const blotter = new Blotter(updatedForm);
 
