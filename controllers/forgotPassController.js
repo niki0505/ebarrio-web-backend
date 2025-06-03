@@ -25,7 +25,7 @@ export const limitOTP = async (req, res) => {
   try {
     const { username } = req.params;
 
-    rds.setex(`disabledOTP_${username}`, 86400, "true");
+    rds.setex(`disabledOTP_${username}`, 1800, "true");
 
     res.status(200).json({ message: "User cannot use OTP for the mean time" });
   } catch (error) {
