@@ -348,9 +348,7 @@ export const createResident = async (req, res) => {
     await ActivityLog.insertOne({
       userID: userID,
       action: "Residents",
-      description: `User created a resident profile of ${resident.lastname}, ${
-        resident.firstname
-      } a ${typeofcertificate.toLowerCase()}.`,
+      description: `User created a resident profile of ${resident.lastname}, ${resident.firstname}`,
     });
     res
       .status(200)
