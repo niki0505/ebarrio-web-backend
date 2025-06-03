@@ -94,7 +94,7 @@ export const checkUser = async (req, res) => {
   try {
     const { username } = req.params;
     const user = await User.findOne({ username: username })
-      .select("securityquestions")
+      .select("securityquestions status role")
       .populate({
         path: "empID",
         select: "resID",
@@ -103,6 +103,31 @@ export const checkUser = async (req, res) => {
           select: "mobilenumber",
         },
       });
+
+    if (
+      !user ||
+      user.resID ||
+      user.role === "Official" ||
+      user.role === "Resident" ||
+      user.status === "Archived"
+    ) {
+      console.log("❌ Account not found");
+      return res.status(404).json({
+        message: "Account not found.",
+      });
+    }
+    if (user.status === "Deactivated") {
+      console.log("❌ Account is deactivated");
+      return res.status(403).json({
+        message: "Account is currently deactivated.",
+      });
+    }
+
+    if (user.status === "Password Not Set") {
+      return res.status(403).json({
+        message: "Account password has not been set.",
+      });
+    }
 
     if (!user) {
       return res.status(404).json({ message: "User not found." });

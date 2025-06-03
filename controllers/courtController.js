@@ -103,11 +103,8 @@ export const approveReservation = async (req, res) => {
       "userID"
     );
 
-    await CourtReservation.findByIdAndUpdate(
-      reservationID,
-      { status: "Approved" },
-      { new: true, runValidators: false }
-    );
+    reservation.status = "Approved";
+    await reservation.save();
 
     let timesObj =
       reservation.times instanceof Map

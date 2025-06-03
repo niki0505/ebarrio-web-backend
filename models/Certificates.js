@@ -106,7 +106,7 @@ certSchema.pre("save", async function (next) {
       await assignCertNo(this);
     } else if (
       (this.isModified("status") && this.status === "Not Yet Collected") ||
-      (doc.status === "Collected" && !this.certno)
+      (this.status === "Collected" && !this.certno)
     ) {
       await assignCertNo(this);
     }

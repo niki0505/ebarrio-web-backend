@@ -50,7 +50,7 @@ const crSchema = new mongoose.Schema(
 async function assignReservationNo(doc) {
   if (!doc.reservationno && doc.status === "Approved") {
     const counter = await ReservationCounter.findByIdAndUpdate(
-      { _id: "reservationo" },
+      { _id: "reservationno" },
       { $inc: { seq: 1 } },
       { new: true, upsert: true }
     );
@@ -61,11 +61,11 @@ async function assignReservationNo(doc) {
 // Pre-save hook
 crSchema.pre("save", async function (next) {
   try {
-    if (this.isNew) {
-      await assignReservationNo(this);
-    } else if (
-      (this.isModified("status") && this.status === "Approved") ||
-      !this.certno
+    // Only assign if status is Approved and reservationno missing
+    if (
+      (this.isNew || this.isModified("status")) &&
+      this.status === "Approved" &&
+      !this.reservationno
     ) {
       await assignReservationNo(this);
     }

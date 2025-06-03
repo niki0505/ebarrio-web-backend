@@ -236,6 +236,7 @@ export const getAllResidents = async (req, res) => {
 
 export const createResident = async (req, res) => {
   try {
+    const { userID } = req.user;
     const {
       picture,
       signature,
@@ -344,7 +345,13 @@ export const createResident = async (req, res) => {
       course,
     });
     await resident.save();
-    console.log("Resident successfully created!");
+    await ActivityLog.insertOne({
+      userID: userID,
+      action: "Residents",
+      description: `User created a resident profile of ${resident.lastname}, ${
+        resident.firstname
+      } a ${typeofcertificate.toLowerCase()}.`,
+    });
     res
       .status(200)
       .json({ message: "Resident successfully created", resID: resident._id });
