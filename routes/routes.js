@@ -137,7 +137,7 @@ router.get("/getmobilenumber/:username", getMobileNumber);
 router.put("/login/:username", loginUser);
 router.post("/logout", logoutUser);
 router.post("/deactivateduser/:userID", deactivatedUser);
-router.post("/archiveduser", archivedUser);
+router.post("/archiveduser/:userID", archivedUser);
 router.post("/updateduser", authMiddleware, updatedUser);
 
 //FORGOT PASSWORD
@@ -165,7 +165,7 @@ router.get("/getcaptain", getCaptain);
 router.get("/getemployee/:empID", getEmployee);
 
 //RESIDENTS
-router.post("/createresident", createResident);
+router.post("/createresident", authMiddleware, createResident);
 router.get("/getresidents", getAllResidents);
 router.get("/getresident/:resID", getResident);
 router.put("/updateresident/:resID", authMiddleware, updateResident);
