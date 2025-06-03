@@ -94,15 +94,18 @@ export const recoverResident = async (req, res) => {
       return res.status(404).json({ message: "Resident not found." });
     }
 
-    const user = await User.findOne({ resID: resident._id });
+    if (resident.userID) {
+      const user = await User.findById(resident.userID);
 
-    if (!user.passwordistoken) {
-      user.status = "Inactive";
-    } else {
-      user.status = "Password Not Set";
+      if (!user.passwordistoken) {
+        user.status = "Inactive";
+      } else {
+        user.status = "Password Not Set";
+      }
+
+      await user.save();
     }
 
-    await user.save();
     resident.status = "Active";
     await resident.save();
 

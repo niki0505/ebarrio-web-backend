@@ -172,6 +172,7 @@ export const updatedUser = async (req, res) => {
 
 export const archivedUser = async (req, res) => {
   try {
+    const { userID } = req.user;
     res.clearCookie("refreshToken", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",

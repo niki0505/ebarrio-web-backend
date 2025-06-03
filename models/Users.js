@@ -41,7 +41,6 @@ const userSchema = new mongoose.Schema(
     },
     passwordistoken: {
       type: Boolean,
-      default: true,
     },
     securityquestions: [
       {
