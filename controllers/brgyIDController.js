@@ -1,8 +1,8 @@
 import Resident from "../models/Residents.js";
 import QRCode from "qrcode";
-const bgUrl = "http://localhost:5000/qr-bg.png";
-const aniban2logoUrl = "http://localhost:5000/aniban2logo.jpg";
-const verifiedUrl = "http://localhost:5000/verified.png";
+const bgUrl = "https://api.ebarrio.online/qr-bg.png";
+const aniban2logoUrl = "https://api.ebarrio.online/aniban2logo.jpg";
+const verifiedUrl = "https://api.ebarrio.online/verified.png";
 
 export const verifyQR = async (req, res) => {
   try {
@@ -12,7 +12,7 @@ export const verifyQR = async (req, res) => {
       return res.send(`
         <html>
       <head>
-        <title>Employee ID Verification</title>
+        <title>Barangay ID Verification</title>
         <style>
           html, body {
             margin: 0;
@@ -200,7 +200,7 @@ export const verifyQR = async (req, res) => {
             src=${resident.picture}"
           />
           <p style="font-size: 14px; text-transform: uppercase;">
-            <strong>Position:</strong> ${resident.firstname} ${resident.lastname}
+            <strong>Name:</strong> ${resident.firstname} ${resident.lastname}
           </p>
           <p style="font-size: 14px; text-transform: uppercase;">
             <strong>Address:</strong> ${resident.address}
@@ -267,7 +267,7 @@ export const generateBrgyID = async (req, res) => {
     const expirationDate = expirationDateObj.toISOString().split("T")[0];
 
     const qrToken = crypto.randomUUID();
-    const qrCodeUrl = `http://localhost:5000/verifyResident/${qrToken}`;
+    const qrCodeUrl = `https://api.ebarrio.online/verifyResident/${qrToken}`;
     const qrCode = await QRCode.toDataURL(qrCodeUrl);
 
     return res.status(200).json({

@@ -1,8 +1,8 @@
 import Employee from "../models/Employees.js";
 import QRCode from "qrcode";
-const bgUrl = "http://localhost:5000/qr-bg.png";
-const aniban2logoUrl = "http://localhost:5000/aniban2logo.jpg";
-const verifiedUrl = "http://localhost:5000/verified.png";
+const bgUrl = "https://api.ebarrio.online/qr-bg.png";
+const aniban2logoUrl = "https://api.ebarrio.online/aniban2logo.jpg";
+const verifiedUrl = "https://api.ebarrio.online/verified.png";
 
 export const verifyEmployeeQR = async (req, res) => {
   try {
@@ -271,7 +271,7 @@ export const generateEmployeeID = async (req, res) => {
     const expirationDate = expirationDateObj.toISOString().split("T")[0];
 
     const qrToken = crypto.randomUUID();
-    const qrCodeUrl = `http://localhost:5000/verifyEmployee/${qrToken}`;
+    const qrCodeUrl = `https://api.ebarrio.online/verifyEmployee/${qrToken}`;
     const qrCode = await QRCode.toDataURL(qrCodeUrl);
 
     return res.status(200).json({

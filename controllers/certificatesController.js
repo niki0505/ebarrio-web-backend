@@ -373,7 +373,7 @@ export const verifyCertificateQR = async (req, res) => {
       return res.send(`
           <html>
       <head>
-        <title>Employee ID Verification</title>
+        <title>Certificate Verification</title>
         <style>
           html, body {
             margin: 0;
@@ -492,7 +492,7 @@ export const verifyCertificateQR = async (req, res) => {
             <strong>Name:</strong> ${cert.typeofcertificate}
           </p>
           <p style="font-size: 14px; text-transform: uppercase;">
-            <strong>Position:</strong> ${cert.certID.controlNumber}
+            <strong>Control No:</strong> ${cert.certID.controlNumber}
           </p>
           <p style="font-size: 14px; text-transform: uppercase;">
             <strong>Address:</strong> ${cert.certID.expirationDate}
@@ -599,7 +599,7 @@ export const generateCertificate = async (req, res) => {
     const expirationDate = expirationDateObj.toISOString().split("T")[0];
 
     const qrToken = crypto.randomUUID();
-    const qrCodeUrl = `http://localhost:5000/verifyCertificate/${qrToken}`;
+    const qrCodeUrl = `https://api.ebarrio.online/verifyCertificate/${qrToken}`;
     const qrCode = await QRCode.toDataURL(qrCodeUrl);
 
     const cert = new Certificate({
