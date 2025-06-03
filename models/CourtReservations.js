@@ -1,7 +1,18 @@
 import mongoose from "mongoose";
 
+const ReservationCounterSchema = new mongoose.Schema({
+  _id: String,
+  seq: Number,
+});
+
+const ReservationCounter = mongoose.model(
+  "ReservationCounter",
+  ReservationCounterSchema
+);
+
 const crSchema = new mongoose.Schema(
   {
+    reservationno: { type: Number, unique: true, sparse: true },
     resID: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Resident",
@@ -11,14 +22,6 @@ const crSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    // starttime: {
-    //   type: Date,
-    //   required: true,
-    // },
-    // endtime: {
-    //   type: Date,
-    //   required: true,
-    // },
     times: {
       type: Map,
       of: new mongoose.Schema({
@@ -43,6 +46,34 @@ const crSchema = new mongoose.Schema(
   },
   { versionKey: false, timestamps: true }
 );
+
+async function assignReservationNo(doc) {
+  if (!doc.reservationno && doc.status === "Approved") {
+    const counter = await ReservationCounter.findByIdAndUpdate(
+      { _id: "reservationo" },
+      { $inc: { seq: 1 } },
+      { new: true, upsert: true }
+    );
+    doc.reservationno = counter.seq;
+  }
+}
+
+// Pre-save hook
+crSchema.pre("save", async function (next) {
+  try {
+    if (this.isNew) {
+      await assignReservationNo(this);
+    } else if (
+      (this.isModified("status") && this.status === "Approved") ||
+      !this.certno
+    ) {
+      await assignReservationNo(this);
+    }
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
 
 const CourtReservation = mongoose.model("CourtReservation", crSchema);
 

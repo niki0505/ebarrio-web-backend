@@ -41,6 +41,7 @@ export const editUser = async (req, res) => {
       });
 
       user.status = "Password Not Set";
+      user.passwordistoken = true;
       user.password = userForm.password;
       await user.save();
     } else if (userForm.username) {
@@ -70,6 +71,7 @@ export const editUser = async (req, res) => {
       user.username = userForm.username;
       user.status = "Password Not Set";
       user.password = userForm.password;
+      user.passwordistoken = true;
       await user.save();
     }
 
@@ -234,6 +236,7 @@ export const createUser = async (req, res) => {
         password,
         resID: resident._id,
         role,
+        passwordistoken: true,
       });
     }
 

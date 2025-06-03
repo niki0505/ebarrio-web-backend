@@ -109,26 +109,41 @@ export const approveReservation = async (req, res) => {
       { new: true, runValidators: false }
     );
 
-    const startTime = new Date(reservation.starttime);
-    const endTime = new Date(reservation.endtime);
+    let timesObj =
+      reservation.times instanceof Map
+        ? Object.fromEntries(reservation.times)
+        : reservation.times;
 
-    const dateOptions = { year: "numeric", month: "short", day: "numeric" };
-    const timeOptions = { hour: "numeric", minute: "numeric", hour12: true };
-
-    const formattedDate = startTime.toLocaleDateString("en-US", dateOptions);
-    const formattedStartTime = startTime.toLocaleTimeString(
-      "en-US",
-      timeOptions
-    );
-
-    const formattedEndTime = endTime.toLocaleTimeString("en-US", timeOptions);
+    let formattedSchedule = Object.entries(timesObj)
+      .map(([date, time]) => {
+        const dateStr = new Date(date + "T00:00:00").toLocaleDateString(
+          "en-US",
+          {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          }
+        );
+        const start = new Date(time.starttime).toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        });
+        const end = new Date(time.endtime).toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        });
+        return `${dateStr} from ${start} to ${end}`;
+      })
+      .join("; ");
 
     if (resident.userID) {
       const user = await User.findById(resident.userID);
       const io = req.app.get("socketio");
       io.to(user._id).emit("reservationUpdate", {
         title: `📅 Court Reservation Update`,
-        message: `Your court reservation request scheduled on ${formattedDate} from ${formattedStartTime} to ${formattedEndTime} has been approved. `,
+        message: `Your court reservation request scheduled on ${formattedSchedule} has been approved. `,
         timestamp: reservation.updatedAt,
       });
 
@@ -136,7 +151,7 @@ export const approveReservation = async (req, res) => {
         await sendPushNotification(
           user.pushtoken,
           `📅 Court Reservation Update`,
-          `Your court reservation request scheduled on ${formattedDate} from ${formattedStartTime} to ${formattedEndTime} has been approved. `,
+          `Your court reservation request scheduled on ${formattedSchedule} has been approved. `,
           "Status"
         );
       } else {
@@ -146,7 +161,7 @@ export const approveReservation = async (req, res) => {
       await Notification.insertOne({
         userID: user._id,
         title: `📅 Court Reservation Update`,
-        message: `Your court reservation request scheduled on ${formattedDate} from ${formattedStartTime} to ${formattedEndTime} has been approved. `,
+        message: `Your court reservation request scheduled on ${formattedSchedule} has been approved.`,
         redirectTo: "Status",
       });
 

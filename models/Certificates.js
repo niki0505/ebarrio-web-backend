@@ -71,16 +71,25 @@ const certSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["Pending", "Issued", "Rejected", "Cancelled"],
+      enum: [
+        "Pending",
+        "Rejected",
+        "Cancelled",
+        "Collected",
+        "Not Yet Collected",
+      ],
       required: true,
-      default: "Issued",
+      default: "Collected",
     },
   },
   { versionKey: false, timestamps: true }
 );
 
 async function assignCertNo(doc) {
-  if (!doc.certno && doc.status === "Issued") {
+  if (
+    (!doc.certno && doc.status === "Not Yet Collected") ||
+    doc.status === "Collected"
+  ) {
     const counter = await CertificateCounter.findByIdAndUpdate(
       { _id: "certno" },
       { $inc: { seq: 1 } },
@@ -93,13 +102,11 @@ async function assignCertNo(doc) {
 // Pre-save hook
 certSchema.pre("save", async function (next) {
   try {
-    // If new document or status changed to "Issued" and certno not assigned yet
     if (this.isNew) {
       await assignCertNo(this);
     } else if (
-      this.isModified("status") &&
-      this.status === "Issued" &&
-      !this.certno
+      (this.isModified("status") && this.status === "Not Yet Collected") ||
+      (doc.status === "Collected" && !this.certno)
     ) {
       await assignCertNo(this);
     }

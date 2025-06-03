@@ -74,7 +74,6 @@ const bSchema = new mongoose.Schema(
       type: String,
       enum: ["Pending", "Scheduled", "Settled", "Rejected"],
       required: true,
-      default: "Scheduled",
     },
     scheduleAt: { type: Date },
   },
@@ -90,7 +89,6 @@ async function assignBlotterNo(doc) {
     doc.blotterno = counter.seq;
   }
 }
-
 // Pre-save hook
 bSchema.pre("save", async function (next) {
   try {
