@@ -122,6 +122,8 @@ import {
 } from "../controllers/residentsController.js";
 import { getLogs } from "../controllers/activityLogsController.js";
 import {
+  addMember,
+  editPosition,
   getAllHousehold,
   getHousehold,
 } from "../controllers/householdController.js";
@@ -316,4 +318,6 @@ router.post("/logexport", authMiddleware, logExport);
 //HOUSEHOLD
 router.get("/gethouseholds", getAllHousehold);
 router.get("/gethousehold/:householdID", getHousehold);
+router.put("/household/:householdID/member/:memberID", editPosition);
+router.post("/household/:householdID/member", addMember);
 export default router;
