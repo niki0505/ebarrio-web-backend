@@ -4,6 +4,7 @@ import OldResident from "../models/OldResidents.js";
 import Employee from "../models/Employees.js";
 import ActivityLog from "../models/ActivityLogs.js";
 import moment from "moment";
+import Household from "../models/Households.js";
 import {
   getEmployeesUtils,
   getResidentsUtils,
@@ -277,6 +278,8 @@ export const createResident = async (req, res) => {
       educationalattainment,
       typeofschool,
       course,
+      head,
+      householdForm,
     } = req.body;
 
     const birthDate = moment(birthdate, "YYYY/MM/DD");
@@ -345,6 +348,27 @@ export const createResident = async (req, res) => {
       course,
     });
     await resident.save();
+
+    let members = [...householdForm.members];
+
+    if (head === "Yes") {
+      members.push({
+        resID: resident._id,
+        position: "Head",
+      });
+
+      const household = new Household({
+        members,
+      });
+      await household.save();
+
+      await Promise.all(
+        members.map(({ resID }) =>
+          Resident.findByIdAndUpdate(resID, { householdno: household._id })
+        )
+      );
+    }
+
     await ActivityLog.insertOne({
       userID: userID,
       action: "Residents",

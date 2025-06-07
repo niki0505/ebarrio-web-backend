@@ -121,6 +121,10 @@ import {
   viewResidentDetails,
 } from "../controllers/residentsController.js";
 import { getLogs } from "../controllers/activityLogsController.js";
+import {
+  getAllHousehold,
+  getHousehold,
+} from "../controllers/householdController.js";
 
 const router = express.Router();
 
@@ -309,4 +313,7 @@ router.get("/getactivitylogs", authMiddleware, getLogs);
 //EXPORT
 router.post("/logexport", authMiddleware, logExport);
 
+//HOUSEHOLD
+router.get("/gethouseholds", getAllHousehold);
+router.get("/gethousehold/:householdID", getHousehold);
 export default router;
