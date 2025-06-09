@@ -75,6 +75,7 @@ import {
 import {
   approveReservation,
   createReservation,
+  getPendingReservations,
   getReservations,
   rejectCourtReq,
 } from "../controllers/courtController.js";
@@ -126,6 +127,7 @@ import {
   editPosition,
   getAllHousehold,
   getHousehold,
+  removeMember,
 } from "../controllers/householdController.js";
 
 const router = express.Router();
@@ -269,6 +271,7 @@ router.post(
 
 //COURT RESERVATION
 router.get("/getreservations", authMiddleware, getReservations);
+router.get("/getpendingreservations", authMiddleware, getPendingReservations);
 router.put(
   "/approvereservation/:reservationID",
   authMiddleware,
@@ -320,4 +323,5 @@ router.get("/gethouseholds", getAllHousehold);
 router.get("/gethousehold/:householdID", getHousehold);
 router.put("/household/:householdID/member/:memberID", editPosition);
 router.post("/household/:householdID/member", addMember);
+router.delete("/household/:householdID/member/:memberID", removeMember);
 export default router;

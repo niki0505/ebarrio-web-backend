@@ -1,6 +1,31 @@
 import Household from "../models/Households.js";
 import Resident from "../models/Residents.js";
 
+export const removeMember = async (req, res) => {
+  try {
+    const { householdID, memberID } = req.params;
+    const household = await Household.findById(householdID);
+
+    const member = household.members.find((m) => m._id.toString() === memberID);
+
+    household.members = household.members.filter(
+      (m) => m._id.toString() !== memberID
+    );
+
+    await household.save();
+
+    const resident = await Resident.findById(member.resID);
+
+    resident.set("householdno", undefined);
+    await resident.save();
+
+    res.status(200).json({ message: "Member successfully removed" });
+  } catch (error) {
+    console.log("Error updating household position", error);
+    res.status(500).json({ message: "Failed to fetch household position" });
+  }
+};
+
 export const addMember = async (req, res) => {
   try {
     const { householdID } = req.params;

@@ -164,6 +164,26 @@ const resSchema = new mongoose.Schema(
       required: true,
       default: "Active",
     },
+    is4Ps: {
+      type: Boolean,
+      default: false,
+    },
+    isSenior: {
+      type: Boolean,
+      default: false,
+    },
+    isPregnant: {
+      type: Boolean,
+      default: false,
+    },
+    isPWD: {
+      type: Boolean,
+      default: false,
+    },
+    isSoloParent: {
+      type: Boolean,
+      default: false,
+    },
     householdno: { type: mongoose.Schema.Types.ObjectId, ref: "Household" },
     userID: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     empID: { type: mongoose.Schema.Types.ObjectId, ref: "Employee" },

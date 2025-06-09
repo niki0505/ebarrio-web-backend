@@ -279,7 +279,14 @@ export const createResident = async (req, res) => {
       typeofschool,
       course,
       head,
+      is4Ps,
+      isPregnant,
+      isSenior,
+      isPWD,
+      isSoloParent,
       householdForm,
+      householdno,
+      householdposition,
     } = req.body;
 
     const birthDate = moment(birthdate, "YYYY/MM/DD");
@@ -346,6 +353,11 @@ export const createResident = async (req, res) => {
       educationalattainment,
       typeofschool,
       course,
+      is4Ps,
+      isPregnant,
+      isSenior,
+      isPWD,
+      isSoloParent,
     });
     await resident.save();
 
@@ -367,6 +379,27 @@ export const createResident = async (req, res) => {
           Resident.findByIdAndUpdate(resID, { householdno: household._id })
         )
       );
+    } else if (head === "No") {
+      if (householdno && householdposition) {
+        const household = await Household.findById(householdno);
+        if (household) {
+          resident.set("householdno", householdno);
+
+          const alreadyMember = household.members.some(
+            (m) => m.resID.toString() === resident._id.toString()
+          );
+
+          if (!alreadyMember) {
+            household.members.push({
+              resID: resident._id,
+              position: householdposition,
+            });
+          }
+
+          await resident.save();
+          await household.save();
+        }
+      }
     }
 
     await ActivityLog.insertOne({
