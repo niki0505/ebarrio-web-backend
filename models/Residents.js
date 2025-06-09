@@ -164,21 +164,32 @@ const resSchema = new mongoose.Schema(
       required: true,
       default: "Active",
     },
+    is4Ps: {
+      type: Boolean,
+      default: false,
+    },
+    isSenior: {
+      type: Boolean,
+      default: false,
+    },
+    isPregnant: {
+      type: Boolean,
+      default: false,
+    },
+    isPWD: {
+      type: Boolean,
+      default: false,
+    },
+    isSoloParent: {
+      type: Boolean,
+      default: false,
+    },
+    householdno: { type: mongoose.Schema.Types.ObjectId, ref: "Household" },
     userID: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     empID: { type: mongoose.Schema.Types.ObjectId, ref: "Employee" },
   },
   { versionKey: false }
 );
-
-// resSchema.pre("save", function (next) {
-//   if (this.isNew) {
-//     const base10 = BigInt("0x" + this._id.toString()).toString();
-//     const shortDigits = base10.slice(-10);
-//     const year = new Date().getFullYear();
-//     this.brgyID = `${year}${shortDigits}`;
-//   }
-//   next();
-// });
 
 resSchema.methods.updateAge = function () {
   this.age = moment().diff(moment(this.birthdate), "years");

@@ -75,6 +75,7 @@ import {
 import {
   approveReservation,
   createReservation,
+  getPendingReservations,
   getReservations,
   rejectCourtReq,
 } from "../controllers/courtController.js";
@@ -121,6 +122,13 @@ import {
   viewResidentDetails,
 } from "../controllers/residentsController.js";
 import { getLogs } from "../controllers/activityLogsController.js";
+import {
+  addMember,
+  editPosition,
+  getAllHousehold,
+  getHousehold,
+  removeMember,
+} from "../controllers/householdController.js";
 
 const router = express.Router();
 
@@ -161,13 +169,13 @@ router.post("/createuser", authMiddleware, createUser);
 router.put("/edituser/:userID", authMiddleware, editUser);
 
 //BARANGAY CAPTAIN
-router.get("/getcaptain", getCaptain);
-router.get("/getemployee/:empID", getEmployee);
+router.get("/getcaptain", authMiddleware, getCaptain);
+router.get("/getemployee/:empID", authMiddleware, getEmployee);
 
 //RESIDENTS
 router.post("/createresident", authMiddleware, createResident);
-router.get("/getresidents", getAllResidents);
-router.get("/getresident/:resID", getResident);
+router.get("/getresidents", authMiddleware, getAllResidents);
+router.get("/getresident/:resID", authMiddleware, getResident);
 router.put("/updateresident/:resID", authMiddleware, updateResident);
 router.put("/archiveresident/:resID", authMiddleware, archiveResident);
 router.put("/recoverresident/:resID", authMiddleware, recoverResident);
@@ -190,18 +198,22 @@ router.post("/generatebrgyID/:resID", authMiddleware, generateBrgyID);
 router.put("/savebrgyID/:resID", authMiddleware, saveBrgyID);
 
 //EMPLOYEE ID
-router.post("/generateemployeeID/:empID", generateEmployeeID);
-router.put("/saveemployeeID/:empID", saveEmployeeID);
+router.post("/generateemployeeID/:empID", authMiddleware, generateEmployeeID);
+router.put("/saveemployeeID/:empID", authMiddleware, saveEmployeeID);
 
 //CERTIFICATE
-router.post("/generatecertificate/", generateCertificate);
-router.put("/savecertificate/:certID", saveCertificate);
-router.get("/getcertificate/:certID", getCertificate);
-router.get("/getprepared/:userID", getPrepared);
+router.post("/generatecertificate/", authMiddleware, generateCertificate);
+router.put("/savecertificate/:certID", authMiddleware, saveCertificate);
+router.get("/getcertificate/:certID", authMiddleware, getCertificate);
+router.get("/getprepared/:userID", authMiddleware, getPrepared);
 
 //CERTIFICATE REQUESTS
 router.get("/getcertificates", authMiddleware, getAllCertificateRequests);
-router.put("/generatecertificatereq/:certID", generateCertificateReq);
+router.put(
+  "/generatecertificatereq/:certID",
+  authMiddleware,
+  generateCertificateReq
+);
 router.put("/savecertificatereq/:certID", authMiddleware, saveCertificateReq);
 router.put(
   "/rejectcertificatereq/:certID",
@@ -213,7 +225,7 @@ router.put("/notifycert/:certID", authMiddleware, notifyCert);
 router.put("/collectedcert/:certID", authMiddleware, collectedCert);
 
 //EMERGENCY HOTLINES
-router.get("/getemergencyhotlines", getEmergencyHotlines);
+router.get("/getemergencyhotlines", authMiddleware, getEmergencyHotlines);
 router.post(
   "/createemergencyhotlines",
   authMiddleware,
@@ -237,7 +249,7 @@ router.put(
 
 //ANNOUNCEMENT
 router.post("/createannouncement", authMiddleware, createAnnouncement);
-router.get("/getannouncements", getAnnouncements);
+router.get("/getannouncements", authMiddleware, getAnnouncements);
 router.put("/pinannouncement/:announcementID", authMiddleware, pinAnnouncement);
 router.put(
   "/unpinannouncement/:announcementID",
@@ -254,7 +266,7 @@ router.put(
   authMiddleware,
   recoverAnnouncement
 );
-router.get("/getannouncement/:announcementID", getAnnouncement);
+router.get("/getannouncement/:announcementID", authMiddleware, getAnnouncement);
 router.post(
   "/editannouncement/:announcementID",
   authMiddleware,
@@ -263,6 +275,7 @@ router.post(
 
 //COURT RESERVATION
 router.get("/getreservations", authMiddleware, getReservations);
+router.get("/getpendingreservations", authMiddleware, getPendingReservations);
 router.put(
   "/approvereservation/:reservationID",
   authMiddleware,
@@ -277,8 +290,8 @@ router.put(
 
 //BLOTTER REPORTS
 router.post("/createblotter", authMiddleware, createBlotter);
-router.get("/getblotters", getBlotters);
-router.get("/getblotter/:blotterID", getBlotter);
+router.get("/getblotters", authMiddleware, getBlotters);
+router.get("/getblotter/:blotterID", authMiddleware, getBlotter);
 router.put("/scheduleblotter/:blotterID", authMiddleware, scheduleBlotter);
 router.put(
   "/editscheduleblotter/:blotterID",
@@ -309,4 +322,18 @@ router.get("/getactivitylogs", authMiddleware, getLogs);
 //EXPORT
 router.post("/logexport", authMiddleware, logExport);
 
+//HOUSEHOLD
+router.get("/gethouseholds", authMiddleware, getAllHousehold);
+router.get("/gethousehold/:householdID", authMiddleware, getHousehold);
+router.put(
+  "/household/:householdID/member/:memberID",
+  authMiddleware,
+  editPosition
+);
+router.post("/household/:householdID/member", authMiddleware, addMember);
+router.delete(
+  "/household/:householdID/member/:memberID",
+  authMiddleware,
+  removeMember
+);
 export default router;

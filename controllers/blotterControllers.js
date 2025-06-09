@@ -20,7 +20,7 @@ export const rejectBlotter = async (req, res) => {
     blotter.remarks = remarks;
     await blotter.save();
 
-    if (resident.userID) {
+    if (resident && resident.userID) {
       const user = await User.findById(resident.userID);
       const io = req.app.get("socketio");
       io.to(user._id).emit("blotterUpdate", {
@@ -79,7 +79,7 @@ export const settleBlotter = async (req, res) => {
       "userID"
     );
 
-    if (resident.userID) {
+    if (resident && resident.userID) {
       const user = await User.findById(resident.userID);
       const io = req.app.get("socketio");
       io.to(user._id).emit("blotterUpdate", {
@@ -217,7 +217,7 @@ export const scheduleBlotter = async (req, res) => {
 
     const formattedEndTime = endTime.toLocaleTimeString("en-US", timeOptions);
 
-    if (resident.userID) {
+    if (resident && resident.userID) {
       const user = await User.findById(resident.userID);
       const io = req.app.get("socketio");
       io.to(user._id).emit("blotterUpdate", {

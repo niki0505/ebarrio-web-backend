@@ -174,6 +174,20 @@ export const approveReservation = async (req, res) => {
   }
 };
 
+export const getPendingReservations = async (req, res) => {
+  try {
+    const reservations = await getReservationsUtils();
+    const pending = reservations.filter(
+      (reservation) => reservation.status === "Pending"
+    );
+
+    return res.status(200).json({ pendingCount: pending.length });
+  } catch (error) {
+    console.error("Error in fetching court reservations:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 export const getReservations = async (req, res) => {
   try {
     const reservation = await getReservationsUtils();
