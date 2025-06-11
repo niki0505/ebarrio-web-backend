@@ -26,6 +26,22 @@ export const removeMember = async (req, res) => {
   }
 };
 
+export const addVehicle = async (req, res) => {
+  try {
+    const { householdID } = req.params;
+    const payload = req.body;
+    const household = await Household.findById(householdID);
+
+    household.vehicles.push(payload);
+    await household.save();
+
+    res.status(200).json({ message: "Vehicle has been added successfully." });
+  } catch (error) {
+    console.log("Error updating household position", error);
+    res.status(500).json({ message: "Failed to fetch household position" });
+  }
+};
+
 export const addMember = async (req, res) => {
   try {
     const { householdID } = req.params;
@@ -49,6 +65,29 @@ export const addMember = async (req, res) => {
     res.status(200).json(addedMember);
   } catch (error) {
     console.log("Error updating household position", error);
+    res.status(500).json({ message: "Failed to fetch household position" });
+  }
+};
+
+export const editVehicle = async (req, res) => {
+  try {
+    const { householdID, vehicleID } = req.params;
+    const { payload } = req.body;
+    const household = await Household.findById(householdID);
+
+    const vehicle = household.vehicles.find(
+      (v) => v._id.toString() === vehicleID
+    );
+
+    vehicle.model = payload.model;
+    vehicle.color = payload.color;
+    vehicle.kind = payload.kind;
+    vehicle.platenumber = payload.platenumber;
+
+    await household.save();
+    res.status(200).json({ message: "Vehicle successfully updated" });
+  } catch (error) {
+    console.log("Error updating vehicle", error);
     res.status(500).json({ message: "Failed to fetch household position" });
   }
 };

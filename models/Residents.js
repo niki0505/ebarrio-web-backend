@@ -172,6 +172,14 @@ const resSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    isInfant: {
+      type: Boolean,
+      default: false,
+    },
+    isChild: {
+      type: Boolean,
+      default: false,
+    },
     isPregnant: {
       type: Boolean,
       default: false,
