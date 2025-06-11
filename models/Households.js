@@ -35,6 +35,26 @@ const hSchema = new mongoose.Schema(
         },
       },
     ],
+    vehicles: [
+      {
+        model: {
+          type: String,
+          required: true,
+        },
+        color: {
+          type: String,
+          required: true,
+        },
+        kind: {
+          type: String,
+          required: true,
+        },
+        platenumber: {
+          type: String,
+          required: true,
+        },
+      },
+    ],
   },
   { versionKey: false, timestamps: true }
 );

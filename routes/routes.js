@@ -124,7 +124,9 @@ import {
 import { getLogs } from "../controllers/activityLogsController.js";
 import {
   addMember,
+  addVehicle,
   editPosition,
+  editVehicle,
   getAllHousehold,
   getHousehold,
   removeMember,
@@ -330,7 +332,13 @@ router.put(
   authMiddleware,
   editPosition
 );
+router.put(
+  "/household/:householdID/vehicle/:vehicleID",
+  authMiddleware,
+  editVehicle
+);
 router.post("/household/:householdID/member", authMiddleware, addMember);
+router.post("/household/:householdID/vehicle", authMiddleware, addVehicle);
 router.delete(
   "/household/:householdID/member/:memberID",
   authMiddleware,

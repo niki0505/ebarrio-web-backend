@@ -79,6 +79,13 @@ export const updateResident = async (req, res) => {
       educationalattainment,
       typeofschool,
       course,
+      is4Ps,
+      isPregnant,
+      isSenior,
+      isInfant,
+      isChild,
+      isPWD,
+      isSoloParent,
     } = req.body;
 
     const { resID } = req.params;
@@ -156,6 +163,12 @@ export const updateResident = async (req, res) => {
     resident.educationalattainment = educationalattainment;
     resident.typeofschool = typeofschool;
     resident.course = course;
+    resident.isSenior = isSenior;
+    resident.is4Ps = is4Ps;
+    resident.isInfant = isInfant;
+    resident.isChild = isChild;
+    resident.isPWD = isPWD;
+    resident.isSoloParent = isSoloParent;
     await resident.save();
 
     console.log("ResID", user.empID.resID._id, resident._id);
@@ -282,6 +295,8 @@ export const createResident = async (req, res) => {
       is4Ps,
       isPregnant,
       isSenior,
+      isInfant,
+      isChild,
       isPWD,
       isSoloParent,
       householdForm,
@@ -356,6 +371,8 @@ export const createResident = async (req, res) => {
       is4Ps,
       isPregnant,
       isSenior,
+      isChild,
+      isInfant,
       isPWD,
       isSoloParent,
     });
