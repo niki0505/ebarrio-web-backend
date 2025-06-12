@@ -1,5 +1,6 @@
 import Resident from "../models/Residents.js";
 import QRCode from "qrcode";
+import ActivityLog from "../models/ActivityLogs.js";
 const bgUrl = "http://localhost:5000/qr-bg.png";
 const aniban2logoUrl = "http://localhost:5000/aniban2logo.jpg";
 const verifiedUrl = "http://localhost:5000/verified.png";

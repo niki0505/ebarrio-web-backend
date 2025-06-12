@@ -55,6 +55,12 @@ const hSchema = new mongoose.Schema(
         },
       },
     ],
+    ethnicity: { type: String, required: true },
+    tribe: { type: String },
+    sociostatus: { type: String, required: true },
+    nhtsno: { type: String },
+    watersource: { type: String, required: true },
+    toiletfacility: { type: String, required: true },
   },
   { versionKey: false, timestamps: true }
 );

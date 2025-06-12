@@ -86,6 +86,18 @@ export const updateResident = async (req, res) => {
       isChild,
       isPWD,
       isSoloParent,
+      philhealthid,
+      philhealthtype,
+      philhealthcategory,
+      haveHypertension,
+      haveDiabetes,
+      haveTubercolosis,
+      haveSurgery,
+      lastmenstrual,
+      haveFPmethod,
+      fpmethod,
+      fpstatus,
+      householdForm,
     } = req.body;
 
     const { resID } = req.params;
@@ -94,6 +106,15 @@ export const updateResident = async (req, res) => {
     const age = moment().diff(birthDate, "years");
 
     const resident = await Resident.findOne({ _id: resID });
+
+    const household = await Household.findById(resident.householdno);
+
+    const isHead = household?.members?.some(
+      (member) =>
+        member.resID.toString() === resident._id.toString() &&
+        member.position === "Head"
+    );
+
     const user = await User.findById(userID).populate({
       path: "empID",
       select: "resID",
@@ -168,10 +189,33 @@ export const updateResident = async (req, res) => {
     resident.isInfant = isInfant;
     resident.isChild = isChild;
     resident.isPWD = isPWD;
+    resident.isPregnant = isPregnant;
     resident.isSoloParent = isSoloParent;
+    resident.philhealthid = philhealthid;
+    resident.philhealthtype = philhealthtype;
+    resident.philhealthcategory = philhealthcategory;
+    resident.haveHypertension = haveHypertension;
+    resident.haveDiabetes = haveDiabetes;
+    resident.haveTubercolosis = haveTubercolosis;
+    resident.haveSurgery = haveSurgery;
+    resident.lastmenstrual = lastmenstrual;
+    resident.haveFPmethod = haveFPmethod;
+    resident.fpmethod = fpmethod;
+    resident.fpstatus = fpstatus;
     await resident.save();
 
-    console.log("ResID", user.empID.resID._id, resident._id);
+    if (isHead) {
+      // household.members = householdForm.members;
+      // household.vehicles = householdForm.vehicles;
+      household.ethnicity = householdForm.ethnicity;
+      household.tribe = householdForm.tribe;
+      household.sociostatus = householdForm.sociostatus;
+      household.nhtsno = householdForm.nhtsno;
+      household.watersource = householdForm.watersource;
+      household.toiletfacility = householdForm.toiletfacility;
+      await household.save();
+    }
+
     if (user.empID.resID._id.toString() === resident._id.toString()) {
       await ActivityLog.insertOne({
         userID: userID,
@@ -302,6 +346,17 @@ export const createResident = async (req, res) => {
       householdForm,
       householdno,
       householdposition,
+      philhealthid,
+      philhealthtype,
+      philhealthcategory,
+      haveHypertension,
+      haveDiabetes,
+      haveTubercolosis,
+      haveSurgery,
+      lastmenstrual,
+      haveFPmethod,
+      fpmethod,
+      fpstatus,
     } = req.body;
 
     const birthDate = moment(birthdate, "YYYY/MM/DD");
@@ -375,9 +430,20 @@ export const createResident = async (req, res) => {
       isInfant,
       isPWD,
       isSoloParent,
+      philhealthid,
+      philhealthtype,
+      philhealthcategory,
+      haveHypertension,
+      haveDiabetes,
+      haveTubercolosis,
+      haveSurgery,
+      lastmenstrual,
+      haveFPmethod,
+      fpmethod,
+      fpstatus,
     });
     await resident.save();
-
+    console.log(householdForm);
     let members = [...householdForm.members];
 
     if (head === "Yes") {
@@ -387,6 +453,7 @@ export const createResident = async (req, res) => {
       });
 
       const household = new Household({
+        ...householdForm,
         members,
       });
       await household.save();
