@@ -1,8 +1,11 @@
 import Resident from "../models/Residents.js";
 import QRCode from "qrcode";
-const bgUrl = "https://api.ebarrio.online/qr-bg.png";
-const aniban2logoUrl = "https://api.ebarrio.online/aniban2logo.jpg";
-const verifiedUrl = "https://api.ebarrio.online/verified.png";
+
+import ActivityLog from "../models/ActivityLogs.js";
+const bgUrl = "http://localhost:5000/qr-bg.png";
+const aniban2logoUrl = "http://localhost:5000/aniban2logo.jpg";
+const verifiedUrl = "http://localhost:5000/verified.png";
+
 
 export const verifyQR = async (req, res) => {
   try {
