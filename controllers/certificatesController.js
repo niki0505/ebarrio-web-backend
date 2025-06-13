@@ -9,9 +9,9 @@ import {
   sendPushNotification,
 } from "../utils/collectionUtils.js";
 import Notification from "../models/Notifications.js";
-const bgUrl = "http://localhost:5000/qr-bg.png";
-const aniban2logoUrl = "http://localhost:5000/aniban2logo.jpg";
-const verifiedUrl = "http://localhost:5000/verified.png";
+const bgUrl = "https://api.ebarrio.online/qr-bg.png";
+const aniban2logoUrl = "https://api.ebarrio.online/aniban2logo.jpg";
+const verifiedUrl = "https://api.ebarrio.online/verified.png";
 import ActivityLog from "../models/ActivityLogs.js";
 
 export const collectedCert = async (req, res) => {
@@ -237,7 +237,7 @@ export const generateCertificateReq = async (req, res) => {
     const expirationDate = expirationDateObj.toISOString().split("T")[0];
 
     const qrToken = crypto.randomUUID();
-    const qrCodeUrl = `http://localhost:5000/verifyCertificate/${qrToken}`;
+    const qrCodeUrl = `https://api.ebarrio.online/verifyCertificate/${qrToken}`;
     const qrCode = await QRCode.toDataURL(qrCodeUrl);
 
     cert.certID = {
@@ -373,7 +373,7 @@ export const verifyCertificateQR = async (req, res) => {
       return res.send(`
           <html>
       <head>
-        <title>Employee ID Verification</title>
+        <title>Certificate Verification</title>
         <style>
           html, body {
             margin: 0;
@@ -492,7 +492,7 @@ export const verifyCertificateQR = async (req, res) => {
             <strong>Name:</strong> ${cert.typeofcertificate}
           </p>
           <p style="font-size: 14px; text-transform: uppercase;">
-            <strong>Position:</strong> ${cert.certID.controlNumber}
+            <strong>Control No:</strong> ${cert.certID.controlNumber}
           </p>
           <p style="font-size: 14px; text-transform: uppercase;">
             <strong>Address:</strong> ${cert.certID.expirationDate}
@@ -599,7 +599,7 @@ export const generateCertificate = async (req, res) => {
     const expirationDate = expirationDateObj.toISOString().split("T")[0];
 
     const qrToken = crypto.randomUUID();
-    const qrCodeUrl = `http://localhost:5000/verifyCertificate/${qrToken}`;
+    const qrCodeUrl = `https://api.ebarrio.online/verifyCertificate/${qrToken}`;
     const qrCode = await QRCode.toDataURL(qrCodeUrl);
 
     const cert = new Certificate({
