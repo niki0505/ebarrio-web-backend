@@ -21,7 +21,7 @@ app.use(cookieParser());
 
 app.use(
   cors({
-    origin: "https://ebarrio.online",
+    origin: "http://localhost:3000",
     credentials: true,
   })
 );
@@ -36,7 +36,7 @@ export { rds };
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "https://ebarrio.online",
+    origin: "http://localhost:3000",
     credentials: true,
   },
 });
