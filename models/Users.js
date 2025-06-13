@@ -22,7 +22,14 @@ const userSchema = new mongoose.Schema(
     role: {
       type: String,
       required: true,
-      enum: ["Resident", "Secretary", "Official", "Clerk", "Justice"],
+      enum: [
+        "Resident",
+        "Secretary",
+        "Official",
+        "Clerk",
+        "Justice",
+        "Technical Admin",
+      ],
     },
     status: {
       type: String,
@@ -48,6 +55,9 @@ const userSchema = new mongoose.Schema(
         answer: { type: String, required: true },
       },
     ],
+    mobilenumber: {
+      type: String,
+    },
   },
   { versionKey: false, timestamps: true }
 );

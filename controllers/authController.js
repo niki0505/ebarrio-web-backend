@@ -276,7 +276,6 @@ export const logoutUser = async (req, res) => {
 
 export const loginUser = async (req, res) => {
   try {
-    console.log("🔵 Login request:", req.body);
     const { username } = req.params;
 
     const user = await User.findOne({ username }).populate({
@@ -286,74 +285,100 @@ export const loginUser = async (req, res) => {
       },
     });
 
-    const accessToken = jwt.sign(
-      {
-        userID: user._id.toString(),
-        username: user.username,
-        empID: user.empID._id.toString(),
-        role: user.role,
-        name: `${user.empID.resID.firstname} ${user.empID.resID.lastname}`,
-        picture: user.empID.resID.picture,
-      },
-      ACCESS_SECRET,
-      {
-        expiresIn: "15m",
-      }
-    );
+    if (user.role !== "Technical Admin") {
+      const accessToken = jwt.sign(
+        {
+          userID: user._id.toString(),
+          username: user.username,
+          empID: user.empID._id.toString(),
+          role: user.role,
+          name: `${user.empID.resID.firstname} ${user.empID.resID.lastname}`,
+          picture: user.empID.resID.picture,
+        },
+        ACCESS_SECRET,
+        {
+          expiresIn: "15m",
+        }
+      );
 
-    const refreshToken = jwt.sign(
-      {
-        userID: user._id.toString(),
-        username: user.username,
-        empID: user.empID._id.toString(),
-        role: user.role,
-        name: `${user.empID.resID.firstname} ${user.empID.resID.lastname}`,
-        picture: user.empID.resID.picture,
-      },
-      REFRESH_SECRET,
-      {
-        expiresIn: "30d",
-      }
-    );
+      const refreshToken = jwt.sign(
+        {
+          userID: user._id.toString(),
+          username: user.username,
+          empID: user.empID._id.toString(),
+          role: user.role,
+          name: `${user.empID.resID.firstname} ${user.empID.resID.lastname}`,
+          picture: user.empID.resID.picture,
+        },
+        REFRESH_SECRET,
+        {
+          expiresIn: "30d",
+        }
+      );
 
-    res.cookie("accessToken", accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "Strict",
-      maxAge: 15 * 60 * 1000,
-    });
+      res.cookie("accessToken", accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "Strict",
+        maxAge: 15 * 60 * 1000,
+      });
 
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "Strict",
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-    });
+      res.cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "Strict",
+        maxAge: 30 * 24 * 60 * 60 * 1000,
+      });
 
-    // res.cookie("accessToken", accessToken, {
-    //   httpOnly: true,
-    //   secure: true,
-    //   sameSite: "None",
-    //   maxAge: 15 * 60 * 1000,
-    // });
+      await ActivityLog.insertOne({
+        userID: user._id,
+        action: "Login",
+        description: "User logged in successfully.",
+      });
+      rds.del(`login_attempts_${user._id}`, (err) => {
+        if (err) {
+          console.error("Error deleting login attempts key:", err);
+        }
+      });
+    } else {
+      const accessToken = jwt.sign(
+        {
+          userID: user._id.toString(),
+          username: user.username,
+          role: user.role,
+        },
+        ACCESS_SECRET,
+        {
+          expiresIn: "15m",
+        }
+      );
 
-    // res.cookie("refreshToken", refreshToken, {
-    //   httpOnly: true,
-    //   secure: true,
-    //   sameSite: "None",
-    //   maxAge: 30 * 24 * 60 * 60 * 1000,
-    // });
+      const refreshToken = jwt.sign(
+        {
+          userID: user._id.toString(),
+          username: user.username,
+          role: user.role,
+        },
+        REFRESH_SECRET,
+        {
+          expiresIn: "30d",
+        }
+      );
 
-    await ActivityLog.insertOne({
-      userID: user._id,
-      action: "Login",
-      description: "User logged in successfully.",
-    });
-    rds.del(`login_attempts_${user._id}`, (err) => {
-      if (err) {
-        console.error("Error deleting login attempts key:", err);
-      }
-    });
+      res.cookie("accessToken", accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "Strict",
+        maxAge: 15 * 60 * 1000,
+      });
+
+      res.cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "Strict",
+        maxAge: 30 * 24 * 60 * 60 * 1000,
+      });
+    }
 
     return res.status(200).json({
       message: "Login successful!",
@@ -470,7 +495,7 @@ export const getMobileNumber = async (req, res) => {
 
     const user = await User.findOne({ username: username }).populate({
       path: "empID",
-      select: "resID",
+      select: "resID mobilenumber",
       populate: {
         path: "resID",
         select: "mobilenumber",
@@ -480,7 +505,15 @@ export const getMobileNumber = async (req, res) => {
       return res.status(404).json({ message: "Username not found!" });
     }
 
-    return res.status(200).json(user);
+    let mobilenumber = null;
+
+    if (user.role !== "Technical Admin") {
+      mobilenumber = user.empID.resID.mobilenumber;
+    } else {
+      mobilenumber = user.mobilenumber;
+    }
+
+    return res.status(200).json(mobilenumber);
   } catch (error) {
     console.error("Error in sending OTP:", error);
     res.status(500).json({ message: "Internal server error" });

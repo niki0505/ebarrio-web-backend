@@ -11,6 +11,7 @@ import { watchAllCollectionsChanges } from "./controllers/watchDB.js";
 import Redis from "ioredis";
 import { registerSocketEvents, connectedUsers } from "./utils/socket.js";
 import { createAdapter } from "@socket.io/redis-adapter";
+import bcrypt from "bcryptjs";
 
 configDotenv();
 
@@ -63,6 +64,18 @@ app.set("connectedUsers", connectedUsers);
 
 app.use("/api", routes);
 app.use("/", qrCodeRoute);
+
+// const plainPassword = "ebarriotechnicaladmin";
+// const saltRounds = 10;
+
+// bcrypt.hash(plainPassword, saltRounds, (err, hash) => {
+//   if (err) {
+//     console.error("Hashing error:", err);
+//     return;
+//   }
+
+//   console.log("Hashed Password:", hash);
+// });
 
 const PORT = process.env.PORT;
 server.listen(PORT, async () => {
