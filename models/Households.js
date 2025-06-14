@@ -55,6 +55,12 @@ const hSchema = new mongoose.Schema(
         },
       },
     ],
+    status: {
+      type: String,
+      enum: ["Active", "Archived", "Pending"],
+      required: true,
+      default: "Active",
+    },
     ethnicity: { type: String, required: true },
     tribe: { type: String },
     sociostatus: { type: String, required: true },
