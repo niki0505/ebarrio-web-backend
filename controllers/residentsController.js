@@ -2,6 +2,111 @@ import Employee from "../models/Employees.js";
 import Resident from "../models/Residents.js";
 import ActivityLog from "../models/ActivityLogs.js";
 import User from "../models/Users.js";
+import Household from "../models/Households.js";
+
+import fetch from "node-fetch";
+
+export const getResidentImages = async (req, res) => {
+  try {
+    const { resID } = req.params;
+    const resident = await Resident.findById(resID);
+
+    if (!resident)
+      return res.status(404).json({ message: "Resident not found" });
+
+    const fetchImageAsBase64 = async (url) => {
+      try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error("Failed to fetch image");
+
+        const contentType = response.headers.get("content-type") || "image/png"; // fallback
+        const buffer = await response.buffer();
+        const base64 = buffer.toString("base64");
+
+        return {
+          mime: contentType,
+          base64,
+        };
+      } catch (err) {
+        console.error("Image fetch error:", err);
+        return null;
+      }
+    };
+
+    const picture = await fetchImageAsBase64(resident.picture);
+    const signature = await fetchImageAsBase64(resident.signature);
+
+    if (!picture || !signature) {
+      return res
+        .status(500)
+        .json({ message: "Failed to fetch one or more images" });
+    }
+
+    return res.status(200).json({
+      picture: `data:${picture.mime};base64,${picture.base64}`,
+      signature: `data:${signature.mime};base64,${signature.base64}`,
+    });
+  } catch (error) {
+    console.error("Backend image error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const approveResident = async (req, res) => {
+  try {
+    const { resID } = req.params;
+    const { pictureURL, signatureURL } = req.body;
+    const { userID } = req.user;
+
+    const resident = await Resident.findById(resID);
+
+    resident.status = "Active";
+    resident.picture = pictureURL;
+    resident.signature = signatureURL;
+
+    await resident.save();
+
+    const household = await Household.findById(resident.householdno);
+
+    const isHead = household.members.some(
+      (member) =>
+        member.resID.toString() === resident._id.toString() &&
+        member.position === "Head"
+    );
+
+    if (isHead) {
+      const otherMembers = household.members.filter(
+        (member) =>
+          member.resID.toString() !== resident._id.toString() &&
+          member.position !== "Head"
+      );
+
+      if (otherMembers) {
+        await Promise.all(
+          otherMembers.map(({ resID }) =>
+            Resident.findByIdAndUpdate(resID, { householdno: household._id })
+          )
+        );
+      }
+    }
+
+    household.status = "Active";
+    await household.save();
+
+    await ActivityLog.insertOne({
+      userID: userID,
+      action: "Residents",
+      description: `User approved ${resident.lastname}, ${resident.firstname}`,
+    });
+
+    return res.status(200).json({
+      message: "Admin approved a resident profile.",
+    });
+  } catch (error) {
+    console.error("Error in approving a resident profile:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
 
 export const issueDocument = async (req, res) => {
   try {
@@ -63,9 +168,7 @@ export const viewResidentDetails = async (req, res) => {
       description: `User viewed the details of ${resident.lastname}, ${resident.firstname}.`,
     });
 
-    return res.status(200).json({
-      message: "Admin viewed resident details.",
-    });
+    return res.status(200).json(resident);
   } catch (error) {
     console.error("Error in recovering resident:", error);
     res.status(500).json({ message: "Internal server error" });

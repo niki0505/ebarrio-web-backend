@@ -120,6 +120,8 @@ import {
   printBrgyID,
   recoverResident,
   viewResidentDetails,
+  approveResident,
+  getResidentImages,
 } from "../controllers/residentsController.js";
 import { getLogs } from "../controllers/activityLogsController.js";
 import {
@@ -344,4 +346,7 @@ router.delete(
   authMiddleware,
   removeMember
 );
+
+router.post("/approveresident/:resID/", authMiddleware, approveResident);
+router.get("/getresidentimages/:resID/", authMiddleware, getResidentImages);
 export default router;
