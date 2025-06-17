@@ -160,7 +160,7 @@ const resSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["Active", "Archived"],
+      enum: ["Active", "Archived", "Pending", "Rejected"],
       required: true,
       default: "Active",
     },
@@ -248,6 +248,7 @@ const resSchema = new mongoose.Schema(
     householdno: { type: mongoose.Schema.Types.ObjectId, ref: "Household" },
     userID: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     empID: { type: mongoose.Schema.Types.ObjectId, ref: "Employee" },
+    remarks: { type: String },
   },
   { versionKey: false }
 );
