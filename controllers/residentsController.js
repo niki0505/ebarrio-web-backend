@@ -3,7 +3,7 @@ import Resident from "../models/Residents.js";
 import ActivityLog from "../models/ActivityLogs.js";
 import User from "../models/Users.js";
 import Household from "../models/Households.js";
-
+import axios from "axios";
 import fetch from "node-fetch";
 
 export const getResidentImages = async (req, res) => {
@@ -75,18 +75,20 @@ export const approveResident = async (req, res) => {
     );
 
     if (isHead) {
-      const otherMembers = household.members.filter(
-        (member) =>
-          member.resID.toString() !== resident._id.toString() &&
-          member.position !== "Head"
-      );
-
-      if (otherMembers) {
-        await Promise.all(
-          otherMembers.map(({ resID }) =>
-            Resident.findByIdAndUpdate(resID, { householdno: household._id })
-          )
+      if (Array.isArray(household.members)) {
+        const otherMembers = household.members.filter(
+          (member) =>
+            member.resID.toString() !== resident._id.toString() &&
+            member.position !== "Head"
         );
+
+        if (otherMembers) {
+          await Promise.all(
+            otherMembers.map(({ resID }) =>
+              Resident.findByIdAndUpdate(resID, { householdno: household._id })
+            )
+          );
+        }
       }
     }
 
@@ -97,6 +99,12 @@ export const approveResident = async (req, res) => {
       userID: userID,
       action: "Residents",
       description: `User approved ${resident.lastname}, ${resident.firstname}`,
+    });
+
+    await axios.post("https://api.semaphore.co/api/v4/priority", {
+      apikey: "46d791fbe4e880554fcad1ee958bbf33",
+      number: resident.mobilenumber,
+      message: `Your resident profile has been approved by Barangay Aniban 2. You may now create an account on the mobile application. Thank you!`,
     });
 
     return res.status(200).json({
