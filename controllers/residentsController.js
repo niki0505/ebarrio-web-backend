@@ -52,6 +52,58 @@ export const getResidentImages = async (req, res) => {
   }
 };
 
+export const rejectResident = async (req, res) => {
+  try {
+    const { resID } = req.params;
+    const { remarks } = req.body;
+    const { userID } = req.user;
+
+    const resident = await Resident.findById(resID);
+
+    resident.status = "Rejected";
+
+    await resident.save();
+
+    const household = await Household.findById(resident.householdno);
+
+    const isHead = household.members.some(
+      (member) =>
+        member.resID.toString() === resident._id.toString() &&
+        member.position === "Head"
+    );
+
+    if (isHead) {
+      household.status = "Rejected";
+      await household.save();
+    } else {
+      household.members = household.members.filter(
+        (member) => member.resID.toString() !== resident._id.toString()
+      );
+      household.status = "Active";
+      await household.save();
+    }
+
+    await ActivityLog.insertOne({
+      userID: userID,
+      action: "Residents",
+      description: `User rejected ${resident.lastname}, ${resident.firstname}`,
+    });
+
+    await axios.post("https://api.semaphore.co/api/v4/priority", {
+      apikey: "46d791fbe4e880554fcad1ee958bbf33",
+      number: resident.mobilenumber,
+      message: `We regret to inform you that your resident profile request has been rejected. Reason: ${remarks}. If you have questions or believe this was a mistake, please contact the barangay office for assistance. Thank you.`,
+    });
+
+    return res.status(200).json({
+      message: "Admin rejected a resident profile.",
+    });
+  } catch (error) {
+    console.error("Error in rejecting a resident profile:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 export const approveResident = async (req, res) => {
   try {
     const { resID } = req.params;

@@ -57,7 +57,7 @@ const hSchema = new mongoose.Schema(
     ],
     status: {
       type: String,
-      enum: ["Active", "Archived", "Pending", "Change Requested"],
+      enum: ["Active", "Archived", "Pending", "Change Requested", "Rejected"],
       required: true,
       default: "Active",
     },
