@@ -79,13 +79,21 @@ export const updateResident = async (req, res) => {
       educationalattainment,
       typeofschool,
       course,
-      is4Ps,
+      // is4Ps,
       isPregnant,
       isSenior,
       isInfant,
-      isChild,
+      isNewborn,
+      isUnder5,
+      isSchoolAge,
+      isAdolescent,
+      isAdolescentPregnant,
+      isAdult,
+      isPostpartum,
+      isWomenOfReproductive,
+      // isChild,
       isPWD,
-      isSoloParent,
+      // isSoloParent,
       philhealthid,
       philhealthtype,
       philhealthcategory,
@@ -185,12 +193,20 @@ export const updateResident = async (req, res) => {
     resident.typeofschool = typeofschool;
     resident.course = course;
     resident.isSenior = isSenior;
-    resident.is4Ps = is4Ps;
+    // resident.is4Ps = is4Ps;
     resident.isInfant = isInfant;
-    resident.isChild = isChild;
+    resident.isNewborn = isNewborn;
+    resident.isUnder5 = isUnder5;
+    resident.isSchoolAge = isSchoolAge;
+    resident.isAdolescent = isAdolescent;
+    resident.isAdolescentPregnant = isAdolescentPregnant;
+    resident.isAdult = isAdult;
+    resident.isPostpartum = isPostpartum;
+    resident.isWomenOfReproductive = isWomenOfReproductive;
+    // resident.isChild = isChild;
     resident.isPWD = isPWD;
     resident.isPregnant = isPregnant;
-    resident.isSoloParent = isSoloParent;
+    // resident.isSoloParent = isSoloParent;
     resident.philhealthid = philhealthid;
     resident.philhealthtype = philhealthtype;
     resident.philhealthcategory = philhealthcategory;
@@ -336,13 +352,21 @@ export const createResident = async (req, res) => {
       typeofschool,
       course,
       head,
-      is4Ps,
+      // is4Ps,
       isPregnant,
       isSenior,
       isInfant,
-      isChild,
+      // isChild,
+      isNewborn,
+      isUnder5,
+      isSchoolAge,
+      isAdolescent,
+      isAdolescentPregnant,
+      isAdult,
+      isPostpartum,
+      isWomenOfReproductive,
       isPWD,
-      isSoloParent,
+      // isSoloParent,
       householdForm,
       householdno,
       householdposition,
@@ -423,13 +447,21 @@ export const createResident = async (req, res) => {
       educationalattainment,
       typeofschool,
       course,
-      is4Ps,
+      // is4Ps,
       isPregnant,
       isSenior,
-      isChild,
+      // isChild,
       isInfant,
+      isNewborn,
+      isUnder5,
+      isSchoolAge,
+      isAdolescent,
+      isAdolescentPregnant,
+      isAdult,
+      isPostpartum,
+      isWomenOfReproductive,
       isPWD,
-      isSoloParent,
+      // isSoloParent,
       philhealthid,
       philhealthtype,
       philhealthcategory,
