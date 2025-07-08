@@ -12,6 +12,8 @@ import Redis from "ioredis";
 import { registerSocketEvents, connectedUsers } from "./utils/socket.js";
 import { createAdapter } from "@socket.io/redis-adapter";
 import bcrypt from "bcryptjs";
+import { captureSnapshot } from "./controllers/snapshotController.js";
+import cron from "node-cron";
 
 configDotenv();
 
@@ -64,6 +66,11 @@ app.set("connectedUsers", connectedUsers);
 
 app.use("/api", routes);
 app.use("/", qrCodeRoute);
+
+// 1 min
+cron.schedule("* * * * *", () => {
+  captureSnapshot();
+});
 
 // const plainPassword = "ebarriotechnicaladmin";
 // const saltRounds = 10;
