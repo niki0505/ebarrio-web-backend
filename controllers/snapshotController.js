@@ -32,9 +32,28 @@ export async function captureSnapshot(req, res) {
     .output(outputFile)
     .on("start", (cmd) => console.log("📸 Starting:", cmd))
     .on("stderr", (line) => console.log("🪵", line))
-    .on("end", () => {
+    .on("end", async () => {
       console.log(`✅ Snapshot saved: ${outputFile}`);
       res?.status(200).json({ message: "Snapshot captured", file: outputFile });
+
+      try {
+        await bucket.upload(localPath, {
+          destination: firebaseFilename,
+          metadata: { contentType: "image/jpeg" },
+        });
+
+        await bucket.file(firebaseFilename).makePublic();
+        const publicUrl = bucket.file(firebaseFilename).publicUrl();
+
+        console.log(`📤 Uploaded to Firebase: ${publicUrl}`);
+
+        res?.status(200).json({ message: "Snapshot captured", url: publicUrl });
+      } catch (err) {
+        console.error("❌ Firebase upload failed:", err);
+        res?.status(500).json({ error: "Upload failed", details: err.message });
+      } finally {
+        fs.unlinkSync(localPath); // optional: cleanup local file
+      }
     })
     .on("error", (err) => {
       console.error(`❌ Snapshot failed: ${err.message}`);
