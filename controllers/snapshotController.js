@@ -2,7 +2,7 @@ import ffmpeg from "fluent-ffmpeg";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
-import { bucket } from "../firebaseAdmin";
+import { bucket } from "../firebaseAdmin.js";
 
 // Fix __dirname in ES Modules
 const __filename = fileURLToPath(import.meta.url);
