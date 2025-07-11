@@ -134,6 +134,7 @@ import {
   getHousehold,
   removeMember,
 } from "../controllers/householdController.js";
+import { getLatestSnapshot } from "../controllers/snapshotController.js";
 
 const router = express.Router();
 
@@ -351,4 +352,7 @@ router.delete(
 router.post("/approveresident/:resID/", authMiddleware, approveResident);
 router.get("/getresidentimages/:resID/", authMiddleware, getResidentImages);
 router.post("/rejectresident/:resID", authMiddleware, rejectResident);
+
+//RIVER SNAPSHOTS
+router.get("/latestsnapshot", getLatestSnapshot);
 export default router;
