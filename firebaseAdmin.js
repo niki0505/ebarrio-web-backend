@@ -21,11 +21,14 @@
 // const bucket = admin.storage().bucket();
 // export { bucket };
 
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 import admin from "firebase-admin";
 
 // Path to the downloaded service account key JSON
 const serviceAccount = JSON.parse(
-  process.env.FIREBASE_SERVICE_ACCOUNT.replace(/\\n/g, "\n")
+  fs.readFileSync(path.join(__dirname, "serviceAccountKey.json"), "utf8")
 );
 
 admin.initializeApp({
