@@ -102,8 +102,7 @@ const __dirname = path.dirname(__filename);
 //   "C:/Users/Charito/FFmpeg/ffmpeg-7.1.1-essentials_build/bin/ffmpeg.exe"
 // );
 
-const RTSP_URL =
-  "rtsp://rtspstream:kuSUMpTyTMZ1oXl-ZMopw@zephyr.rtsp.stream/people";
+const RTSP_URL = "rtsp://ebarrio2025:itgirls_ebarrio@192.168.1.12:554/stream1";
 const SNAPSHOT_DIR = path.join(__dirname, "..", "snapshots");
 
 // Ensure folder exists
