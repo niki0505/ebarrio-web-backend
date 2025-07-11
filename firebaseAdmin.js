@@ -26,6 +26,9 @@ import path from "path";
 import { fileURLToPath } from "url";
 import admin from "firebase-admin";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 // Path to the downloaded service account key JSON
 const serviceAccount = JSON.parse(
   fs.readFileSync(path.join(__dirname, "serviceAccountKey.json"), "utf8")
