@@ -123,14 +123,23 @@ export async function captureSnapshot(req, res) {
       "-fflags",
       "+discardcorrupt",
       "-probesize",
-      "10M",
+      "50M",
       "-analyzeduration",
-      "10M",
+      "15M",
     ])
-    .duration(2)
+    .outputOptions([
+      "-ss",
+      "3",
+      "-frames:v",
+      "1",
+      "-pix_fmt",
+      "yuvj420p",
+      "-update",
+      "1",
+    ])
+    .duration(5)
     .frames(1)
     .output(outputFile)
-    .outputOptions(["-update", "1"])
     .on("start", (cmd) => console.log("📸 Starting:", cmd))
     .on("stderr", (line) => {
       console.log("🪵", line);
