@@ -117,11 +117,17 @@ export async function captureSnapshot(req, res) {
   console.log(`[${new Date().toLocaleTimeString()}] Capturing snapshot...`);
 
   ffmpeg(RTSP_URL)
-    .inputOptions(["-rtsp_transport", "tcp", "-ss", "2"])
+    .inputOptions(["-rtsp_transport", "tcp"])
+    .duration(2)
     .frames(1)
     .output(outputFile)
     .on("start", (cmd) => console.log("📸 Starting:", cmd))
-    .on("stderr", (line) => console.log("🪵", line))
+    .on("stderr", (line) => {
+      console.log("🪵", line);
+      if (line.toLowerCase().includes("error")) {
+        console.error("⚠️ FFmpeg stderr error:", line);
+      }
+    })
     .on("end", async () => {
       console.log(`✅ Snapshot saved: ${outputFile}`);
 
