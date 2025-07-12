@@ -117,7 +117,18 @@ export async function captureSnapshot(req, res) {
   console.log(`[${new Date().toLocaleTimeString()}] Capturing snapshot...`);
 
   ffmpeg(RTSP_URL)
-    .inputOptions(["-rtsp_transport", "tcp"])
+    .inputOptions([
+      "-rtsp_transport",
+      "tcp",
+      "-fflags",
+      "+discardcorrupt",
+      "-probesize",
+      "5M",
+      "-analyzeduration",
+      "5M",
+      "-ss",
+      "2",
+    ])
     .duration(2)
     .frames(1)
     .output(outputFile)
