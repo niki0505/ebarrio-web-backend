@@ -130,6 +130,7 @@ export async function captureSnapshot(req, res) {
     .duration(2)
     .frames(1)
     .output(outputFile)
+    .outputOptions(["-update", "1"])
     .on("start", (cmd) => console.log("📸 Starting:", cmd))
     .on("stderr", (line) => {
       console.log("🪵", line);
