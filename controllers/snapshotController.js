@@ -123,11 +123,9 @@ export async function captureSnapshot(req, res) {
       "-fflags",
       "+discardcorrupt",
       "-probesize",
-      "5M",
+      "10M",
       "-analyzeduration",
-      "5M",
-      "-ss",
-      "2",
+      "10M",
     ])
     .duration(2)
     .frames(1)
