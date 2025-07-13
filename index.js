@@ -12,6 +12,8 @@ import Redis from "ioredis";
 import { registerSocketEvents, connectedUsers } from "./utils/socket.js";
 import { createAdapter } from "@socket.io/redis-adapter";
 import bcrypt from "bcryptjs";
+import { captureSnapshot } from "./controllers/snapshotController.js";
+import cron from "node-cron";
 
 configDotenv();
 
@@ -21,7 +23,7 @@ app.use(cookieParser());
 
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: "https://ebarrio.online",
     credentials: true,
   })
 );
@@ -36,7 +38,7 @@ export { rds };
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: "https://ebarrio.online",
     credentials: true,
   },
 });
@@ -64,6 +66,11 @@ app.set("connectedUsers", connectedUsers);
 
 app.use("/api", routes);
 app.use("/", qrCodeRoute);
+
+// 1 min
+cron.schedule("* * * * *", () => {
+  captureSnapshot();
+});
 
 // const plainPassword = "ebarriotechnicaladmin";
 // const saltRounds = 10;
