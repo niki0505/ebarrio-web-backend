@@ -15,6 +15,7 @@ const serviceAccount = JSON.parse(
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
   storageBucket: "ebarrio-21814.firebasestorage.app", // ✅ correct bucket format
+
 });
 
 const bucket = admin.storage().bucket();
