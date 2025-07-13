@@ -102,8 +102,7 @@ const __dirname = path.dirname(__filename);
 //   "C:/Users/Charito/FFmpeg/ffmpeg-7.1.1-essentials_build/bin/ffmpeg.exe"
 // );
 
-const RTSP_URL =
-  "rtsp://rtspstream:kuSUMpTyTMZ1oXl-ZMopw@zephyr.rtsp.stream/people";
+const RTSP_URL = "rtsp://149.28.158.38:8554/relay";
 const SNAPSHOT_DIR = path.join(__dirname, "..", "snapshots");
 
 // Ensure folder exists
@@ -118,11 +117,36 @@ export async function captureSnapshot(req, res) {
   console.log(`[${new Date().toLocaleTimeString()}] Capturing snapshot...`);
 
   ffmpeg(RTSP_URL)
-    .inputOptions(["-rtsp_transport", "tcp", "-ss", "2"])
+    .inputOptions([
+      "-rtsp_transport",
+      "tcp",
+      "-fflags",
+      "+discardcorrupt",
+      "-probesize",
+      "50M",
+      "-analyzeduration",
+      "15M",
+    ])
+    .outputOptions([
+      "-ss",
+      "3",
+      "-frames:v",
+      "1",
+      "-pix_fmt",
+      "yuvj420p",
+      "-update",
+      "1",
+    ])
+    .duration(5)
     .frames(1)
     .output(outputFile)
     .on("start", (cmd) => console.log("📸 Starting:", cmd))
-    .on("stderr", (line) => console.log("🪵", line))
+    .on("stderr", (line) => {
+      console.log("🪵", line);
+      if (line.toLowerCase().includes("error")) {
+        console.error("⚠️ FFmpeg stderr error:", line);
+      }
+    })
     .on("end", async () => {
       console.log(`✅ Snapshot saved: ${outputFile}`);
 

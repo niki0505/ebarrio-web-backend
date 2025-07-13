@@ -23,9 +23,7 @@ export { bucket };
 // import admin from "firebase-admin";
 
 // // Path to the downloaded service account key JSON
-// const serviceAccount = JSON.parse(
-//   process.env.FIREBASE_SERVICE_ACCOUNT.replace(/\\n/g, "\n")
-// );
+// const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 
 // admin.initializeApp({
 //   credential: admin.credential.cert(serviceAccount),
