@@ -20,7 +20,8 @@ const hSchema = new mongoose.Schema(
           enum: [
             "Head",
             "Spouse",
-            "Child",
+            "Son",
+            "Daughter",
             "Parent",
             "Sibling",
             "Grandparent",
