@@ -1,0 +1,23 @@
+# Ignore dependencies
+node_modules
+
+# Ignore environment files
+.env
+.env.*
+
+# Ignore git and build stuff
+.git
+.gitignore
+.vscode
+dist
+build
+coverage
+
+# Ignore media and logs
+*.log
+*.png
+*.jpg
+*.jpeg
+*.zip
+*.tar.gz
+*.DS_Store
