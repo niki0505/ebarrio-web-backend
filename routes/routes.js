@@ -135,6 +135,7 @@ import {
   removeMember,
 } from "../controllers/householdController.js";
 import { getLatestSnapshot } from "../controllers/snapshotController.js";
+import { createFAQ, getFAQs } from "../controllers/chatController.js";
 
 const router = express.Router();
 
@@ -355,4 +356,8 @@ router.post("/rejectresident/:resID", authMiddleware, rejectResident);
 
 //RIVER SNAPSHOTS
 router.get("/latestsnapshot", getLatestSnapshot);
+
+//FAQs
+router.post("/createfaq", authMiddleware, createFAQ);
+router.get("/getfaqs", authMiddleware, getFAQs);
 export default router;
