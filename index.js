@@ -23,7 +23,7 @@ app.use(cookieParser());
 
 app.use(
   cors({
-    origin: "https://ebarrio.online",
+    origin: "http://localhost:3000",
     credentials: true,
   })
 );
@@ -36,9 +36,21 @@ const subClient = rds.duplicate();
 export { rds };
 
 const server = http.createServer(app);
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://ebarrio.online.com",
+  undefined,
+];
+
 const io = new Server(server, {
   cors: {
-    origin: "https://ebarrio.online",
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true); // ✅ allow
+      } else {
+        callback(new Error("❌ Not allowed by CORS"));
+      }
+    },
     credentials: true,
   },
 });
