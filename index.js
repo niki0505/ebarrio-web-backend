@@ -36,9 +36,21 @@ const subClient = rds.duplicate();
 export { rds };
 
 const server = http.createServer(app);
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://ebarrio.online.com",
+  undefined,
+];
+
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true); // ✅ allow
+      } else {
+        callback(new Error("❌ Not allowed by CORS"));
+      }
+    },
     credentials: true,
   },
 });
