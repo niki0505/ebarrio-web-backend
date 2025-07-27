@@ -1,6 +1,6 @@
+export const connectedUsers = new Map();
 import User from "../models/Users.js";
 import Chat from "../models/Chats.js";
-export const connectedUsers = new Map();
 
 async function markUserActive(userId) {
   await User.findByIdAndUpdate(userId, { status: "Active" });
@@ -18,11 +18,16 @@ export const registerSocketEvents = (io) => {
   io.on("connection", (socket) => {
     console.log("User connected:", socket.id);
 
-    socket.on("register", (userID) => {
-      connectedUsers.set(userID, socket.id);
+    socket.on("register", (userID, role) => {
+      connectedUsers.set(userID, {
+        socketId: socket.id,
+        role,
+      });
       socket.userID = userID;
+      socket.role = role;
       markUserActive(userID);
       socket.join(userID);
+      console.log(`Socket joined room: ${userID}`);
     });
 
     socket.on("unregister", (userID) => {
@@ -36,24 +41,9 @@ export const registerSocketEvents = (io) => {
       console.log(`Socket ${socket.id} joined announcements room`);
     });
 
-    socket.on("join_certificates", () => {
-      socket.join("certificates");
-      console.log(`Socket ${socket.id} joined certificates room`);
-    });
-
-    socket.on("join_courtreservations", () => {
-      socket.join("courtreservations");
-      console.log(`Socket ${socket.id} joined court reservations room`);
-    });
-
-    socket.on("join_blotterreports", () => {
-      socket.join("blotterreports");
-      console.log(`Socket ${socket.id} joined blotter reports room`);
-    });
-
     socket.on("disconnect", () => {
-      connectedUsers.forEach((id, userID) => {
-        if (id === socket.id) {
+      connectedUsers.forEach((info, userID) => {
+        if (info.socketId === socket.id) {
           connectedUsers.delete(userID);
           markUserInactive(socket.userID);
           console.log(`User ${userID} removed from connectedUsers`);
