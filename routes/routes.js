@@ -135,7 +135,12 @@ import {
   removeMember,
 } from "../controllers/householdController.js";
 import { getLatestSnapshot } from "../controllers/snapshotController.js";
-import { createFAQ, getChats, getFAQs } from "../controllers/chatController.js";
+import {
+  createFAQ,
+  getChat,
+  getChats,
+  getFAQs,
+} from "../controllers/chatController.js";
 
 const router = express.Router();
 
@@ -361,4 +366,5 @@ router.get("/latestsnapshot", getLatestSnapshot);
 router.post("/createfaq", authMiddleware, createFAQ);
 router.get("/getfaqs", authMiddleware, getFAQs);
 router.get("/getchats", authMiddleware, getChats);
+router.get("/getchat/:roomId", authMiddleware, getChat);
 export default router;

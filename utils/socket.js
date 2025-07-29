@@ -41,6 +41,11 @@ export const registerSocketEvents = (io) => {
       console.log(`Socket ${socket.id} joined announcements room`);
     });
 
+    socket.on("join_room", (roomId) => {
+      socket.join(roomId);
+      console.log(`✅ Socket ${socket.id} joined room ${roomId}`);
+    });
+
     socket.on("disconnect", () => {
       connectedUsers.forEach((info, userID) => {
         if (info.socketId === socket.id) {
@@ -53,7 +58,7 @@ export const registerSocketEvents = (io) => {
 
     //CHAT
 
-    socket.on("request_chat", () => {
+    socket.on("request_chat", async () => {
       if (socket.role !== "Resident") return;
 
       let target = null;
@@ -77,36 +82,89 @@ export const registerSocketEvents = (io) => {
         }
       }
 
-      if (assignedStaffId) {
-        io.to(socket.id).emit("chat_assigned", { userID: assignedStaffId });
-        console.log(
-          "👥 Assigned staff to resident on chat start:",
-          assignedStaffId
-        );
-      } else {
+      if (!assignedStaffId) {
         console.log("❌ No staff available to assign");
+        return;
       }
-    });
 
-    socket.on("send_message", async ({ from, to, message }) => {
-      console.log(`📨 Message received from ${from} to ${to}:`, message);
-      const isFromResident = socket.role === "Resident";
+      // ✅ Try to find existing chat between them
       let chat = await Chat.findOne({
-        participants: { $all: [from, to] },
+        participants: { $all: [socket.userID, assignedStaffId] },
         status: "Active",
       });
 
+      // ✅ If none, create a new chat
+      if (!chat) {
+        chat = new Chat({
+          participants: [socket.userID, assignedStaffId],
+          status: "Active",
+        });
+        await chat.save();
+        console.log("🆕 Created new chat:", chat._id.toString());
+      } else {
+        console.log("📁 Found existing chat:", chat._id.toString());
+      }
+
+      const roomId = chat._id.toString();
+
+      // ✅ Make the resident join the room now (optional but helpful)
+      socket.join(roomId);
+      console.log("🚪 Resident joined room:", roomId);
+
+      // ✅ Tell resident the assigned staff and roomId
+      io.to(socket.id).emit("chat_assigned", {
+        userID: assignedStaffId,
+        roomId,
+      });
+
+      console.log(
+        "👥 Assigned staff to resident on chat start:",
+        assignedStaffId
+      );
+    });
+
+    socket.on("send_message", async ({ from, to, message, roomId }) => {
+      console.log(`📨 Message received from ${from} to ${to}:`, message);
+
+      const isFromResident = socket.role === "Resident";
+      let chat = null;
+
+      if (roomId) {
+        chat = await Chat.findById(roomId);
+        console.log("🔎 Found chat by roomId:", roomId);
+      }
+
+      // If no chat found by roomId, fallback to participants
+      if (!chat) {
+        chat = await Chat.findOne({
+          participants: { $all: [from, to] },
+          status: "Active",
+        });
+
+        if (chat) {
+          console.log("📁 Found chat by participants:", chat._id.toString());
+          roomId = chat._id.toString();
+        }
+      }
+
+      // If still no chat, create a new one
       if (!chat) {
         chat = new Chat({ participants: [from, to], status: "Active" });
+        await chat.save();
+        roomId = chat._id.toString();
+        console.log("🆕 New chat created with roomId:", roomId);
       }
 
+      // Push the new message
       chat.messages.push({ from, to, message });
 
-      // Auto-assign responder if null
+      // Auto-assign responder if needed
       if (!chat.responder && socket.role !== "Resident") {
-        chat.responder = from; // clerk or secretary took the convo
+        chat.responder = from;
+        console.log("👤 Assigned responder:", from);
       }
 
+      // Save chat
       try {
         await chat.save();
         console.log("✅ Chat saved to DB");
@@ -114,9 +172,12 @@ export const registerSocketEvents = (io) => {
         console.error("❌ Failed to save chat:", err.message);
       }
 
-      // Determine which staff to notify if from resident
+      // Join the room
+      socket.join(roomId);
+      console.log(`👥 ${from} joined room ${roomId}`);
+
       if (isFromResident) {
-        // Search connected users for secretary first
+        // Find target staff to notify
         let target = null;
         let assignedStaffId = null;
 
@@ -128,7 +189,6 @@ export const registerSocketEvents = (io) => {
           }
         }
 
-        // If no secretary, check for clerk
         if (!target) {
           for (let [userId, info] of connectedUsers) {
             if (info.role === "Clerk") {
@@ -140,29 +200,33 @@ export const registerSocketEvents = (io) => {
         }
 
         if (target) {
-          // Notify staff
-          io.to(target).emit("receive_message", {
+          io.to(target).socketsJoin(roomId);
+          io.to(roomId).emit("receive_message", {
             from,
             to,
             message,
             timestamp: new Date(),
+            roomId,
           });
 
           console.log("📤 Sent message to staff:", assignedStaffId);
         } else {
-          // No one online → mark as pending (optional)
-          console.log("No clerk or secretary online. Marking as pending.");
+          console.log("❗ No clerk or secretary online. Message pending.");
         }
       } else {
-        // Staff reply — notify the resident
+        // Staff replies to resident
         const residentSocket = connectedUsers.get(to);
         if (residentSocket) {
-          io.to(residentSocket.socketId).emit("receive_message", {
+          io.to(residentSocket.socketId).socketsJoin(roomId);
+          io.to(roomId).emit("receive_message", {
             from,
             to,
             message,
             timestamp: new Date(),
+            roomId,
           });
+
+          console.log("📤 Sent message to resident:", to);
         }
       }
     });
