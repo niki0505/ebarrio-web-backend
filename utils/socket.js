@@ -199,17 +199,14 @@ export const registerSocketEvents = (io) => {
           }
         }
 
-        if (target) {
-          io.to(target).socketsJoin(roomId);
-          io.to(roomId).emit("receive_message", {
+        if (assignedStaffId && connectedUsers.has(assignedStaffId)) {
+          io.to(assignedStaffId).emit("receive_message", {
             from,
             to,
             message,
             timestamp: new Date(),
-            roomId,
+            roomId: chat._id,
           });
-
-          console.log("📤 Sent message to staff:", assignedStaffId);
         } else {
           console.log("❗ No clerk or secretary online. Message pending.");
         }

@@ -2,6 +2,28 @@ import FAQ from "../models/FAQs.js";
 import ActivityLog from "../models/ActivityLogs.js";
 import Chat from "../models/Chats.js";
 
+export const endChat = async (req, res) => {
+  try {
+    const { chatID } = req.params;
+    const io = req.app.get("socketio");
+
+    const chat = await Chat.findById(chatID);
+
+    chat.status = "Ended";
+    await chat.save();
+
+    io.to(chat._id.toString()).emit("chat_ended", {
+      chatID: chat._id.toString(),
+      timestamp: new Date(),
+    });
+
+    res.status(200).json({ message: "Chat has been successfully ended." });
+  } catch (error) {
+    console.error("Error in ending the chat:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 export const getChat = async (req, res) => {
   try {
     const { userID } = req.user;

@@ -137,6 +137,7 @@ import {
 import { getLatestSnapshot } from "../controllers/snapshotController.js";
 import {
   createFAQ,
+  endChat,
   getChat,
   getChats,
   getFAQs,
@@ -367,4 +368,5 @@ router.post("/createfaq", authMiddleware, createFAQ);
 router.get("/getfaqs", authMiddleware, getFAQs);
 router.get("/getchats", authMiddleware, getChats);
 router.get("/getchat/:roomId", authMiddleware, getChat);
+router.put("/endchat/:chatID", authMiddleware, endChat);
 export default router;
