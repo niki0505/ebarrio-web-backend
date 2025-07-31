@@ -202,9 +202,15 @@ export const registerSocketEvents = (io) => {
 
       // ✅ Tell resident the assigned staff and roomId
       io.to(socket.id).emit("chat_assigned", {
-        userID: assignedStaffId,
-        roomId,
-        adminMessages: isNewChat ? chat.messages : [],
+        id: chat._id.toString(),
+        participants: chat.participants,
+        responder: chat.responder,
+        messages: chat.messages,
+        status: chat.status,
+        isCleared: chat.isCleared,
+        isBot: chat.isBot,
+        createdAt: chat.createdAt,
+        updatedAt: chat.updatedAt,
       });
 
       console.log(
