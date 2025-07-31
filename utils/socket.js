@@ -64,7 +64,7 @@ export const registerSocketEvents = (io) => {
     socket.on("request_bot_chat", async ({ userID }) => {
       try {
         // 🔍 Check if there's already an active staff chat
-        const hasActiveStaffChat = await Chat.exists({
+        const hasActiveStaffChat = await Chat.findOne({
           participants: new mongoose.Types.ObjectId(userID),
           isBot: false,
           status: "Active",
