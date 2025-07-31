@@ -83,10 +83,15 @@ export const registerSocketEvents = (io) => {
 
         if (existingChat) {
           io.to(userID.toString()).emit("chat_assigned", {
-            userID: SYSTEM_USER_ID,
-            roomId: existingChat._id.toString(),
-            botMessages: existingChat.messages,
-            isBot: true,
+            _id: existingChat._id.toString(),
+            participants: existingChat.participants,
+            responder: SYSTEM_USER_ID,
+            messages: existingChat.messages,
+            status: existingChat.status,
+            isCleared: existingChat.isCleared,
+            isBot: existingChat.isBot,
+            createdAt: existingChat.createdAt,
+            updatedAt: existingChat.updatedAt,
           });
           return;
         }
@@ -124,10 +129,15 @@ export const registerSocketEvents = (io) => {
         await newChat.save();
 
         io.to(userID.toString()).emit("chat_assigned", {
-          userID: SYSTEM_USER_ID,
-          roomId: newChat._id.toString(),
-          botMessages: botMessages,
-          isBot: true,
+          _id: newChat._id.toString(),
+          participants: newChat.participants,
+          responder: newChat.responder,
+          messages: newChat.messages,
+          status: newChat.status,
+          isCleared: newChat.isCleared,
+          isBot: newChat.isBot,
+          createdAt: newChat.createdAt,
+          updatedAt: newChat.updatedAt,
         });
       } catch (error) {
         console.error("Error in request_bot_chat:", error);
