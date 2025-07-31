@@ -164,9 +164,9 @@ export const registerSocketEvents = (io) => {
         return;
       }
 
-      await Chat.updateOne(
+      const result = await Chat.updateOne(
         {
-          participants: socket.userID,
+          participants: new mongoose.Types.ObjectId(socket.userID),
           isBot: true,
           status: "Active",
         },
@@ -183,6 +183,20 @@ export const registerSocketEvents = (io) => {
         }
       );
 
+      console.log("🔧 Chat update result:", result);
+
+      if (result.matchedCount === 0) {
+        console.warn(
+          "⚠️ No matching active bot chat found for user:",
+          socket.userID
+        );
+      } else if (result.modifiedCount === 0) {
+        console.warn(
+          "⚠️ Chat found but not modified — check update payload or schema."
+        );
+      } else {
+        console.log("✅ Chat ended and message appended.");
+      }
       // ✅ Try to find existing chat between them
       let chat = await Chat.findOne({
         participants: { $all: [socket.userID, assignedStaffId] },
