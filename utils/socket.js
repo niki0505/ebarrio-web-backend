@@ -153,7 +153,7 @@ export const registerSocketEvents = (io) => {
         return;
       }
 
-      await Chat.updateMany(
+      await Chat.updateOne(
         {
           participants: socket.userID,
           isBot: true,
@@ -163,14 +163,10 @@ export const registerSocketEvents = (io) => {
           $set: { status: "Ended" },
           $push: {
             messages: {
-              $each: [
-                {
-                  from: null,
-                  to: socket.userID,
-                  message: "This chat has ended.",
-                  timestamp: new Date(),
-                },
-              ],
+              from: null,
+              to: socket.userID,
+              message: "This chat has ended.",
+              timestamp: new Date(),
             },
           },
         }
