@@ -39,6 +39,7 @@ const server = http.createServer(app);
 const allowedOrigins = [
   "http://localhost:3000",
   "https://ebarrio.online",
+  "https://api.ebarrio.online",
   undefined,
 ];
 
