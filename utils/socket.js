@@ -15,7 +15,7 @@ async function markUserInactive(userId) {
 }
 
 export const registerSocketEvents = (io) => {
-  io.on("connection", async (socket) => {
+  io.on("connection", (socket) => {
     console.log("User connected:", socket.id);
 
     socket.on("register", (userID, role) => {
@@ -57,82 +57,6 @@ export const registerSocketEvents = (io) => {
     });
 
     //CHAT
-
-    socket.on("request_chat_history", async ({ userID }) => {
-      if (!userID) return;
-
-      try {
-        const allChats = await Chat.find({
-          participants: userID,
-        })
-          .sort({ updatedAt: -1 }) // most recent first
-          .populate({
-            path: "participants",
-            select: "resID empID",
-            populate: [
-              { path: "resID", select: "firstname lastname picture" },
-              {
-                path: "empID",
-                populate: {
-                  path: "resID",
-                  select: "firstname lastname picture",
-                },
-              },
-            ],
-          })
-          .populate({
-            path: "messages.from",
-            select: "resID empID",
-            populate: [
-              { path: "resID", select: "firstname lastname picture" },
-              {
-                path: "empID",
-                populate: {
-                  path: "resID",
-                  select: "firstname lastname picture",
-                },
-              },
-            ],
-          })
-          .populate({
-            path: "messages.to",
-            select: "resID empID",
-            populate: [
-              { path: "resID", select: "firstname lastname picture" },
-              {
-                path: "empID",
-                populate: {
-                  path: "resID",
-                  select: "firstname lastname picture",
-                },
-              },
-            ],
-          });
-
-        // ✅ Send full chat history
-        socket.emit("chat_history", {
-          userID,
-          chats: allChats,
-        });
-
-        // ✅ Optionally assign most recent active chat
-        const activeChat = allChats.find((chat) => chat.status === "Active");
-        if (activeChat) {
-          socket.emit("chat_assigned", {
-            roomId: activeChat._id,
-            botMessages: activeChat.messages, // full messages
-            isBot: activeChat.isBot,
-          });
-        } else {
-          socket.emit("no_active_chat", { userID });
-        }
-      } catch (err) {
-        console.error("❌ Error fetching chats:", err);
-        socket.emit("chat_history_error", {
-          error: "Unable to load chats.",
-        });
-      }
-    });
 
     const SYSTEM_USER_ID = "000000000000000000000000";
 
@@ -210,7 +134,7 @@ export const registerSocketEvents = (io) => {
       }
     });
 
-    socket.on("request_chat", async (userID) => {
+    socket.on("request_chat", async () => {
       if (socket.role !== "Resident") return;
 
       let target = null;
@@ -240,39 +164,6 @@ export const registerSocketEvents = (io) => {
         return;
       }
 
-      const result = await Chat.updateOne(
-        {
-          participants: userID,
-          isBot: true,
-          status: "Active",
-        },
-        {
-          $set: { status: "Ended" },
-          $push: {
-            messages: {
-              from: SYSTEM_USER_ID,
-              to: userID,
-              message: "This chat has ended.",
-              timestamp: new Date(),
-            },
-          },
-        }
-      );
-
-      console.log("🔧 Chat update result:", result);
-
-      if (result.matchedCount === 0) {
-        console.warn(
-          "⚠️ No matching active bot chat found for user:",
-          socket.userID
-        );
-      } else if (result.modifiedCount === 0) {
-        console.warn(
-          "⚠️ Chat found but not modified — check update payload or schema."
-        );
-      } else {
-        console.log("✅ Chat ended and message appended.");
-      }
       // ✅ Try to find existing chat between them
       let chat = await Chat.findOne({
         participants: { $all: [socket.userID, assignedStaffId] },
