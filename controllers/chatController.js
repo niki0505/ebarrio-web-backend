@@ -4,6 +4,7 @@ import Chat from "../models/Chats.js";
 
 export const endChat = async (req, res) => {
   try {
+    const { userID } = req.user;
     const { chatID } = req.params;
     const io = req.app.get("socketio");
 
@@ -15,6 +16,51 @@ export const endChat = async (req, res) => {
     io.to(chat._id.toString()).emit("chat_ended", {
       chatID: chat._id.toString(),
       timestamp: new Date(),
+    });
+
+    const residentID = chat.participants.find(
+      (id) => id.toString() !== userID.toString()
+    );
+
+    // Dummy ObjectId for system/bot messages
+    const SYSTEM_USER_ID = "000000000000000000000000";
+
+    const botMessages = [
+      {
+        from: SYSTEM_USER_ID,
+        to: residentID,
+        message: "Hi! How can I help you today? 😊",
+        timestamp: new Date(),
+      },
+      {
+        from: SYSTEM_USER_ID,
+        to: residentID,
+        message: JSON.stringify({
+          type: "button",
+          options: [
+            { id: "faq", label: "Ask a Question" },
+            { id: "chat", label: "Chat with the Barangay" },
+          ],
+        }),
+        timestamp: new Date(),
+      },
+    ];
+
+    const newChat = new Chat({
+      participants: [residentID],
+      responder: null,
+      messages: botMessages,
+      status: "Active",
+      isBot: true,
+    });
+
+    await newChat.save();
+
+    io.to(residentID.toString()).emit("chat_assigned", {
+      userID: null,
+      roomId: newChat._id.toString(),
+      botMessages: botMessages,
+      isBot: true,
     });
 
     res.status(200).json({ message: "Chat has been successfully ended." });

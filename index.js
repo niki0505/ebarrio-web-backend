@@ -52,6 +52,8 @@ const io = new Server(server, {
       }
     },
     credentials: true,
+    pingTimeout: 30000, // 30s timeout
+    pingInterval: 10000,
   },
 });
 

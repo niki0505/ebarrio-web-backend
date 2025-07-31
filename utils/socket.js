@@ -50,7 +50,7 @@ export const registerSocketEvents = (io) => {
       connectedUsers.forEach((info, userID) => {
         if (info.socketId === socket.id) {
           connectedUsers.delete(userID);
-          markUserInactive(socket.userID);
+          markUserInactive(userID); // use userID from loop
           console.log(`User ${userID} removed from connectedUsers`);
         }
       });
@@ -58,11 +58,77 @@ export const registerSocketEvents = (io) => {
 
     //CHAT
 
+    const SYSTEM_USER_ID = "000000000000000000000000";
+
+    socket.on("request_bot_chat", async ({ userID }) => {
+      try {
+        // 1. Check if an active bot chat already exists for the user
+        const existingChat = await Chat.findOne({
+          isBot: true,
+          participants: userID,
+          status: "Active",
+        });
+
+        if (existingChat) {
+          // Chat already exists — return it instead of creating a new one
+          io.to(userID.toString()).emit("chat_assigned", {
+            userID: SYSTEM_USER_ID,
+            roomId: existingChat._id.toString(),
+            botMessages: existingChat.messages,
+            isBot: true,
+          });
+          return;
+        }
+
+        // 2. No existing chat, create a new one
+        const botMessages = [
+          {
+            from: SYSTEM_USER_ID,
+            to: userID,
+            message: "Hi! How can I help you today? 😊",
+            timestamp: new Date(),
+          },
+          {
+            from: SYSTEM_USER_ID,
+            to: userID,
+            message: JSON.stringify({
+              type: "button",
+              options: [
+                { id: "faq", label: "Ask a Question" },
+                { id: "chat", label: "Chat with the Barangay" },
+              ],
+            }),
+            timestamp: new Date(),
+          },
+        ];
+
+        const newChat = new Chat({
+          participants: [userID],
+          responder: null,
+          messages: botMessages,
+          status: "Active",
+          isBot: true,
+        });
+
+        await newChat.save();
+
+        io.to(userID.toString()).emit("chat_assigned", {
+          userID: SYSTEM_USER_ID,
+          roomId: newChat._id.toString(),
+          botMessages: botMessages,
+          isBot: true,
+        });
+      } catch (error) {
+        console.error("Error in request_bot_chat:", error);
+      }
+    });
+
     socket.on("request_chat", async () => {
       if (socket.role !== "Resident") return;
 
       let target = null;
       let assignedStaffId = null;
+      let isNewChat = null;
 
       for (let [userId, info] of connectedUsers) {
         if (info.role === "Secretary") {
@@ -87,6 +153,15 @@ export const registerSocketEvents = (io) => {
         return;
       }
 
+      await Chat.updateMany(
+        {
+          participants: socket.userID,
+          isBot: true,
+          status: "Active",
+        },
+        { $set: { status: "Ended" } }
+      );
+
       // ✅ Try to find existing chat between them
       let chat = await Chat.findOne({
         participants: { $all: [socket.userID, assignedStaffId] },
@@ -95,11 +170,23 @@ export const registerSocketEvents = (io) => {
 
       // ✅ If none, create a new chat
       if (!chat) {
+        const defaultMessage = {
+          from: assignedStaffId,
+          to: socket.userID,
+          message:
+            "Your chat has been transferred to an available staff. How can we help you today?",
+          timestamp: new Date(),
+        };
+
         chat = new Chat({
           participants: [socket.userID, assignedStaffId],
           status: "Active",
+          messages: [defaultMessage], // Include the default message here
         });
+
         await chat.save();
+        isNewChat = true;
+
         console.log("🆕 Created new chat:", chat._id.toString());
       } else {
         console.log("📁 Found existing chat:", chat._id.toString());
@@ -115,6 +202,7 @@ export const registerSocketEvents = (io) => {
       io.to(socket.id).emit("chat_assigned", {
         userID: assignedStaffId,
         roomId,
+        adminMessages: isNewChat ? chat.messages : [],
       });
 
       console.log(

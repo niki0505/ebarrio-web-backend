@@ -15,12 +15,10 @@ const cSchema = new mongoose.Schema(
         from: {
           type: mongoose.Schema.Types.ObjectId,
           ref: "User",
-          required: true,
         },
         to: {
           type: mongoose.Schema.Types.ObjectId,
           ref: "User",
-          required: true,
         },
         message: { type: String, required: true },
         timestamp: {
@@ -35,6 +33,7 @@ const cSchema = new mongoose.Schema(
       required: true,
     },
     isCleared: { type: Boolean, default: false },
+    isBot: { type: Boolean, default: false },
   },
   { versionKey: false, timestamps: true }
 );
