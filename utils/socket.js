@@ -73,7 +73,7 @@ export const registerSocketEvents = (io) => {
         if (hasActiveStaffChat) {
           console.log("❌ Cannot start bot chat: active staff chat exists.");
           io.to(userID.toString()).emit("chat_assigned", {
-            id: hasActiveStaffChat._id.toString(),
+            _id: hasActiveStaffChat._id.toString(),
             participants: hasActiveStaffChat.participants,
             responder: hasActiveStaffChat.responder,
             messages: hasActiveStaffChat.messages,
@@ -247,7 +247,7 @@ export const registerSocketEvents = (io) => {
 
       // ✅ Tell resident the assigned staff and roomId
       io.to(socket.id).emit("chat_assigned", {
-        id: chat._id.toString(),
+        _id: chat._id.toString(),
         participants: chat.participants,
         responder: chat.responder,
         messages: chat.messages,
