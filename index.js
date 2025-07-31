@@ -57,6 +57,22 @@ const io = new Server(server, {
 
 io.adapter(createAdapter(rds, subClient));
 
+io.engine.on("connection", (rawSocket) => {
+  console.log("🔌 Engine.IO connection established");
+
+  rawSocket.on("upgrade", () => {
+    console.log("🚀 Connection upgraded to WebSocket");
+  });
+
+  rawSocket.on("close", (reason) => {
+    console.log("❌ Engine.IO connection closed:", reason);
+  });
+
+  rawSocket.on("error", (err) => {
+    console.log("❗ Engine.IO socket error:", err);
+  });
+});
+
 rds.ping((err, result) => {
   if (err) {
     console.error("Error connecting to Redis:", err);
@@ -97,7 +113,7 @@ cron.schedule("*/2 * * * *", () => {
 // });
 
 const PORT = process.env.PORT;
-server.listen(PORT, async () => {
+server.listen(5000, "0.0.0.0", async () => {
   try {
     console.log(`Server is running on port ${PORT}`);
     await connectDB();
