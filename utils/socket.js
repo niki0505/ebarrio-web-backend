@@ -62,7 +62,19 @@ export const registerSocketEvents = (io) => {
 
     socket.on("request_bot_chat", async ({ userID }) => {
       try {
-        // 1. Check if an active bot chat already exists for the user
+        // 🔍 Check if there's already an active staff chat
+        const hasActiveStaffChat = await Chat.exists({
+          participants: userID,
+          isBot: false,
+          status: "Active",
+        });
+
+        if (hasActiveStaffChat) {
+          console.log("❌ Cannot start bot chat: active staff chat exists.");
+          return; // ✅ Exit early — no bot chat if staff is already handling
+        }
+
+        // 🔍 Check if an active bot chat already exists
         const existingChat = await Chat.findOne({
           isBot: true,
           participants: userID,
@@ -70,7 +82,6 @@ export const registerSocketEvents = (io) => {
         });
 
         if (existingChat) {
-          // Chat already exists — return it instead of creating a new one
           io.to(userID.toString()).emit("chat_assigned", {
             userID: SYSTEM_USER_ID,
             roomId: existingChat._id.toString(),
@@ -80,7 +91,7 @@ export const registerSocketEvents = (io) => {
           return;
         }
 
-        // 2. No existing chat, create a new one
+        // 🆕 Create new bot chat
         const botMessages = [
           {
             from: SYSTEM_USER_ID,
