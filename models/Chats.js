@@ -12,6 +12,7 @@ const cSchema = new mongoose.Schema(
     },
     messages: [
       {
+        _id: false,
         from: {
           type: mongoose.Schema.Types.ObjectId,
           ref: "User",
