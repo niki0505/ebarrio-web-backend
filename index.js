@@ -39,6 +39,7 @@ const server = http.createServer(app);
 const allowedOrigins = [
   "http://localhost:3000",
   "https://ebarrio.online",
+  "https://api.ebarrio.online",
   undefined,
 ];
 
@@ -56,22 +57,6 @@ const io = new Server(server, {
 });
 
 io.adapter(createAdapter(rds, subClient));
-
-io.engine.on("connection", (rawSocket) => {
-  console.log("🔌 Engine.IO connection established");
-
-  rawSocket.on("upgrade", () => {
-    console.log("🚀 Connection upgraded to WebSocket");
-  });
-
-  rawSocket.on("close", (reason) => {
-    console.log("❌ Engine.IO connection closed:", reason);
-  });
-
-  rawSocket.on("error", (err) => {
-    console.log("❗ Engine.IO socket error:", err);
-  });
-});
 
 rds.ping((err, result) => {
   if (err) {
@@ -96,9 +81,9 @@ app.use("/api", routes);
 app.use("/", qrCodeRoute);
 
 // 2 mins
-cron.schedule("*/2 * * * *", () => {
-  captureSnapshot();
-});
+// cron.schedule("*/2 * * * *", () => {
+//   captureSnapshot();
+// });
 
 // const plainPassword = "ebarriotechnicaladmin";
 // const saltRounds = 10;
@@ -113,7 +98,7 @@ cron.schedule("*/2 * * * *", () => {
 // });
 
 const PORT = process.env.PORT;
-server.listen(5000, "0.0.0.0", async () => {
+server.listen(PORT, "0.0.0.0", async () => {
   try {
     console.log(`Server is running on port ${PORT}`);
     await connectDB();
