@@ -64,7 +64,7 @@ export const registerSocketEvents = (io) => {
       try {
         // 🔍 Check if there's already an active staff chat
         const hasActiveStaffChat = await Chat.exists({
-          participants: userID,
+          participants: new mongoose.Types.ObjectId(userID),
           isBot: false,
           status: "Active",
         });
@@ -174,7 +174,7 @@ export const registerSocketEvents = (io) => {
           $set: { status: "Ended" },
           $push: {
             messages: {
-              from: null,
+              from: SYSTEM_USER_ID,
               to: socket.userID,
               message: "This chat has ended.",
               timestamp: new Date(),
