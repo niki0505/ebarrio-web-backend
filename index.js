@@ -97,7 +97,7 @@ app.use("/", qrCodeRoute);
 // });
 
 const PORT = process.env.PORT;
-server.listen(5000, "0.0.0.0", async () => {
+server.listen(PORT, "0.0.0.0", async () => {
   try {
     console.log(`Server is running on port ${PORT}`);
     await connectDB();
