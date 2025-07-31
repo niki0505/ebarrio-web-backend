@@ -134,7 +134,7 @@ export const registerSocketEvents = (io) => {
       }
     });
 
-    socket.on("request_chat", async () => {
+    socket.on("request_chat", async (userID) => {
       if (socket.role !== "Resident") return;
 
       let target = null;
@@ -166,7 +166,7 @@ export const registerSocketEvents = (io) => {
 
       const result = await Chat.updateOne(
         {
-          participants: new mongoose.Types.ObjectId(socket.userID),
+          participants: userID,
           isBot: true,
           status: "Active",
         },
@@ -175,7 +175,7 @@ export const registerSocketEvents = (io) => {
           $push: {
             messages: {
               from: SYSTEM_USER_ID,
-              to: socket.userID,
+              to: userID,
               message: "This chat has ended.",
               timestamp: new Date(),
             },
