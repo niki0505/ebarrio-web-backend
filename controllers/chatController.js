@@ -57,10 +57,7 @@ export const endChat = async (req, res) => {
     await newChat.save();
 
     io.to(residentID.toString()).emit("chat_assigned", {
-      userID: null,
-      roomId: newChat._id.toString(),
-      botMessages: botMessages,
-      isBot: true,
+      ...newChat.toObject(),
     });
 
     res.status(200).json({ message: "Chat has been successfully ended." });
