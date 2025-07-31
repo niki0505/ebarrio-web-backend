@@ -159,7 +159,17 @@ export const registerSocketEvents = (io) => {
           isBot: true,
           status: "Active",
         },
-        { $set: { status: "Ended" } }
+        {
+          $set: { status: "Ended" },
+          $push: {
+            messages: {
+              from: null,
+              to: socket.userID,
+              message: "This chat has ended.",
+              timestamp: new Date(),
+            },
+          },
+        }
       );
 
       // ✅ Try to find existing chat between them
