@@ -152,6 +152,29 @@ export const registerSocketEvents = (io) => {
       let assignedStaffId = null;
       let isNewChat = null;
 
+      const existingBotChat = await Chat.findOne({
+        participants: socket.userID,
+        isBot: true,
+        status: "Active",
+      });
+
+      if (existingBotChat) {
+        existingBotChat.status = "Ended";
+
+        existingBotChat.messages.push({
+          from: SYSTEM_USER_ID,
+          to: socket.userID,
+          message: "This chat has ended.",
+          timestamp: new Date(),
+        });
+
+        await existingBotChat.save();
+        console.log(
+          "☑️ Ended previous bot chat:",
+          existingBotChat._id.toString()
+        );
+      }
+
       for (let [userId, info] of connectedUsers) {
         if (info.role === "Secretary") {
           target = info.socketId;
