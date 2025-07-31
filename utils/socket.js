@@ -163,10 +163,14 @@ export const registerSocketEvents = (io) => {
           $set: { status: "Ended" },
           $push: {
             messages: {
-              from: null,
-              to: socket.userID,
-              message: "This chat has ended.",
-              timestamp: new Date(),
+              $each: [
+                {
+                  from: null,
+                  to: socket.userID,
+                  message: "This chat has ended.",
+                  timestamp: new Date(),
+                },
+              ],
             },
           },
         }
