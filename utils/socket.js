@@ -16,7 +16,6 @@ async function markUserInactive(userId) {
 
 export const registerSocketEvents = (io) => {
   io.on("connection", async (socket) => {
-    const userID = socket.handshake.query.userID;
     console.log("User connected:", socket.id);
 
     socket.on("register", (userID, role) => {
@@ -59,78 +58,81 @@ export const registerSocketEvents = (io) => {
 
     //CHAT
 
-    if (!userID) return;
+    socket.on("request_chat_history", async ({ userID }) => {
+      if (!userID) return;
 
-    try {
-      // Fetch all chats for this user
-      const allChats = await Chat.find({
-        participants: userID,
-      })
-        .sort({ updatedAt: -1 }) // recent first
-        .populate({
-          path: "participants",
-          select: "resID empID",
-          populate: [
-            { path: "resID", select: "firstname lastname picture" },
-            {
-              path: "empID",
-              populate: {
-                path: "resID",
-                select: "firstname lastname picture",
-              },
-            },
-          ],
+      try {
+        const allChats = await Chat.find({
+          participants: userID,
         })
-        .populate({
-          path: "messages.from",
-          select: "resID empID",
-          populate: [
-            { path: "resID", select: "firstname lastname picture" },
-            {
-              path: "empID",
-              populate: {
-                path: "resID",
-                select: "firstname lastname picture",
+          .sort({ updatedAt: -1 }) // most recent first
+          .populate({
+            path: "participants",
+            select: "resID empID",
+            populate: [
+              { path: "resID", select: "firstname lastname picture" },
+              {
+                path: "empID",
+                populate: {
+                  path: "resID",
+                  select: "firstname lastname picture",
+                },
               },
-            },
-          ],
-        })
-        .populate({
-          path: "messages.to",
-          select: "resID empID",
-          populate: [
-            { path: "resID", select: "firstname lastname picture" },
-            {
-              path: "empID",
-              populate: {
-                path: "resID",
-                select: "firstname lastname picture",
+            ],
+          })
+          .populate({
+            path: "messages.from",
+            select: "resID empID",
+            populate: [
+              { path: "resID", select: "firstname lastname picture" },
+              {
+                path: "empID",
+                populate: {
+                  path: "resID",
+                  select: "firstname lastname picture",
+                },
               },
-            },
-          ],
+            ],
+          })
+          .populate({
+            path: "messages.to",
+            select: "resID empID",
+            populate: [
+              { path: "resID", select: "firstname lastname picture" },
+              {
+                path: "empID",
+                populate: {
+                  path: "resID",
+                  select: "firstname lastname picture",
+                },
+              },
+            ],
+          });
+
+        // ✅ Send full chat history
+        socket.emit("chat_history", {
+          userID,
+          chats: allChats,
         });
 
-      // Emit all chats (active, ended, bot, etc.)
-      socket.emit("chat_history", {
-        userID,
-        chats: allChats,
-      });
-
-      // Optionally auto-assign most recent if still active
-      const activeChat = allChats.find((chat) => chat.status === "Active");
-      if (activeChat) {
-        socket.emit("chat_assigned", {
-          roomId: activeChat._id,
-          botMessages: activeChat.messages, // send all messages
-          isBot: activeChat.isBot,
+        // ✅ Optionally assign most recent active chat
+        const activeChat = allChats.find((chat) => chat.status === "Active");
+        if (activeChat) {
+          socket.emit("chat_assigned", {
+            roomId: activeChat._id,
+            botMessages: activeChat.messages, // full messages
+            isBot: activeChat.isBot,
+          });
+        } else {
+          socket.emit("no_active_chat", { userID });
+        }
+      } catch (err) {
+        console.error("❌ Error fetching chats:", err);
+        socket.emit("chat_history_error", {
+          error: "Unable to load chats.",
         });
-      } else {
-        socket.emit("no_active_chat", { userID });
       }
-    } catch (err) {
-      console.error("❌ Error fetching chats:", err);
-      socket.emit("chat_history_error", { error: "Unable to load chats." });
-    }
+    });
 
     const SYSTEM_USER_ID = "000000000000000000000000";
 
