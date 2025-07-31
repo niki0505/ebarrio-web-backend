@@ -72,7 +72,18 @@ export const registerSocketEvents = (io) => {
 
         if (hasActiveStaffChat) {
           console.log("❌ Cannot start bot chat: active staff chat exists.");
-          return; // ✅ Exit early — no bot chat if staff is already handling
+          io.to(socket.id).emit("chat_assigned", {
+            id: hasActiveStaffChat._id.toString(),
+            participants: hasActiveStaffChat.participants,
+            responder: hasActiveStaffChat.responder,
+            messages: hasActiveStaffChat.messages,
+            status: hasActiveStaffChat.status,
+            isCleared: hasActiveStaffChat.isCleared,
+            isBot: hasActiveStaffChat.isBot,
+            createdAt: hasActiveStaffChat.createdAt,
+            updatedAt: hasActiveStaffChat.updatedAt,
+          });
+          return;
         }
 
         // 🔍 Check if an active bot chat already exists
