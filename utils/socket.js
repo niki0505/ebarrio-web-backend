@@ -1,6 +1,7 @@
 export const connectedUsers = new Map();
 import User from "../models/Users.js";
 import Chat from "../models/Chats.js";
+import mongoose from "mongoose";
 
 async function markUserActive(userId) {
   await User.findByIdAndUpdate(userId, { status: "Active" });
