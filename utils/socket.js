@@ -414,6 +414,7 @@ export const registerSocketEvents = (io) => {
       // ✅ Always include both Secretary and Clerk
       const staffUsers = await User.find({
         role: { $in: ["Secretary", "Clerk"] },
+        status: { $nin: ["Archived", "Deactivated"] },
       });
       if (staffUsers.length === 0) {
         console.log("❌ No Secretary or Clerk users found in DB");
@@ -437,7 +438,7 @@ export const registerSocketEvents = (io) => {
           from: assignedStaffId,
           to: socket.userID,
           message:
-            "Your chat has been transferred to an available admin. How can we help you today?",
+            "This conversation has been forwarded to the barangay office. An admin will get back to you shortly.",
           timestamp: new Date(),
         };
 
