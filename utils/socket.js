@@ -425,7 +425,7 @@ export const registerSocketEvents = (io) => {
           from: assignedStaffId,
           to: socket.userID,
           message:
-            "Your chat has been transferred to an available staff. How can we help you today?",
+            "Your chat has been transferred to an available admin. How can we help you today?",
           timestamp: new Date(),
         };
 
