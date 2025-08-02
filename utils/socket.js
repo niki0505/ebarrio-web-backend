@@ -19,7 +19,7 @@ export const registerSocketEvents = (io) => {
   io.on("connection", (socket) => {
     console.log("User connected:", socket.id);
 
-    socket.on("register", (userID, role) => {
+    socket.on("register", async (userID, role) => {
       connectedUsers.set(userID, {
         socketId: socket.id,
         role,
@@ -29,6 +29,20 @@ export const registerSocketEvents = (io) => {
       markUserActive(userID);
       socket.join(userID);
       console.log(`Socket joined room: ${userID}`);
+
+      if (["Secretary", "Clerk"].includes(role)) {
+        const activeChats = await Chat.find({
+          participants: userID,
+          status: "Active",
+          isBot: false,
+        });
+
+        for (const chat of activeChats) {
+          const roomId = chat._id.toString();
+          socket.join(roomId);
+          console.log(`🔁 Staff (${role}) rejoined room: ${roomId}`);
+        }
+      }
     });
 
     socket.on("unregister", (userID) => {
@@ -397,23 +411,21 @@ export const registerSocketEvents = (io) => {
         );
       }
 
-      const staffUserIDs = [];
-      // 🎯 Assign first available Secretary or Clerk
-      for (let [userId, info] of connectedUsers) {
-        if (["Secretary", "Clerk"].includes(info.role)) {
-          staffUserIDs.push(userId);
-        }
-      }
-
-      if (staffUserIDs.length === 0) {
-        console.log("❌ No staff available to assign");
+      // ✅ Always include both Secretary and Clerk
+      const staffUsers = await User.find({
+        role: { $in: ["Secretary", "Clerk"] },
+      });
+      if (staffUsers.length === 0) {
+        console.log("❌ No Secretary or Clerk users found in DB");
         return;
       }
 
-      assignedStaffId = staffUserIDs[0]; // for default message
+      const staffUserIDs = staffUsers.map((user) => user._id.toString());
+      assignedStaffId = staffUserIDs[0]; // Pick first for welcome message
+
       const participantIds = [socket.userID, ...staffUserIDs];
 
-      // 🔍 Look for existing active chat involving the resident and admins
+      // 🔍 Look for existing active chat involving the resident and staff
       let chat = await Chat.findOne({
         participants: { $all: participantIds },
         status: "Active",
@@ -444,9 +456,12 @@ export const registerSocketEvents = (io) => {
 
       const roomId = chat._id.toString();
 
-      // 👥 Join all staff sockets and resident to room
+      // 👥 Online staff join room
       for (let [userId, info] of connectedUsers) {
-        if (["Secretary", "Clerk"].includes(info.role)) {
+        if (
+          ["Secretary", "Clerk"].includes(info.role) &&
+          staffUserIDs.includes(userId)
+        ) {
           io.to(info.socketId).socketsJoin(roomId);
         }
       }
