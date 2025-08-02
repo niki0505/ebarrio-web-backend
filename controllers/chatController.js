@@ -136,7 +136,7 @@ export const getChats = async (req, res) => {
   try {
     const { userID } = req.user; // assuming auth middleware sets req.user
 
-    const chats = await Chat.find({ participants: userID })
+    const chats = await Chat.find({ isBot: { $ne: true } })
       .populate({
         path: "participants",
         select: "resID empID",
