@@ -23,7 +23,7 @@ app.use(cookieParser());
 
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: "https://ebarrio.online",
     credentials: true,
   })
 );
@@ -36,9 +36,22 @@ const subClient = rds.duplicate();
 export { rds };
 
 const server = http.createServer(app);
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://ebarrio.online",
+  "https://api.ebarrio.online",
+  undefined,
+];
+
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true); // ✅ allow
+      } else {
+        callback(new Error("❌ Not allowed by CORS"));
+      }
+    },
     credentials: true,
   },
 });
@@ -68,9 +81,9 @@ app.use("/api", routes);
 app.use("/", qrCodeRoute);
 
 // 2 mins
-cron.schedule("*/2 * * * *", () => {
-  captureSnapshot();
-});
+// cron.schedule("*/2 * * * *", () => {
+//   captureSnapshot();
+// });
 
 // const plainPassword = "ebarriotechnicaladmin";
 // const saltRounds = 10;
@@ -85,7 +98,7 @@ cron.schedule("*/2 * * * *", () => {
 // });
 
 const PORT = process.env.PORT;
-server.listen(PORT, async () => {
+server.listen(PORT, "0.0.0.0", async () => {
   try {
     console.log(`Server is running on port ${PORT}`);
     await connectDB();

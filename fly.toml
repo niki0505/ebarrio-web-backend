@@ -2,14 +2,14 @@ app = 'ebarrio-web-backend-6nymsa'
 primary_region = 'sin'
 
 [env]
-  PORT="5000"
+  PORT = "5000"
 
 [http_service]
   internal_port = 5000
   force_https = true
   auto_stop_machines = "stop"
   auto_start_machines = true
-  min_machines_running = 0
+  min_machines_running = 1
   processes = ["app"]
 
 [[vm]]
@@ -17,3 +17,7 @@ primary_region = 'sin'
   cpu_kind = "shared"
   cpus = 1
 
+[services.concurrency]
+type = "connections"
+soft_limit = 25
+hard_limit = 50
