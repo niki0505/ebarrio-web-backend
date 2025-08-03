@@ -23,7 +23,7 @@ app.use(cookieParser());
 
 app.use(
   cors({
-    origin: "https://ebarrio.online",
+    origin: "http://localhost:3000",
     credentials: true,
   })
 );
