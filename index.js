@@ -81,9 +81,9 @@ app.use("/api", routes);
 app.use("/", qrCodeRoute);
 
 // 2 mins
-// cron.schedule("*/2 * * * *", () => {
-//   captureSnapshot();
-// });
+cron.schedule("*/2 * * * *", () => {
+  captureSnapshot();
+});
 
 // const plainPassword = "ebarriotechnicaladmin";
 // const saltRounds = 10;
