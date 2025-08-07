@@ -386,9 +386,6 @@ export const registerSocketEvents = (io) => {
     socket.on("request_chat", async () => {
       if (socket.role !== "Resident") return;
 
-      let assignedStaffId = null;
-      let isNewChat = null;
-
       // 🧹 End previous active bot chat
       const existingBotChat = await Chat.findOne({
         participants: socket.userID,
@@ -411,7 +408,6 @@ export const registerSocketEvents = (io) => {
         );
       }
 
-      // ✅ Always include both Secretary and Clerk
       const staffUsers = await User.find({
         role: { $in: ["Secretary", "Clerk"] },
         status: { $nin: ["Archived", "Deactivated"] },
@@ -422,70 +418,13 @@ export const registerSocketEvents = (io) => {
       }
 
       const staffUserIDs = staffUsers.map((user) => user._id.toString());
-      assignedStaffId = staffUserIDs[0]; // Pick first for welcome message
+      const assignedStaffId = staffUserIDs[0]; // Choose one staff
 
-      const participantIds = [socket.userID, ...staffUserIDs];
-
-      // 🔍 Look for existing active chat involving the resident and staff
-      let chat = await Chat.findOne({
-        participants: { $all: participantIds },
-        status: "Active",
+      // Don't create chat yet — only remember the assignment
+      console.log("📥 Waiting for user to send first message to start chat");
+      io.to(socket.id).emit("chat_pending", {
+        assignedStaffId,
       });
-
-      // 🆕 If none, create one
-      if (!chat) {
-        const defaultMessage = {
-          from: assignedStaffId,
-          to: socket.userID,
-          message:
-            "This conversation has been forwarded to the barangay office. An admin will get back to you shortly.",
-          timestamp: new Date(),
-        };
-
-        chat = new Chat({
-          participants: participantIds,
-          status: "Active",
-          messages: [defaultMessage],
-        });
-
-        await chat.save();
-        isNewChat = true;
-        console.log("🆕 Created new chat:", chat._id.toString());
-      } else {
-        console.log("📁 Found existing chat:", chat._id.toString());
-      }
-
-      const roomId = chat._id.toString();
-
-      // 👥 Online staff join room
-      for (let [userId, info] of connectedUsers) {
-        if (
-          ["Secretary", "Clerk"].includes(info.role) &&
-          staffUserIDs.includes(userId)
-        ) {
-          io.to(info.socketId).socketsJoin(roomId);
-        }
-      }
-
-      socket.join(roomId); // Resident joins too
-      console.log("🚪 Resident and staff joined room:", roomId);
-
-      io.to(socket.id).emit("chat_assigned", {
-        _id: chat._id.toString(),
-        participants: chat.participants,
-        responder: chat.responder,
-        messages: chat.messages,
-        status: chat.status,
-        isCleared: chat.isCleared,
-        isBot: chat.isBot,
-        createdAt: chat.createdAt,
-        updatedAt: chat.updatedAt,
-      });
-
-      console.log(
-        "👥 Assigned staff to resident on chat start:",
-        assignedStaffId
-      );
     });
 
     socket.on("send_message", async ({ from, to, message, roomId }) => {
@@ -546,7 +485,7 @@ export const registerSocketEvents = (io) => {
         to,
         message,
         timestamp: new Date(),
-        roomId,
+        roomID: roomId,
       });
 
       console.log("📤 Broadcasted message to room:", roomId);
