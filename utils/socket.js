@@ -386,75 +386,86 @@ export const registerSocketEvents = (io) => {
     socket.on("send_message", async ({ from, to, message, roomId }) => {
       console.log(`📨 Message received from ${from} to ${to}:`, message);
 
-      const isFromResident = socket.role === "Resident";
       let chat = null;
 
-      // 1. End bot chat (if any)
-      if (isFromResident) {
-        const botChat = await Chat.findOne({
+      // 🧹 End previous active bot chat if any
+      if (socket.role === "Resident") {
+        const existingBotChat = await Chat.findOne({
           participants: from,
           isBot: true,
           status: "Active",
         });
 
-        if (botChat) {
-          botChat.status = "Ended";
-          botChat.messages.push({
+        if (existingBotChat) {
+          existingBotChat.status = "Ended";
+          existingBotChat.messages.push({
             from: SYSTEM_USER_ID,
             to: from,
             message: "This chat has ended.",
             timestamp: new Date(),
           });
-          await botChat.save();
-          console.log("☑️ Bot chat ended:", botChat._id);
+
+          await existingBotChat.save();
+          console.log("☑️ Ended bot chat:", existingBotChat._id.toString());
         }
       }
 
-      // 2. Try to find chat by ID or participants
+      // 1️⃣ Try by roomId first
       if (roomId) {
         chat = await Chat.findById(roomId);
-        console.log("🔎 Found chat by roomId:", roomId);
+        if (chat) console.log("🔎 Found chat by roomId:", roomId);
       }
 
+      // 2️⃣ Try by participants
       if (!chat) {
         chat = await Chat.findOne({
           participants: { $all: [from, to] },
           status: "Active",
+          isBot: false,
         });
+
         if (chat) {
           roomId = chat._id.toString();
-          console.log("📁 Found chat by participants:", roomId);
+          console.log("📁 Found human chat by participants:", roomId);
         }
       }
 
-      // 3. Create new chat if none exists
+      // 3️⃣ Create new human chat if still none
       if (!chat) {
-        let assignedStaffId = to;
-
-        // If to is null, assign a staff
-        if (!assignedStaffId && isFromResident) {
-          assignedStaffId = await assignAvailableStaff(); // ← your logic
-          console.log("👥 Assigned staff:", assignedStaffId);
-        }
-
         chat = new Chat({
-          participants: [from, assignedStaffId],
-          responder: assignedStaffId,
+          participants: [from, to],
           status: "Active",
+          messages: [],
           isBot: false,
         });
 
         await chat.save();
         roomId = chat._id.toString();
-        console.log("🆕 Created chat:", roomId);
+        console.log("🆕 Created new human chat:", roomId);
       }
 
-      // 4. Push the message
+      // 4️⃣ Add the message
       chat.messages.push({ from, to, message, timestamp: new Date() });
-      await chat.save();
 
-      // 5. Broadcast
+      // 5️⃣ Assign responder if needed
+      if (!chat.responder && socket.role !== "Resident") {
+        chat.responder = from;
+        console.log("👤 Assigned responder:", from);
+      }
+
+      // 6️⃣ Save chat
+      try {
+        await chat.save();
+        console.log("✅ Chat updated with new message");
+      } catch (err) {
+        console.error("❌ Failed to save chat:", err.message);
+      }
+
+      // 7️⃣ Join room (safety)
       socket.join(roomId);
+      console.log(`👥 ${from} joined room ${roomId}`);
+
+      // 8️⃣ Emit message
       io.to(roomId).emit("receive_message", {
         from,
         to,
@@ -463,7 +474,7 @@ export const registerSocketEvents = (io) => {
         roomId,
       });
 
-      console.log("📤 Sent to room:", roomId);
+      console.log("📤 Broadcasted message to room:", roomId);
     });
   });
 };
