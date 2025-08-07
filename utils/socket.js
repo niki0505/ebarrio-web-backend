@@ -383,112 +383,80 @@ export const registerSocketEvents = (io) => {
     //   }
     // });
 
-    socket.on("request_chat", async () => {
-      if (socket.role !== "Resident") return;
-
-      // 🧹 End previous active bot chat
-      const existingBotChat = await Chat.findOne({
-        participants: socket.userID,
-        isBot: true,
-        status: "Active",
-      });
-
-      if (existingBotChat) {
-        existingBotChat.status = "Ended";
-        existingBotChat.messages.push({
-          from: SYSTEM_USER_ID,
-          to: socket.userID,
-          message: "This chat has ended.",
-          timestamp: new Date(),
-        });
-        await existingBotChat.save();
-        console.log(
-          "☑️ Ended previous bot chat:",
-          existingBotChat._id.toString()
-        );
-      }
-
-      const staffUsers = await User.find({
-        role: { $in: ["Secretary", "Clerk"] },
-        status: { $nin: ["Archived", "Deactivated"] },
-      });
-      if (staffUsers.length === 0) {
-        console.log("❌ No Secretary or Clerk users found in DB");
-        return;
-      }
-
-      const staffUserIDs = staffUsers.map((user) => user._id.toString());
-      const assignedStaffId = staffUserIDs[0]; // Choose one staff
-
-      // Don't create chat yet — only remember the assignment
-      console.log("📥 Waiting for user to send first message to start chat");
-      io.to(socket.id).emit("chat_pending", {
-        assignedStaffId,
-      });
-    });
-
     socket.on("send_message", async ({ from, to, message, roomId }) => {
       console.log(`📨 Message received from ${from} to ${to}:`, message);
 
       const isFromResident = socket.role === "Resident";
       let chat = null;
 
+      // End bot chat ONLY if this is the first real message to a staff
+      if (isFromResident) {
+        const activeBotChat = await Chat.findOne({
+          participants: from,
+          isBot: true,
+          status: "Active",
+        });
+
+        if (activeBotChat) {
+          activeBotChat.status = "Ended";
+          activeBotChat.messages.push({
+            from: SYSTEM_USER_ID,
+            to: from,
+            message: "This chat has ended.",
+            timestamp: new Date(),
+          });
+          await activeBotChat.save();
+          console.log(
+            "☑️ Ended active bot chat:",
+            activeBotChat._id.toString()
+          );
+        }
+      }
+
+      // Look for existing active chat
       if (roomId) {
         chat = await Chat.findById(roomId);
         console.log("🔎 Found chat by roomId:", roomId);
       }
 
-      // If no chat found by roomId, fallback to participants
       if (!chat) {
         chat = await Chat.findOne({
           participants: { $all: [from, to] },
           status: "Active",
         });
-
         if (chat) {
-          console.log("📁 Found chat by participants:", chat._id.toString());
           roomId = chat._id.toString();
+          console.log("📁 Found chat by participants:", roomId);
         }
       }
 
-      // If still no chat, create a new one
+      // Create new chat if still not found
       if (!chat) {
-        chat = new Chat({ participants: [from, to], status: "Active" });
+        chat = new Chat({
+          participants: [from, to],
+          status: "Active",
+          responder: socket.role !== "Resident" ? from : null,
+          isBot: false,
+        });
         await chat.save();
         roomId = chat._id.toString();
-        console.log("🆕 New chat created with roomId:", roomId);
+        console.log("🆕 Created new chat:", roomId);
       }
 
-      // Push the new message
+      // Push message
       chat.messages.push({ from, to, message });
+      await chat.save();
 
-      // Auto-assign responder if needed
-      if (!chat.responder && socket.role !== "Resident") {
-        chat.responder = from;
-        console.log("👤 Assigned responder:", from);
-      }
-
-      // Save chat
-      try {
-        await chat.save();
-        console.log("✅ Chat saved to DB");
-      } catch (err) {
-        console.error("❌ Failed to save chat:", err.message);
-      }
-
-      // Join the room
       socket.join(roomId);
-      console.log(`👥 ${from} joined room ${roomId}`);
-
       io.to(roomId).emit("receive_message", {
         from,
         to,
         message,
         timestamp: new Date(),
-        roomID: roomId,
+        roomId,
       });
 
-      console.log("📤 Broadcasted message to room:", roomId);
+      console.log("📤 Message broadcasted to room:", roomId);
     });
   });
 };
