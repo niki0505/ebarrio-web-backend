@@ -384,12 +384,29 @@ export const registerSocketEvents = (io) => {
     // });
 
     socket.on("send_message", async ({ from, to, message, roomId }) => {
-      console.log(`📨 Message received from ${from} to ${to}:`, message);
+      console.log(`📨 Message received from ${from} to ${to || "?"}:`, message);
 
       const isFromResident = socket.role === "Resident";
       let chat = null;
+      let assignedStaffId = to;
 
-      // End bot chat ONLY if this is the first real message to a staff
+      // STEP 1: If resident and no "to", assign a staff
+      if (isFromResident && !assignedStaffId) {
+        const availableStaff = await User.findOne({
+          role: { $in: ["Secretary", "Clerk"] },
+          status: { $nin: ["Archived", "Deactivated"] },
+        });
+
+        if (!availableStaff) {
+          console.log("❌ No staff available");
+          return;
+        }
+
+        assignedStaffId = availableStaff._id.toString();
+        console.log("👤 Assigned staff to resident:", assignedStaffId);
+      }
+
+      // STEP 2: End active bot chat if any
       if (isFromResident) {
         const activeBotChat = await Chat.findOne({
           participants: from,
@@ -413,27 +430,29 @@ export const registerSocketEvents = (io) => {
         }
       }
 
-      // Look for existing active chat
+      // STEP 3: Look for existing active chat
       if (roomId) {
         chat = await Chat.findById(roomId);
         console.log("🔎 Found chat by roomId:", roomId);
       }
 
-      if (!chat) {
+      // Try fallback: find active chat between both
+      if (!chat && assignedStaffId) {
         chat = await Chat.findOne({
-          participants: { $all: [from, to] },
+          participants: { $all: [from, assignedStaffId] },
           status: "Active",
         });
+
         if (chat) {
           roomId = chat._id.toString();
-          console.log("📁 Found chat by participants:", roomId);
+          console.log("📁 Found existing chat by participants:", roomId);
         }
       }
 
-      // Create new chat if still not found
+      // STEP 4: Create chat if still not found
       if (!chat) {
         chat = new Chat({
-          participants: [from, to],
+          participants: [from, assignedStaffId],
           status: "Active",
           responder: socket.role !== "Resident" ? from : null,
           isBot: false,
@@ -443,20 +462,20 @@ export const registerSocketEvents = (io) => {
         console.log("🆕 Created new chat:", roomId);
       }
 
-      // Push message
-      chat.messages.push({ from, to, message });
+      // STEP 5: Save message
+      chat.messages.push({ from, to: assignedStaffId, message });
       await chat.save();
 
       socket.join(roomId);
       io.to(roomId).emit("receive_message", {
         from,
-        to,
+        to: assignedStaffId,
         message,
         timestamp: new Date(),
         roomId,
       });
 
-      console.log("📤 Message broadcasted to room:", roomId);
+      console.log("📤 Broadcasted message to room:", roomId);
     });
   });
 };
