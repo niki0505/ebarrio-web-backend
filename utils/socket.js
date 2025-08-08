@@ -539,6 +539,8 @@ export const registerSocketEvents = (io) => {
 
       // Join the room
       socket.join(roomId);
+      const toSocket = connectedUsers.get(to)?.socketId;
+      if (toSocket) io.sockets.sockets.get(toSocket)?.join(room);
       console.log(`👥 ${from} joined room ${roomId}`);
 
       io.to(roomId).emit("receive_message", {
