@@ -5,6 +5,7 @@ import {
   getAnnouncementsUtils,
   getBlottersUtils,
   getEmployeesUtils,
+  getFAQsUtils,
   getFormattedCertificates,
   getHotlinesUtils,
   getReservationsUtils,
@@ -261,6 +262,31 @@ export const watchAllCollectionsChanges = (io) => {
   });
   activitylogsChangeStream.on("error", (error) => {
     console.error("Error in activity logs change stream:", error);
+  });
+
+  //FAQS
+  const faqsChangeStream = db.collection("faqs").watch();
+  faqsChangeStream.on("change", async (change) => {
+    console.log("FAQs change detected:", change);
+    if (
+      change.operationType === "update" ||
+      change.operationType === "insert"
+    ) {
+      const faqs = await getFAQsUtils();
+      websiteNamespace.emit("dbChange", {
+        type: "faqs",
+        data: faqs,
+      });
+    } else if (change.operationType === "delete") {
+      websiteNamespace.emit("dbChange", {
+        type: "faqs",
+        deleted: true,
+        id: change.documentKey._id,
+      });
+    }
+  });
+  faqsChangeStream.on("error", (error) => {
+    console.error("Error in faqs change stream:", error);
   });
 
   console.log("Watching all collections for changes...");

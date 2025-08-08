@@ -136,7 +136,9 @@ import {
 } from "../controllers/householdController.js";
 import { getLatestSnapshot } from "../controllers/snapshotController.js";
 import {
+  archiveFAQ,
   createFAQ,
+  editFAQ,
   endChat,
   getChat,
   getChats,
@@ -365,6 +367,8 @@ router.get("/latestsnapshot", getLatestSnapshot);
 
 //FAQs
 router.post("/createfaq", authMiddleware, createFAQ);
+router.post("/editfaq/:faqID", authMiddleware, editFAQ);
+router.put("/archivefaq/:faqID", authMiddleware, archiveFAQ);
 router.get("/getfaqs", authMiddleware, getFAQs);
 router.get("/getchats", authMiddleware, getChats);
 router.get("/getchat/:roomId", authMiddleware, getChat);
