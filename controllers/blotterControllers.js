@@ -1,10 +1,24 @@
 import Blotter from "../models/Blotters.js";
-import { getBlottersUtils } from "../utils/collectionUtils.js";
+import {
+  getBlottersUtils,
+  getPendingBlotters,
+} from "../utils/collectionUtils.js";
 import Resident from "../models/Residents.js";
 import User from "../models/Users.js";
 import { sendPushNotification } from "../utils/collectionUtils.js";
 import Notification from "../models/Notifications.js";
 import { sendNotificationUpdate } from "../utils/collectionUtils.js";
+
+export const getPendingBlottersCount = async (req, res) => {
+  try {
+    const blotter = await getPendingBlotters();
+
+    return res.status(200).json(blotter);
+  } catch (error) {
+    console.error("Error in fetching court reservations:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
 
 export const rejectBlotter = async (req, res) => {
   try {
@@ -257,11 +271,23 @@ export const getBlotter = async (req, res) => {
   try {
     const { blotterID } = req.params;
     const blotter = await Blotter.findById(blotterID)
-      .populate(
-        "complainantID",
-        "firstname middlename lastname signature address mobilenumber"
-      )
-      .populate("subjectID", "firstname middlename lastname signature address")
+      .populate({
+        path: "complainantID",
+        select:
+          "firstname middlename lastname signature householdno mobilenumber",
+        populate: {
+          path: "householdno",
+          select: "address",
+        },
+      })
+      .populate({
+        path: "subjectID",
+        select: "firstname middlename lastname signature householdno",
+        populate: {
+          path: "householdno",
+          select: "address",
+        },
+      })
       .populate("witnessID", "firstname middlename lastname signature");
 
     const formatDatePH = (date) => {

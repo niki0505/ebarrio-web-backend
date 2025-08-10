@@ -1,5 +1,20 @@
 import Household from "../models/Households.js";
 import Resident from "../models/Residents.js";
+import {
+  getAllHouseholdUtils,
+  getPendingHouseholds,
+} from "../utils/collectionUtils.js";
+
+export const getPendingHouseholdsCount = async (req, res) => {
+  try {
+    const house = await getPendingHouseholds();
+
+    return res.status(200).json(house);
+  } catch (error) {
+    console.error("Error in fetching court reservations:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
 
 export const removeMember = async (req, res) => {
   try {
@@ -124,7 +139,7 @@ export const getHousehold = async (req, res) => {
 
 export const getAllHousehold = async (req, res) => {
   try {
-    const households = await Household.find().populate("members.resID");
+    const households = await getAllHouseholdUtils();
     res.status(200).json(households);
   } catch (error) {
     console.log("Error fetching households", error);

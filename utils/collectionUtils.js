@@ -10,6 +10,7 @@ import axios from "axios";
 import Notification from "../models/Notifications.js";
 import ActivityLog from "../models/ActivityLogs.js";
 import FAQ from "../models/FAQs.js";
+import Household from "../models/Households.js";
 
 export const getFAQsUtils = async () => {
   try {
@@ -18,6 +19,27 @@ export const getFAQsUtils = async () => {
     return faqs;
   } catch (error) {
     throw new Error("Error fetching faqs: " + error.message);
+  }
+};
+
+export const getPendingHouseholds = async () => {
+  try {
+    const house = await Household.countDocuments({
+      status: { $in: ["Pending", "Change Requested"] },
+    });
+    return house;
+  } catch (error) {
+    throw new Error("Error fetching residents: " + error.message);
+  }
+};
+
+export const getAllHouseholdUtils = async (req, res) => {
+  try {
+    const households = await Household.find().populate("members.resID");
+    return households;
+  } catch (error) {
+    console.log("Error fetching households", error);
+    res.status(500).json({ message: "Failed to fetch households" });
   }
 };
 
@@ -83,6 +105,15 @@ export const sendPushNotification = async (pushtoken, title, body, screen) => {
     console.log("✅ Push notification sent! Response:", response.data);
   } catch (error) {
     console.error("❌ Failed to send push notification:", error.message);
+  }
+};
+
+export const getPendingBlotters = async () => {
+  try {
+    const blot = await Blotter.countDocuments({ status: "Pending" });
+    return blot;
+  } catch (error) {
+    throw new Error("Error fetching residents: " + error.message);
   }
 };
 
@@ -164,6 +195,15 @@ export const getHotlinesUtils = async () => {
   }
 };
 
+export const getPendingReservations = async () => {
+  try {
+    const court = await CourtReservation.countDocuments({ status: "Pending" });
+    return court;
+  } catch (error) {
+    throw new Error("Error fetching residents: " + error.message);
+  }
+};
+
 export const getReservationsUtils = async () => {
   try {
     const reservation = await CourtReservation.find().populate("resID");
@@ -175,10 +215,25 @@ export const getReservationsUtils = async () => {
 
 export const getEmployeesUtils = async () => {
   try {
-    const employees = await Employee.find().populate("resID");
+    const employees = await Employee.find().populate({
+      path: "resID",
+      populate: {
+        path: "householdno",
+        select: "address",
+      },
+    });
     return employees;
   } catch (error) {
     throw new Error("Error fetching employees: " + error.message);
+  }
+};
+
+export const getPendingResidents = async () => {
+  try {
+    const residents = await Resident.countDocuments({ status: "Pending" });
+    return residents;
+  } catch (error) {
+    throw new Error("Error fetching residents: " + error.message);
   }
 };
 
@@ -187,6 +242,7 @@ export const getResidentsUtils = async () => {
     const residents = await Resident.find()
       .select("-empID")
       .populate("empID")
+      .populate("householdno", "address")
       .exec();
     return residents;
   } catch (error) {
@@ -210,9 +266,24 @@ export const getAnnouncementsUtils = async () => {
   }
 };
 
+export const getPendingDocuments = async () => {
+  try {
+    const cert = await Certificate.countDocuments({ status: "Pending" });
+    return cert;
+  } catch (error) {
+    throw new Error("Error fetching residents: " + error.message);
+  }
+};
+
 export const getFormattedCertificates = async () => {
   try {
-    const certificates = await Certificate.find().populate("resID");
+    const certificates = await Certificate.find().populate({
+      path: "resID",
+      populate: {
+        path: "householdno",
+        select: "address",
+      },
+    });
 
     const formatDatePH = (date) => {
       return new Date(date).toLocaleString("en-PH", {

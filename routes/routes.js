@@ -49,6 +49,7 @@ import {
   generateCertificateReq,
   getAllCertificateRequests,
   getCertificate,
+  getPendingDocumentsCount,
   getPrepared,
   notifyCert,
   rejectCertificateReq,
@@ -75,7 +76,7 @@ import {
 import {
   approveReservation,
   createReservation,
-  getPendingReservations,
+  getPendingReservationsCount,
   getReservations,
   rejectCourtReq,
 } from "../controllers/courtController.js";
@@ -84,6 +85,7 @@ import {
   editScheduleBlotter,
   getBlotter,
   getBlotters,
+  getPendingBlottersCount,
   rejectBlotter,
   scheduleBlotter,
   settleBlotter,
@@ -123,6 +125,7 @@ import {
   approveResident,
   getResidentImages,
   rejectResident,
+  getPendingResidentsCount,
 } from "../controllers/residentsController.js";
 import { getLogs } from "../controllers/activityLogsController.js";
 import {
@@ -132,9 +135,13 @@ import {
   editVehicle,
   getAllHousehold,
   getHousehold,
+  getPendingHouseholdsCount,
   removeMember,
 } from "../controllers/householdController.js";
-import { getLatestSnapshot } from "../controllers/snapshotController.js";
+import {
+  alertResidents,
+  getLatestSnapshot,
+} from "../controllers/snapshotController.js";
 import {
   archiveFAQ,
   createFAQ,
@@ -198,6 +205,7 @@ router.get("/getoldresidents", getAllOldResidents);
 router.post("/viewresidentdetails/:resID", authMiddleware, viewResidentDetails);
 router.post("/printcurrentbrgyid/:resID", authMiddleware, printBrgyID);
 router.post("/issuedocument/:resID", authMiddleware, issueDocument);
+router.get("/pendingresidents", authMiddleware, getPendingResidentsCount);
 
 //EMPLOYEES
 router.get("/getemployees", authMiddleware, getAllEmployees);
@@ -221,6 +229,7 @@ router.post("/generatecertificate/", authMiddleware, generateCertificate);
 router.put("/savecertificate/:certID", authMiddleware, saveCertificate);
 router.get("/getcertificate/:certID", authMiddleware, getCertificate);
 router.get("/getprepared/:userID", authMiddleware, getPrepared);
+router.get("/pendingdocuments", authMiddleware, getPendingDocumentsCount);
 
 //CERTIFICATE REQUESTS
 router.get("/getcertificates", authMiddleware, getAllCertificateRequests);
@@ -290,7 +299,11 @@ router.post(
 
 //COURT RESERVATION
 router.get("/getreservations", authMiddleware, getReservations);
-router.get("/getpendingreservations", authMiddleware, getPendingReservations);
+router.get(
+  "/getpendingreservations",
+  authMiddleware,
+  getPendingReservationsCount
+);
 router.put(
   "/approvereservation/:reservationID",
   authMiddleware,
@@ -302,6 +315,7 @@ router.put(
   authMiddleware,
   rejectCourtReq
 );
+router.get("/pendingreservations", authMiddleware, getPendingReservationsCount);
 
 //BLOTTER REPORTS
 router.post("/createblotter", authMiddleware, createBlotter);
@@ -315,6 +329,7 @@ router.put(
 );
 router.put("/settleblotter/:blotterID", authMiddleware, settleBlotter);
 router.put("/rejectblotter/:blotterID", authMiddleware, rejectBlotter);
+router.get("/pendingblotters", authMiddleware, getPendingBlottersCount);
 
 //ACCOUNT SETTINGS
 router.get("/getcurrentuser/:userID", authMiddleware, getUserDetails);
@@ -357,6 +372,7 @@ router.delete(
   authMiddleware,
   removeMember
 );
+router.get("/pendinghouseholds", authMiddleware, getPendingHouseholdsCount);
 
 router.post("/approveresident/:resID/", authMiddleware, approveResident);
 router.get("/getresidentimages/:resID/", authMiddleware, getResidentImages);
@@ -364,6 +380,7 @@ router.post("/rejectresident/:resID", authMiddleware, rejectResident);
 
 //RIVER SNAPSHOTS
 router.get("/latestsnapshot", getLatestSnapshot);
+router.post("/alertresidents", authMiddleware, alertResidents);
 
 //FAQs
 router.post("/createfaq", authMiddleware, createFAQ);
