@@ -1,5 +1,8 @@
 import CourtReservation from "../models/CourtReservations.js";
-import { getReservationsUtils } from "../utils/collectionUtils.js";
+import {
+  getPendingReservations,
+  getReservationsUtils,
+} from "../utils/collectionUtils.js";
 import { sendPushNotification } from "../utils/collectionUtils.js";
 import Notification from "../models/Notifications.js";
 import { sendNotificationUpdate } from "../utils/collectionUtils.js";
@@ -174,14 +177,11 @@ export const approveReservation = async (req, res) => {
   }
 };
 
-export const getPendingReservations = async (req, res) => {
+export const getPendingReservationsCount = async (req, res) => {
   try {
-    const reservations = await getReservationsUtils();
-    const pending = reservations.filter(
-      (reservation) => reservation.status === "Pending"
-    );
+    const reservations = await getPendingReservations();
 
-    return res.status(200).json({ pendingCount: pending.length });
+    return res.status(200).json(reservations);
   } catch (error) {
     console.error("Error in fetching court reservations:", error);
     res.status(500).json({ message: "Internal server error" });

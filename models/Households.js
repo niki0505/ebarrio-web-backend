@@ -68,6 +68,10 @@ const hSchema = new mongoose.Schema(
     nhtsno: { type: String },
     watersource: { type: String, required: true },
     toiletfacility: { type: String, required: true },
+    address: {
+      type: String,
+      required: true,
+    },
   },
   { versionKey: false, timestamps: true }
 );

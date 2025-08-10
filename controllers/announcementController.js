@@ -166,7 +166,7 @@ export const createAnnouncement = async (req, res) => {
 
     const senderSocketId = connectedUsers.get(userID.userID.toString());
 
-    io.except(senderSocketId)
+    io.except(senderSocketId.socketId)
       .to("announcements")
       .emit("announcement", {
         title: `📢 ${announcement.title}`,

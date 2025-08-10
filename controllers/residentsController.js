@@ -5,6 +5,17 @@ import User from "../models/Users.js";
 import Household from "../models/Households.js";
 import axios from "axios";
 import fetch from "node-fetch";
+import { getPendingResidents } from "../utils/collectionUtils.js";
+
+export const getPendingResidentsCount = async (req, res) => {
+  try {
+    const residents = await getPendingResidents();
+    return res.status(200).json(residents);
+  } catch (error) {
+    console.error("Backend image error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
 
 export const getResidentImages = async (req, res) => {
   try {

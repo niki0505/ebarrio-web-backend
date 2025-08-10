@@ -2,11 +2,16 @@ import mongoose from "mongoose";
 import Certificate from "../models/Certificates.js";
 import {
   getActivityLogs,
+  getAllHouseholdUtils,
   getAnnouncementsUtils,
   getBlottersUtils,
   getEmployeesUtils,
   getFormattedCertificates,
   getHotlinesUtils,
+  getPendingBlotters,
+  getPendingDocuments,
+  getPendingReservations,
+  getPendingResidents,
   getReservationsUtils,
   getResidentsUtils,
   getUsersUtils,
@@ -66,6 +71,11 @@ export const watchAllCollectionsChanges = (io) => {
         type: "users",
         data: users,
       });
+      const pendingCount = await getPendingResidents();
+      websiteNamespace.emit("dbChange", {
+        type: "pendingresidents",
+        data: pendingCount,
+      });
     } else if (change.operationType === "delete") {
       websiteNamespace.emit("dbChange", {
         type: "residents",
@@ -81,6 +91,11 @@ export const watchAllCollectionsChanges = (io) => {
       websiteNamespace.emit("dbChange", {
         type: "users",
         data: users,
+      });
+      const pendingCount = await getPendingResidents();
+      websiteNamespace.emit("dbChange", {
+        type: "pendingresidents",
+        data: pendingCount,
       });
     }
   });
@@ -101,11 +116,21 @@ export const watchAllCollectionsChanges = (io) => {
         type: "blotterreports",
         data: blotterreports,
       });
+      const pendingCount = await getPendingBlotters();
+      websiteNamespace.emit("dbChange", {
+        type: "pendingblotters",
+        data: pendingCount,
+      });
     } else if (change.operationType === "delete") {
       websiteNamespace.emit("dbChange", {
         type: "blotterreports",
         deleted: true,
         id: change.documentKey._id,
+      });
+      const pendingCount = await getPendingBlotters();
+      websiteNamespace.emit("dbChange", {
+        type: "pendingblotters",
+        data: pendingCount,
       });
     }
   });
@@ -126,11 +151,21 @@ export const watchAllCollectionsChanges = (io) => {
         type: "certificates",
         data: formattedCertificates,
       });
+      const pendingCount = await getPendingDocuments();
+      websiteNamespace.emit("dbChange", {
+        type: "pendingdocuments",
+        data: pendingCount,
+      });
     } else if (change.operationType === "delete") {
       websiteNamespace.emit("dbChange", {
         type: "certificates",
         deleted: true,
         id: change.documentKey._id,
+      });
+      const pendingCount = await getPendingDocuments();
+      websiteNamespace.emit("dbChange", {
+        type: "pendingdocuments",
+        data: pendingCount,
       });
     }
   });
@@ -151,11 +186,21 @@ export const watchAllCollectionsChanges = (io) => {
         type: "courtreservations",
         data: courtreservations,
       });
+      const pendingCount = await getPendingReservations();
+      websiteNamespace.emit("dbChange", {
+        type: "pendingreservations",
+        data: pendingCount,
+      });
     } else if (change.operationType === "delete") {
       websiteNamespace.emit("dbChange", {
         type: "courtreservations",
         deleted: true,
         id: change.documentKey._id,
+      });
+      const pendingCount = await getPendingReservations();
+      websiteNamespace.emit("dbChange", {
+        type: "pendingreservations",
+        data: pendingCount,
       });
     }
   });
@@ -261,6 +306,31 @@ export const watchAllCollectionsChanges = (io) => {
   });
   activitylogsChangeStream.on("error", (error) => {
     console.error("Error in activity logs change stream:", error);
+  });
+
+  //HOUSEHOLDS
+  const householdsChangeStream = db.collection("households").watch();
+  householdsChangeStream.on("change", async (change) => {
+    console.log("Households change detected:", change);
+    if (
+      change.operationType === "update" ||
+      change.operationType === "insert"
+    ) {
+      const household = await getAllHouseholdUtils();
+      websiteNamespace.emit("dbChange", {
+        type: "household",
+        data: household,
+      });
+    } else if (change.operationType === "delete") {
+      const household = await getAllHouseholdUtils();
+      websiteNamespace.emit("dbChange", {
+        type: "household",
+        data: household,
+      });
+    }
+  });
+  householdsChangeStream.on("error", (error) => {
+    console.error("Error in households change stream:", error);
   });
 
   console.log("Watching all collections for changes...");

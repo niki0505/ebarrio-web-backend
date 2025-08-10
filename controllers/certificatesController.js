@@ -5,6 +5,7 @@ import Certificate from "../models/Certificates.js";
 import QRCode from "qrcode";
 import {
   getFormattedCertificates,
+  getPendingDocuments,
   sendNotificationUpdate,
   sendPushNotification,
 } from "../utils/collectionUtils.js";
@@ -13,6 +14,16 @@ const bgUrl = "https://api.ebarrio.online/qr-bg.png";
 const aniban2logoUrl = "https://api.ebarrio.online/aniban2logo.jpg";
 const verifiedUrl = "https://api.ebarrio.online/verified.png";
 import ActivityLog from "../models/ActivityLogs.js";
+
+export const getPendingDocumentsCount = async (req, res) => {
+  try {
+    const cert = await getPendingDocuments();
+    return res.status(200).json(cert);
+  } catch (error) {
+    console.error("Backend image error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
 
 export const collectedCert = async (req, res) => {
   try {
@@ -538,7 +549,13 @@ export const getPrepared = async (req, res) => {
 export const getCertificate = async (req, res) => {
   try {
     const { certID } = req.params;
-    const cert = await Certificate.findById(certID).populate("resID");
+    const cert = await Certificate.findById(certID).populate({
+      path: "resID",
+      populate: {
+        path: "householdno",
+        select: "address",
+      },
+    });
 
     const formatDatePH = (date) => {
       return new Date(date).toLocaleString("en-PH", {

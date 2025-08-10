@@ -66,12 +66,6 @@ export const updateResident = async (req, res) => {
       emergencyname,
       emergencymobilenumber,
       emergencyaddress,
-      address,
-      mother,
-      father,
-      spouse,
-      siblings,
-      children,
       HOAname,
       employmentstatus,
       occupation,
@@ -79,7 +73,6 @@ export const updateResident = async (req, res) => {
       educationalattainment,
       typeofschool,
       course,
-      // is4Ps,
       isPregnant,
       isSenior,
       isInfant,
@@ -91,9 +84,7 @@ export const updateResident = async (req, res) => {
       isAdult,
       isPostpartum,
       isWomenOfReproductive,
-      // isChild,
       isPWD,
-      // isSoloParent,
       philhealthid,
       philhealthtype,
       philhealthcategory,
@@ -132,26 +123,6 @@ export const updateResident = async (req, res) => {
       },
     });
 
-    const motherAsObjectId = mother
-      ? new mongoose.Types.ObjectId(mother)
-      : null;
-    const fatherAsObjectId = father
-      ? new mongoose.Types.ObjectId(father)
-      : null;
-    const spouseAsObjectId = spouse
-      ? new mongoose.Types.ObjectId(spouse)
-      : null;
-
-    const siblingsAsObjectIds =
-      siblings && siblings.length > 0
-        ? siblings.map((siblingId) => new mongoose.Types.ObjectId(siblingId))
-        : [];
-
-    const childrenAsObjectIds =
-      children && children.length > 0
-        ? children.map((childrenId) => new mongoose.Types.ObjectId(childrenId))
-        : [];
-
     resident.picture = picture;
     resident.signature = signature;
     resident.firstname = firstname;
@@ -179,12 +150,6 @@ export const updateResident = async (req, res) => {
     resident.emergencyname = emergencyname;
     resident.emergencymobilenumber = emergencymobilenumber;
     resident.emergencyaddress = emergencyaddress;
-    resident.address = address;
-    resident.mother = motherAsObjectId;
-    resident.father = fatherAsObjectId;
-    resident.spouse = spouseAsObjectId;
-    resident.siblings = siblingsAsObjectIds;
-    resident.children = childrenAsObjectIds;
     resident.HOAname = HOAname;
     resident.employmentstatus = employmentstatus;
     resident.occupation = occupation;
@@ -193,7 +158,6 @@ export const updateResident = async (req, res) => {
     resident.typeofschool = typeofschool;
     resident.course = course;
     resident.isSenior = isSenior;
-    // resident.is4Ps = is4Ps;
     resident.isInfant = isInfant;
     resident.isNewborn = isNewborn;
     resident.isUnder5 = isUnder5;
@@ -203,10 +167,8 @@ export const updateResident = async (req, res) => {
     resident.isAdult = isAdult;
     resident.isPostpartum = isPostpartum;
     resident.isWomenOfReproductive = isWomenOfReproductive;
-    // resident.isChild = isChild;
     resident.isPWD = isPWD;
     resident.isPregnant = isPregnant;
-    // resident.isSoloParent = isSoloParent;
     resident.philhealthid = philhealthid;
     resident.philhealthtype = philhealthtype;
     resident.philhealthcategory = philhealthcategory;
@@ -229,6 +191,7 @@ export const updateResident = async (req, res) => {
       household.nhtsno = householdForm.nhtsno;
       household.watersource = householdForm.watersource;
       household.toiletfacility = householdForm.toiletfacility;
+      household.address = householdForm.address;
       await household.save();
     }
 
@@ -267,7 +230,9 @@ export const getEmployee = async (req, res) => {
 export const getResident = async (req, res) => {
   try {
     const { resID } = req.params;
-    const residents = await Resident.findOne({ _id: resID }).populate("brgyID");
+    const residents = await Resident.findOne({ _id: resID })
+      .populate("brgyID")
+      .populate("householdno", "address");
     res.status(200).json(residents);
   } catch (error) {
     console.log("Error fetching residents", error);
@@ -338,12 +303,6 @@ export const createResident = async (req, res) => {
       emergencyname,
       emergencymobilenumber,
       emergencyaddress,
-      address,
-      mother,
-      father,
-      spouse,
-      siblings,
-      children,
       HOAname,
       employmentstatus,
       occupation,
@@ -352,11 +311,9 @@ export const createResident = async (req, res) => {
       typeofschool,
       course,
       head,
-      // is4Ps,
       isPregnant,
       isSenior,
       isInfant,
-      // isChild,
       isNewborn,
       isUnder5,
       isSchoolAge,
@@ -366,7 +323,6 @@ export const createResident = async (req, res) => {
       isPostpartum,
       isWomenOfReproductive,
       isPWD,
-      // isSoloParent,
       householdForm,
       householdno,
       householdposition,
@@ -385,27 +341,6 @@ export const createResident = async (req, res) => {
 
     const birthDate = moment(birthdate, "YYYY/MM/DD");
     const age = moment().diff(birthDate, "years");
-
-    const motherAsObjectId = mother
-      ? new mongoose.Types.ObjectId(mother)
-      : null;
-    const fatherAsObjectId = father
-      ? new mongoose.Types.ObjectId(father)
-      : null;
-    const spouseAsObjectId = spouse
-      ? new mongoose.Types.ObjectId(spouse)
-      : null;
-
-    const siblingsAsObjectIds =
-      siblings && siblings.length > 0
-        ? siblings.map((siblingId) => new mongoose.Types.ObjectId(siblingId))
-        : [];
-
-    const childrenAsObjectIds =
-      children && children.length > 0
-        ? children.map((childrenId) => new mongoose.Types.ObjectId(childrenId))
-        : [];
-
     const resident = new Resident({
       picture,
       signature,
@@ -434,12 +369,6 @@ export const createResident = async (req, res) => {
       emergencyname,
       emergencymobilenumber,
       emergencyaddress,
-      address,
-      mother: motherAsObjectId,
-      father: fatherAsObjectId,
-      spouse: spouseAsObjectId,
-      siblings: siblingsAsObjectIds,
-      children: childrenAsObjectIds,
       HOAname,
       employmentstatus,
       occupation,
@@ -447,10 +376,8 @@ export const createResident = async (req, res) => {
       educationalattainment,
       typeofschool,
       course,
-      // is4Ps,
       isPregnant,
       isSenior,
-      // isChild,
       isInfant,
       isNewborn,
       isUnder5,
@@ -461,7 +388,6 @@ export const createResident = async (req, res) => {
       isPostpartum,
       isWomenOfReproductive,
       isPWD,
-      // isSoloParent,
       philhealthid,
       philhealthtype,
       philhealthcategory,
