@@ -417,6 +417,7 @@ export const registerSocketEvents = (io) => {
             message: "This chat has ended.",
             timestamp: new Date(),
             roomId: existingBotChat._id,
+            status: "Ended",
           });
         }
       }
