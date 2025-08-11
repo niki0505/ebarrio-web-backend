@@ -409,6 +409,16 @@ export const registerSocketEvents = (io) => {
           "☑️ Ended previous bot chat:",
           existingBotChat._id.toString()
         );
+        const residentSocketId = connectedUsers.get(socket.userID)?.socketId;
+        if (residentSocketId) {
+          io.to(residentSocketId).emit("receive_message", {
+            from: SYSTEM_USER_ID,
+            to: socket.userID,
+            message: "This chat has ended.",
+            timestamp: new Date(),
+            roomId: existingBotChat._id,
+          });
+        }
       }
 
       // ✅ Always include both Secretary and Clerk
@@ -539,6 +549,8 @@ export const registerSocketEvents = (io) => {
 
       // Join the room
       socket.join(roomId);
+      const toSocket = connectedUsers.get(to)?.socketId;
+      if (toSocket) io.sockets.sockets.get(toSocket)?.join(roomId);
       console.log(`👥 ${from} joined room ${roomId}`);
 
       io.to(roomId).emit("receive_message", {
