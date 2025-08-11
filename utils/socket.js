@@ -409,12 +409,12 @@ export const registerSocketEvents = (io) => {
           "☑️ Ended previous bot chat:",
           existingBotChat._id.toString()
         );
-        io.to(existingBotChat._id).emit("receive_message", {
+        io.to(existingBotChat._id.toString()).emit("receive_message", {
           from: SYSTEM_USER_ID,
           to: socket.userID,
           message: "This chat has ended.",
           timestamp: new Date(),
-          roomId: existingBotChat._id,
+          roomId: existingBotChat._id.toString(),
         });
       }
 
