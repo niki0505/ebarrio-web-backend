@@ -409,6 +409,13 @@ export const registerSocketEvents = (io) => {
           "☑️ Ended previous bot chat:",
           existingBotChat._id.toString()
         );
+        io.to(existingBotChat._id).emit("receive_message", {
+          from,
+          to,
+          message,
+          timestamp: new Date(),
+          roomId: existingBotChat._id,
+        });
       }
 
       // ✅ Always include both Secretary and Clerk
