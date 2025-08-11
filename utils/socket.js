@@ -409,13 +409,16 @@ export const registerSocketEvents = (io) => {
           "☑️ Ended previous bot chat:",
           existingBotChat._id.toString()
         );
-        io.to(existingBotChat._id.toString()).emit("receive_message", {
-          from: SYSTEM_USER_ID,
-          to: socket.userID,
-          message: "This chat has ended.",
-          timestamp: new Date(),
-          roomId: existingBotChat._id.toString(),
-        });
+        const residentSocketId = connectedUsers.get(socket.userID)?.socketId;
+        if (residentSocketId) {
+          io.to(residentSocketId).emit("receive_message", {
+            from: SYSTEM_USER_ID,
+            to: socket.userID,
+            message: "This chat has ended.",
+            timestamp: new Date(),
+            roomId: existingBotChat._id,
+          });
+        }
       }
 
       // ✅ Always include both Secretary and Clerk
