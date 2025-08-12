@@ -39,6 +39,7 @@ export const detectSession = async (req, res) => {
             role: decodedRefresh.role,
             name: decodedRefresh.name,
             picture: decodedRefresh.picture,
+            resID: decodedRefresh.resID,
           },
           process.env.ACCESS_SECRET,
           {
@@ -88,6 +89,7 @@ export const refreshAccessToken = async (req, res) => {
             role: decodedRefresh.role,
             name: decodedRefresh.name,
             picture: decodedRefresh.picture,
+            resID: decodedRefresh.resID,
           },
           process.env.ACCESS_SECRET,
           {
@@ -294,6 +296,7 @@ export const loginUser = async (req, res) => {
           role: user.role,
           name: `${user.empID.resID.firstname} ${user.empID.resID.lastname}`,
           picture: user.empID.resID.picture,
+          resID: user.empID.resID._id.toString(),
         },
         ACCESS_SECRET,
         {
@@ -309,6 +312,7 @@ export const loginUser = async (req, res) => {
           role: user.role,
           name: `${user.empID.resID.firstname} ${user.empID.resID.lastname}`,
           picture: user.empID.resID.picture,
+          resID: user.empID.resID._id.toString(),
         },
         REFRESH_SECRET,
         {
