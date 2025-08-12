@@ -52,6 +52,7 @@ export const changePassword = async (req, res) => {
     }
 
     user.password = newpassword;
+    user.passwordchangedat = new Date();
     await user.save();
 
     await ActivityLog.insertOne({

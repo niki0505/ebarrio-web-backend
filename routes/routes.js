@@ -23,6 +23,7 @@ import {
 
 import {
   archivedUser,
+  changedPasswordUser,
   checkCredentials,
   checkIfEmployee,
   checkRefreshToken,
@@ -167,6 +168,7 @@ router.post("/logout", logoutUser);
 router.post("/deactivateduser/:userID", deactivatedUser);
 router.post("/archiveduser/:userID", archivedUser);
 router.post("/updateduser", authMiddleware, updatedUser);
+router.post("/changedpassword", authMiddleware, changedPasswordUser);
 
 //FORGOT PASSWORD
 router.get("/checkuser/:username", checkUser);

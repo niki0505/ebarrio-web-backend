@@ -49,6 +49,10 @@ const userSchema = new mongoose.Schema(
     passwordistoken: {
       type: Boolean,
     },
+    passwordchangedat: {
+      type: Date,
+      default: null,
+    },
     securityquestions: [
       {
         question: { type: String, required: true },
