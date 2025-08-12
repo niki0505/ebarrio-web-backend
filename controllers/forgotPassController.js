@@ -109,7 +109,8 @@ export const checkUser = async (req, res) => {
       user.resID ||
       user.role === "Official" ||
       user.role === "Resident" ||
-      user.status === "Archived"
+      user.status === "Archived" ||
+      user.status === "Password Not Set"
     ) {
       console.log("❌ Account not found");
       return res.status(404).json({
