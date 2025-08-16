@@ -1,5 +1,4 @@
 import Resident from "../models/Residents.js";
-import OldUser from "../models/OldUsers.js";
 import Employee from "../models/Employees.js";
 import User from "../models/Users.js";
 import { getUsersUtils } from "../utils/collectionUtils.js";
@@ -276,16 +275,6 @@ export const createUser = async (req, res) => {
   } catch (error) {
     console.error("Error in creating acccount:", error);
     res.status(500).json({ message: "Internal server error" });
-  }
-};
-
-export const getAllOldUsers = async (req, res) => {
-  try {
-    const users = await OldUser.find();
-    res.status(200).json(users);
-  } catch (error) {
-    console.log("Error fetching old users", error);
-    res.status(500).json({ message: "Failed to fetch old users" });
   }
 };
 

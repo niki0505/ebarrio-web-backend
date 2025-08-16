@@ -2,7 +2,6 @@ import express from "express";
 import {
   createResident,
   getAllEmployees,
-  getAllOldResidents,
   getAllResidents,
   getResident,
   updateResident,
@@ -12,7 +11,6 @@ import {
 } from "../controllers/infoController.js";
 
 import {
-  getAllOldUsers,
   getAllUsers,
   createUser,
   resetPassword,
@@ -150,6 +148,7 @@ import {
   getChats,
   getFAQs,
 } from "../controllers/chatController.js";
+import { analyticsAI, getPrompts } from "../controllers/analyticsController.js";
 
 const router = express.Router();
 
@@ -186,7 +185,6 @@ router.put("/resetpassword/:username", resetPassword);
 router.put("/deactivateuser/:userID", authMiddleware, deactivateUser);
 router.put("/activateuser/:userID", authMiddleware, activateUser);
 router.get("/getusers", authMiddleware, getAllUsers);
-router.get("/getoldusers", getAllOldUsers);
 router.post("/createuser", authMiddleware, createUser);
 router.put("/edituser/:userID", authMiddleware, editUser);
 
@@ -201,7 +199,6 @@ router.get("/getresident/:resID", authMiddleware, getResident);
 router.put("/updateresident/:resID", authMiddleware, updateResident);
 router.put("/archiveresident/:resID", authMiddleware, archiveResident);
 router.put("/recoverresident/:resID", authMiddleware, recoverResident);
-router.get("/getoldresidents", getAllOldResidents);
 router.post("/viewresidentdetails/:resID", authMiddleware, viewResidentDetails);
 router.post("/printcurrentbrgyid/:resID", authMiddleware, printBrgyID);
 router.post("/issuedocument/:resID", authMiddleware, issueDocument);
@@ -388,4 +385,8 @@ router.get("/getfaqs", authMiddleware, getFAQs);
 router.get("/getchats", authMiddleware, getChats);
 router.get("/getchat/:roomId", authMiddleware, getChat);
 router.put("/endchat/:chatID", authMiddleware, endChat);
+
+//ANALYTICS
+router.post("/analytics", authMiddleware, analyticsAI);
+router.get("/getprompts", authMiddleware, getPrompts);
 export default router;

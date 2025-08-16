@@ -1,6 +1,5 @@
 import Resident from "../models/Residents.js";
 import mongoose from "mongoose";
-import OldResident from "../models/OldResidents.js";
 import Employee from "../models/Employees.js";
 import ActivityLog from "../models/ActivityLogs.js";
 import moment from "moment";
@@ -250,16 +249,6 @@ export const getCaptain = async (req, res) => {
   } catch (error) {
     console.log("Error fetching barangay captain", error);
     res.status(500).json({ message: "Failed to fetch barangay captain" });
-  }
-};
-
-export const getAllOldResidents = async (req, res) => {
-  try {
-    const residents = await OldResident.find();
-    res.status(200).json(residents);
-  } catch (error) {
-    console.log("Error fetching residents", error);
-    res.status(500).json({ message: "Failed to fetch residents" });
   }
 };
 
