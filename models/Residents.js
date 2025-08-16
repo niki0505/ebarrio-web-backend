@@ -118,10 +118,6 @@ const resSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    // address: {
-    //   type: String,
-    //   required: true,
-    // },
     mother: { type: mongoose.Schema.Types.ObjectId, ref: "Resident" },
     father: { type: mongoose.Schema.Types.ObjectId, ref: "Resident" },
     spouse: { type: mongoose.Schema.Types.ObjectId, ref: "Resident" },
