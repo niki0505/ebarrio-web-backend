@@ -151,6 +151,7 @@ import {
   getFAQs,
 } from "../controllers/chatController.js";
 import { analyticsAI, getPrompts } from "../controllers/analyticsController.js";
+import { getReports } from "../controllers/SOSController.js";
 
 const router = express.Router();
 
@@ -393,4 +394,7 @@ router.put("/endchat/:chatID", authMiddleware, endChat);
 //ANALYTICS
 router.post("/analytics", authMiddleware, analyticsAI);
 router.get("/getprompts", authMiddleware, getPrompts);
+
+//SOS
+router.get("/getreports", authMiddleware, getReports);
 export default router;
