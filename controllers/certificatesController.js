@@ -46,7 +46,7 @@ export const collectedCert = async (req, res) => {
     const user = await User.findOne({ resID: cert.resID._id });
 
     const io = req.app.get("socketio");
-    io.to(user._id).emit("certificateUpdate", {
+    io.to(user._id.toString()).emit("certificateUpdate", {
       title: `📄 ${cert.typeofcertificate} Collected`,
       message: `Your document has been collected. Thank you for your time.`,
       timestamp: cert.updatedAt,

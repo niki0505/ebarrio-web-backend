@@ -72,6 +72,9 @@ const hSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    HOAname: {
+      type: String,
+    },
   },
   { versionKey: false, timestamps: true }
 );
