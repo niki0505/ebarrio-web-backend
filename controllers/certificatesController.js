@@ -97,7 +97,7 @@ export const notifyCert = async (req, res) => {
     const user = await User.findOne({ resID: cert.resID._id });
 
     const io = req.app.get("socketio");
-    io.to(user._id).emit("certificateUpdate", {
+    io.to(user._id.toString()).emit("certificateUpdate", {
       title: `📄 ${cert.typeofcertificate} Issued`,
       message: `Your document request has been processed and is now available for pick up at the barangay hall. Kindly pay the fee of ${cert.amount} upon claiming.`,
       timestamp: cert.updatedAt,
@@ -151,7 +151,7 @@ export const rejectCertificateReq = async (req, res) => {
     await cert.save();
 
     const io = req.app.get("socketio");
-    io.to(user._id).emit("certificateUpdate", {
+    io.to(user._id.toString()).emit("certificateUpdate", {
       title: `❌ ${cert.typeofcertificate} Rejected`,
       message: `Your document request has been rejected. Kindly see the remarks for the reason.`,
       timestamp: cert.updatedAt,
