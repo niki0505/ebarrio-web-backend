@@ -149,8 +149,18 @@ export const editScheduleBlotter = async (req, res) => {
     const startTime = new Date(blotter.starttime);
     const endTime = new Date(blotter.endtime);
 
-    const dateOptions = { year: "numeric", month: "short", day: "numeric" };
-    const timeOptions = { hour: "numeric", minute: "numeric", hour12: true };
+    const dateOptions = {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      timeZone: "Asia/Manila",
+    };
+    const timeOptions = {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+      timeZone: "Asia/Manila",
+    };
 
     const formattedDate = startTime.toLocaleDateString("en-US", dateOptions);
     const formattedStartTime = startTime.toLocaleTimeString(
@@ -220,8 +230,18 @@ export const scheduleBlotter = async (req, res) => {
     const startTime = new Date(blotter.starttime);
     const endTime = new Date(blotter.endtime);
 
-    const dateOptions = { year: "numeric", month: "short", day: "numeric" };
-    const timeOptions = { hour: "numeric", minute: "numeric", hour12: true };
+    const dateOptions = {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      timeZone: "Asia/Manila",
+    };
+    const timeOptions = {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+      timeZone: "Asia/Manila",
+    };
 
     const formattedDate = startTime.toLocaleDateString("en-US", dateOptions);
     const formattedStartTime = startTime.toLocaleTimeString(
