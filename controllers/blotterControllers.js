@@ -37,7 +37,7 @@ export const rejectBlotter = async (req, res) => {
     if (resident && resident.userID) {
       const user = await User.findById(resident.userID);
       const io = req.app.get("socketio");
-      io.to(user._id).emit("blotterUpdate", {
+      io.to(user._id.toString()).emit("blotterUpdate", {
         title: `❌ Blotter Rejected`,
         message: `Your blotter report has been rejected. Kindly see the remarks for the reason.`,
         timestamp: blotter.updatedAt,
@@ -96,7 +96,7 @@ export const settleBlotter = async (req, res) => {
     if (resident && resident.userID) {
       const user = await User.findById(resident.userID);
       const io = req.app.get("socketio");
-      io.to(user._id).emit("blotterUpdate", {
+      io.to(user._id.toString()).emit("blotterUpdate", {
         title: `✅ Blotter Settled`,
         message: `Your blotter report has been settled.`,
         timestamp: blotter.updatedAt,
@@ -163,7 +163,7 @@ export const editScheduleBlotter = async (req, res) => {
     if (resident.userID) {
       const user = await User.findById(resident.userID);
       const io = req.app.get("socketio");
-      io.to(user._id).emit("blotterUpdate", {
+      io.to(user._id.toString()).emit("blotterUpdate", {
         title: `📅 Blotter Update`,
         message: `Your blotter report has been rescheduled for discussion on ${formattedDate} from ${formattedStartTime} to ${formattedEndTime}. `,
         timestamp: blotter.updatedAt,
@@ -234,7 +234,7 @@ export const scheduleBlotter = async (req, res) => {
     if (resident && resident.userID) {
       const user = await User.findById(resident.userID);
       const io = req.app.get("socketio");
-      io.to(user._id).emit("blotterUpdate", {
+      io.to(user._id.toString()).emit("blotterUpdate", {
         title: `📅 Blotter Update`,
         message: `Your blotter report has been scheduled for discussion on ${formattedDate} from ${formattedStartTime} to ${formattedEndTime}. `,
         timestamp: blotter.updatedAt,
