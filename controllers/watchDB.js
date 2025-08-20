@@ -11,6 +11,7 @@ import {
   getHotlinesUtils,
   getPendingBlotters,
   getPendingDocuments,
+  getPendingHouseholds,
   getPendingReservations,
   getPendingResidents,
   getReservationsUtils,
@@ -317,12 +318,22 @@ export const watchAllCollectionsChanges = (io) => {
       change.operationType === "update" ||
       change.operationType === "insert"
     ) {
+      const pendinghouseholds = await getPendingHouseholds();
+      websiteNamespace.emit("dbChange", {
+        type: "pendinghouseholds",
+        data: pendinghouseholds,
+      });
       const household = await getAllHouseholdUtils();
       websiteNamespace.emit("dbChange", {
         type: "household",
         data: household,
       });
     } else if (change.operationType === "delete") {
+      const pendinghouseholds = await getPendingHouseholds();
+      websiteNamespace.emit("dbChange", {
+        type: "pendinghouseholds",
+        data: pendinghouseholds,
+      });
       const household = await getAllHouseholdUtils();
       websiteNamespace.emit("dbChange", {
         type: "household",
