@@ -101,7 +101,7 @@ export const rejectResident = async (req, res) => {
     });
 
     await axios.post("https://api.semaphore.co/api/v4/priority", {
-      apikey: "46d791fbe4e880554fcad1ee958bbf33",
+      apikey: process.env.SEMAPHORE_KEY,
       number: resident.mobilenumber,
       message: `We regret to inform you that your resident profile request has been rejected. Reason: ${remarks}. If you have questions or believe this was a mistake, please contact the barangay office for assistance. Thank you.`,
     });
@@ -164,7 +164,7 @@ export const approveResident = async (req, res) => {
     });
 
     await axios.post("https://api.semaphore.co/api/v4/priority", {
-      apikey: "46d791fbe4e880554fcad1ee958bbf33",
+      apikey: process.env.SEMAPHORE_KEY,
       number: resident.mobilenumber,
       message: `Your resident profile has been approved by Barangay Aniban 2. You may now create an account on the mobile application. Thank you!`,
     });
