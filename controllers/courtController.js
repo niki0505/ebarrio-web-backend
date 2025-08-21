@@ -42,7 +42,7 @@ export const rejectCourtReq = async (req, res) => {
     if (resident.userID) {
       const user = await User.findById(resident.userID);
       const io = req.app.get("socketio");
-      io.to(user._id).emit("reservationUpdate", {
+      io.to(user._id.toString()).emit("reservationUpdate", {
         title: `❌ Court Reservation Request Rejected`,
         message: `Your court reservation request scheduled on ${formattedDate} from ${formattedStartTime} to ${formattedEndTime} has been rejected. Kindly see the remarks for the reason. `,
         timestamp: court.updatedAt,
@@ -141,7 +141,7 @@ export const approveReservation = async (req, res) => {
     if (resident.userID) {
       const user = await User.findById(resident.userID);
       const io = req.app.get("socketio");
-      io.to(user._id).emit("reservationUpdate", {
+      io.to(user._id.toString()).emit("reservationUpdate", {
         title: `📅 Court Reservation Update`,
         message: `Your court reservation request scheduled on ${formattedSchedule} has been approved. `,
         timestamp: reservation.updatedAt,

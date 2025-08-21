@@ -118,14 +118,13 @@ export const rejectResident = async (req, res) => {
 export const approveResident = async (req, res) => {
   try {
     const { resID } = req.params;
-    const { pictureURL, signatureURL } = req.body;
+    const { pictureURL } = req.body;
     const { userID } = req.user;
 
     const resident = await Resident.findById(resID);
 
     resident.status = "Active";
     resident.picture = pictureURL;
-    resident.signature = signatureURL;
 
     await resident.save();
 

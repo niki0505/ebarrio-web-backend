@@ -9,6 +9,19 @@ import Blotter from "../models/Blotters.js";
 import axios from "axios";
 import Notification from "../models/Notifications.js";
 import ActivityLog from "../models/ActivityLogs.js";
+import FAQ from "../models/FAQs.js";
+import Household from "../models/Households.js";
+
+export const getFAQsUtils = async () => {
+  try {
+    const faqs = await FAQ.find({ status: "Active" });
+
+    return faqs;
+  } catch (error) {
+    throw new Error("Error fetching faqs: " + error.message);
+  }
+};
+
 import Household from "../models/Households.js";
 
 export const getPendingHouseholds = async () => {

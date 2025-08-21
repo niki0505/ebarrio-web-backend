@@ -6,10 +6,12 @@ import {
   getAnnouncementsUtils,
   getBlottersUtils,
   getEmployeesUtils,
+  getFAQsUtils,
   getFormattedCertificates,
   getHotlinesUtils,
   getPendingBlotters,
   getPendingDocuments,
+  getPendingHouseholds,
   getPendingReservations,
   getPendingResidents,
   getReservationsUtils,
@@ -316,12 +318,22 @@ export const watchAllCollectionsChanges = (io) => {
       change.operationType === "update" ||
       change.operationType === "insert"
     ) {
+      const pendinghouseholds = await getPendingHouseholds();
+      websiteNamespace.emit("dbChange", {
+        type: "pendinghouseholds",
+        data: pendinghouseholds,
+      });
       const household = await getAllHouseholdUtils();
       websiteNamespace.emit("dbChange", {
         type: "household",
         data: household,
       });
     } else if (change.operationType === "delete") {
+      const pendinghouseholds = await getPendingHouseholds();
+      websiteNamespace.emit("dbChange", {
+        type: "pendinghouseholds",
+        data: pendinghouseholds,
+      });
       const household = await getAllHouseholdUtils();
       websiteNamespace.emit("dbChange", {
         type: "household",
@@ -331,6 +343,31 @@ export const watchAllCollectionsChanges = (io) => {
   });
   householdsChangeStream.on("error", (error) => {
     console.error("Error in households change stream:", error);
+  });
+
+  //FAQS
+  const faqsChangeStream = db.collection("faqs").watch();
+  faqsChangeStream.on("change", async (change) => {
+    console.log("FAQs change detected:", change);
+    if (
+      change.operationType === "update" ||
+      change.operationType === "insert"
+    ) {
+      const faqs = await getFAQsUtils();
+      websiteNamespace.emit("dbChange", {
+        type: "faqs",
+        data: faqs,
+      });
+    } else if (change.operationType === "delete") {
+      websiteNamespace.emit("dbChange", {
+        type: "faqs",
+        deleted: true,
+        id: change.documentKey._id,
+      });
+    }
+  });
+  faqsChangeStream.on("error", (error) => {
+    console.error("Error in faqs change stream:", error);
   });
 
   console.log("Watching all collections for changes...");
