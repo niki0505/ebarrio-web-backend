@@ -34,7 +34,7 @@ export const editUser = async (req, res) => {
       rds.setex(`userID_${user._id}`, 86400, userForm.password);
 
       await axios.post("https://api.semaphore.co/api/v4/priority", {
-        apikey: "46d791fbe4e880554fcad1ee958bbf33",
+        apikey: process.env.SEMAPHORE_KEY,
         number: mobilenumber,
         message: `Your barangay account has been updated.\nUsername: ${user.username}\nTemporary Password: ${userForm.password}\nPlease log in to the app and set your new password. This token will expire in 24 hours.`,
       });
@@ -62,7 +62,7 @@ export const editUser = async (req, res) => {
       rds.setex(`userID_${user._id}`, 86400, userForm.password);
 
       await axios.post("https://api.semaphore.co/api/v4/priority", {
-        apikey: "46d791fbe4e880554fcad1ee958bbf33",
+        apikey: process.env.SEMAPHORE_KEY,
         number: mobilenumber,
         message: `Your barangay account has been updated.\nUsername: ${userForm.username}\nTemporary Password: ${userForm.password}\nPlease log in to the app and set your new password. This token will expire in 24 hours.`,
       });
@@ -256,7 +256,7 @@ export const createUser = async (req, res) => {
     rds.setex(`userID_${user._id}`, 86400, password);
 
     await axios.post("https://api.semaphore.co/api/v4/priority", {
-      apikey: "46d791fbe4e880554fcad1ee958bbf33",
+      apikey: process.env.SEMAPHORE_KEY,
       number: resident.mobilenumber,
       message: `Your barangay account is created. Use this temporary token as your password to log in: ${password}. 
        Please log in to the app and set your new password. This token will expire in 24 hours.`,
