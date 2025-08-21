@@ -584,7 +584,7 @@ export const sendOTP = async (req, res) => {
   try {
     const { username, mobilenumber } = req.body;
     const response = await axios.post("https://api.semaphore.co/api/v4/otp", {
-      apikey: "46d791fbe4e880554fcad1ee958bbf33",
+      apikey: process.env.SEMAPHORE_KEY,
       number: mobilenumber,
       message:
         "Your one time password is {otp}. Please use it within 5 minutes.",

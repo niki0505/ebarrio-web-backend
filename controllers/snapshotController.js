@@ -28,7 +28,7 @@ export async function alertResidents(req, res) {
 
     const smsPromises = residents.map((resident) =>
       axios.post("https://api.semaphore.co/api/v4/priority", {
-        apikey: "46d791fbe4e880554fcad1ee958bbf33",
+        apikey: process.env.SEMAPHORE_KEY,
         number: resident.mobilenumber,
         message: message,
       })
