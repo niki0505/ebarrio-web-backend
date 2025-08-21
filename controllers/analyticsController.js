@@ -6,6 +6,8 @@ import Certificate from "../models/Certificates.js";
 import CourtReservation from "../models/CourtReservations.js";
 import Household from "../models/Households.js";
 import Prompt from "../models/Prompts.js";
+import SOS from "../models/SOS.js";
+import Employee from "../models/Employees.js";
 
 export const getPrompts = async (req, res) => {
   try {
@@ -27,6 +29,21 @@ export const analyticsAI = async (req, res) => {
 
     // FETCH DATA
 
+    const reports = await SOS.find()
+      .populate({
+        path: "resID",
+        select: "firstname lastname mobilenumber householdno",
+        populate: { path: "householdno" },
+      })
+      .populate({
+        path: "responder.empID",
+        populate: {
+          path: "resID",
+          select: "firstname lastname mobilenumber householdno",
+          populate: "householdno",
+        },
+      });
+    const employees = await Employee.find().populate("resID");
     const residents = await Resident.find();
 
     const households = await Household.find();
@@ -151,32 +168,26 @@ export const analyticsAI = async (req, res) => {
     };
 
     households.forEach((hh) => {
-      // Count status for all households
       householdsData.statusCounts[hh.status] =
         (householdsData.statusCounts[hh.status] || 0) + 1;
 
-      // Only total Active households
       if (hh.status !== "Active") return;
 
       householdsData.totalHouseholds += 1;
       householdsData.totalMembers += hh.members.length;
 
-      // Count ethnicities
       householdsData.ethnicityCounts[hh.ethnicity] =
         (householdsData.ethnicityCounts[hh.ethnicity] || 0) + 1;
 
-      // Count socio-status
       householdsData.socioStatusCounts[hh.sociostatus] =
         (householdsData.socioStatusCounts[hh.sociostatus] || 0) + 1;
 
-      // Count vehicles
       householdsData.vehiclesCount += hh.vehicles.length;
       hh.vehicles.forEach((v) => {
         householdsData.vehicleTypes[v.kind] =
           (householdsData.vehicleTypes[v.kind] || 0) + 1;
       });
 
-      // Optionally store detailed info
       householdsData.households.push({
         householdno: hh.householdno,
         address: hh.address,
@@ -248,6 +259,8 @@ export const analyticsAI = async (req, res) => {
         reservations,
         residents,
         households,
+        employees,
+        reports,
       },
     };
 

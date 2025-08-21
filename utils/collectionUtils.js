@@ -22,8 +22,6 @@ export const getFAQsUtils = async () => {
   }
 };
 
-import Household from "../models/Households.js";
-
 export const getPendingHouseholds = async () => {
   try {
     const house = await Household.countDocuments({
