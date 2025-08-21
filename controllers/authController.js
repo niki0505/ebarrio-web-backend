@@ -439,7 +439,7 @@ export const checkCredentials = async (req, res) => {
     ) {
       console.log("❌ Account not found");
       return res.status(404).json({
-        message: "Account not found.",
+        message: "Kindly check your details and try again.",
       });
     }
     if (user.status === "Deactivated") {
@@ -506,7 +506,7 @@ export const checkCredentials = async (req, res) => {
         }
 
         return res.status(403).json({
-          message: "Invalid credentials.",
+          message: "Kindly check your details and try again.",
         });
       });
 
@@ -563,9 +563,9 @@ export const verifyOTP = async (req, res) => {
       }
 
       if (!storedOTP) {
-        return res
-          .status(400)
-          .json({ message: "OTP has expired or does not exist" });
+        return res.status(400).json({
+          message: "We couldn’t verify that code. Please check and try again.",
+        });
       }
 
       if (storedOTP === OTP.toString()) {
