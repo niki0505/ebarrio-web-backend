@@ -115,7 +115,7 @@ export const checkUser = async (req, res) => {
     ) {
       console.log("❌ Account not found");
       return res.status(404).json({
-        message: "Account not found.",
+        message: "No account found. Please check your credentials.",
       });
     }
     if (user.status === "Deactivated") {
@@ -132,7 +132,9 @@ export const checkUser = async (req, res) => {
     }
 
     if (!user) {
-      return res.status(404).json({ message: "User not found." });
+      return res
+        .status(404)
+        .json({ message: "No account found. Please check your credentials." });
     }
 
     res.status(200).json(user);
