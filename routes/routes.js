@@ -153,12 +153,11 @@ import {
 import { analyticsAI, getPrompts } from "../controllers/analyticsController.js";
 import { getReports } from "../controllers/SOSController.js";
 
-
 const router = express.Router();
 
 //SIGN UP
 router.post("/checkemployee", checkIfEmployee);
-router.get("/checkusername/:username", checkUsername);
+router.get("/checkusername/:username", authMiddleware, checkUsername);
 router.post("/checkcredentials", checkCredentials);
 router.post("/sendotp", sendOTP);
 router.post("/verifyotp", verifyOTP);

@@ -1,6 +1,7 @@
 import User from "../models/Users.js";
 import bcrypt from "bcryptjs";
 import ActivityLog from "../models/ActivityLogs.js";
+import { rds } from "../index.js";
 
 export const changeSecurityQuestions = async (req, res) => {
   try {
@@ -16,12 +17,25 @@ export const changeSecurityQuestions = async (req, res) => {
         .json({ message: "Hmm… that password didn’t work. Let’s try again." });
     }
 
-    if (securityquestions[0]) {
-      user.securityquestions[0] = securityquestions[0];
-    }
-
-    if (securityquestions[1]) {
-      user.securityquestions[1] = securityquestions[1];
+    for (let i = 0; i < 2; i++) {
+      if (securityquestions[i]) {
+        const isSame = await bcrypt.compare(
+          securityquestions[i].answer,
+          user.securityquestions[i].answer || ""
+        );
+        if (isSame) {
+          return res.status(400).json({
+            message: `Answer for question ${
+              i + 1
+            } cannot be the same as before.`,
+          });
+        }
+        user.securityquestions[i].answer = await bcrypt.hash(
+          securityquestions[i].answer,
+          10
+        );
+        user.securityquestions[i].question = securityquestions[i].question;
+      }
     }
 
     await user.save();
@@ -55,6 +69,15 @@ export const changePassword = async (req, res) => {
         .json({ message: "Hmm… that password didn’t work. Let’s try again." });
     }
 
+    const isSame = await bcrypt.compare(newpassword, user.password);
+
+    if (isSame) {
+      return res.status(400).json({
+        message:
+          "Your new password must be different from your current password.",
+      });
+    }
+
     user.password = newpassword;
     user.passwordchangedat = new Date();
     await user.save();
@@ -86,6 +109,15 @@ export const changeUsername = async (req, res) => {
         .json({ message: "Hmm… that password didn’t work. Let’s try again." });
     }
 
+    const isSame = username === user.username;
+
+    if (isSame) {
+      return res.status(400).json({
+        message:
+          "Your new username must be different from your current username.",
+      });
+    }
+
     user.username = username;
     await user.save();
 
@@ -94,6 +126,8 @@ export const changeUsername = async (req, res) => {
       action: "Account Settings",
       description: `User updated their username.`,
     });
+
+    await rds.setex(`limitUsernameChange_${userID}`, 2592000, "true");
 
     res.status(200).json({ message: "Username changed successfully!" });
   } catch (error) {
