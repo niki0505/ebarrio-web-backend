@@ -14,6 +14,7 @@ import {
   getPendingHouseholds,
   getPendingReservations,
   getPendingResidents,
+  getReportsUtils,
   getReservationsUtils,
   getResidentsUtils,
   getUsersUtils,
@@ -368,6 +369,33 @@ export const watchAllCollectionsChanges = (io) => {
   });
   faqsChangeStream.on("error", (error) => {
     console.error("Error in faqs change stream:", error);
+  });
+
+  //SOS
+  const sosChangeStream = db.collection("sos").watch();
+  sosChangeStream.on("change", async (change) => {
+    console.log("SOS change detected:", change);
+    if (
+      change.operationType === "update" ||
+      change.operationType === "insert"
+    ) {
+      const reports = await getReportsUtils();
+      websiteNamespace.emit("dbChange", {
+        type: "reports",
+        data: reports,
+      });
+    } else if (change.operationType === "delete") {
+      const reports = await getReportsUtils();
+      websiteNamespace.emit("dbChange", {
+        type: "reports",
+        data: reports,
+        deleted: true,
+        id: change.documentKey._id,
+      });
+    }
+  });
+  sosChangeStream.on("error", (error) => {
+    console.error("Error in SOS change stream:", error);
   });
 
   console.log("Watching all collections for changes...");
