@@ -68,7 +68,7 @@ export const verifySecurityQuestion = async (req, res) => {
     }
 
     if (!user.securityquestions || user.securityquestions.length === 0) {
-      return res.status(400).json({ message: "No security questions found" });
+      return res.status(400).json({ message: "No security questions found." });
     }
 
     const question = user.securityquestions.find(
@@ -76,14 +76,16 @@ export const verifySecurityQuestion = async (req, res) => {
     );
 
     const isMatch = await bcrypt.compare(
-      securityquestion.answer,
+      securityquestion.answer.trim().toLowerCase(),
       question.answer
     );
 
     if (isMatch) {
       res.status(200).json({ message: "Security question is verified" });
     } else {
-      return res.status(400).json({ message: "Incorrect answer" });
+      return res.status(400).json({
+        message: "We couldn’t verify your answer. Please check and try again.",
+      });
     }
   } catch (error) {
     console.log("Error verifying security question", error);
