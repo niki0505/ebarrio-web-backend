@@ -12,6 +12,7 @@ const sSchema = new mongoose.Schema(
     SOSno: {
       type: Number,
       unique: true,
+      sparse: true,
     },
     location: {
       lat: { type: Number, required: true },
@@ -41,7 +42,7 @@ const sSchema = new mongoose.Schema(
     postreportdetails: { type: String },
     status: {
       type: String,
-      enum: ["Pending", "Ongoing", "Resolved", "False Alarm"],
+      enum: ["Pending", "Ongoing", "Resolved", "False Alarm", "Cancelled"],
       required: true,
       default: "Pending",
     },
