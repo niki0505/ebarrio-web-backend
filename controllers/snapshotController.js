@@ -22,9 +22,9 @@ export async function alertResidents(req, res) {
       });
     }
 
-    const residents = await Resident.find({ status: "Active" }).select(
-      "mobilenumber"
-    );
+    const residents = await Resident.find({
+      status: { $nin: ["Archived", "Rejected", "Pending"] },
+    }).select("mobilenumber");
 
     const smsPromises = residents.map((resident) =>
       axios.post("https://api.semaphore.co/api/v4/priority", {
