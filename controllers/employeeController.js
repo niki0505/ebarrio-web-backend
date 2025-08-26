@@ -33,7 +33,7 @@ export const recoverEmployee = async (req, res) => {
 
     if (emp.userID) {
       const user = await User.findById(emp.userID);
-      user.status = "Inactive";
+      user.status = "Active";
       await user.save();
     }
 
