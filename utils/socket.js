@@ -592,11 +592,13 @@ export const registerSocketEvents = (io) => {
         roomId,
       });
 
-      io.emit("chats", {
-        title: `💬 New Message`,
-        message: `${resident.resID.firstname} ${resident.resID.lastname}: ${preview}`,
-        timestamp: new Date(),
-      });
+      if (resident.resID) {
+        io.emit("chats", {
+          title: `💬 New Message`,
+          message: `${resident.resID.firstname} ${resident.resID.lastname}: ${preview}`,
+          timestamp: new Date(),
+        });
+      }
 
       console.log("📤 Broadcasted message to room:", roomId);
     });

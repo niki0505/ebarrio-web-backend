@@ -87,6 +87,7 @@ export const addMember = async (req, res) => {
 export const editVehicle = async (req, res) => {
   try {
     const { householdID, vehicleID } = req.params;
+
     const { payload } = req.body;
     const household = await Household.findById(householdID);
 
