@@ -1,6 +1,7 @@
 export const connectedUsers = new Map();
 import User from "../models/Users.js";
 import Chat from "../models/Chats.js";
+import { sendPushNotification } from "./collectionUtils.js";
 import mongoose from "mongoose";
 
 async function markUserActive(userId) {
@@ -30,7 +31,7 @@ export const registerSocketEvents = (io) => {
       socket.join(userID);
       console.log(`Socket joined room: ${userID}`);
 
-      if (["Secretary", "Clerk"].includes(role)) {
+      if (["Secretary", "Clerk", "Justice"].includes(role)) {
         const activeChats = await Chat.find({
           participants: userID,
           status: "Active",
@@ -54,6 +55,11 @@ export const registerSocketEvents = (io) => {
     socket.on("join_announcements", () => {
       socket.join("announcements");
       console.log(`Socket ${socket.id} joined announcements room`);
+    });
+
+    socket.on("join_chats", () => {
+      socket.join("chats");
+      console.log(`Socket ${socket.id} joined chats room`);
     });
 
     socket.on("join_room", (roomId) => {
@@ -559,6 +565,37 @@ export const registerSocketEvents = (io) => {
         message,
         timestamp: new Date(),
         roomId,
+      });
+
+      const user = await User.findById(to);
+
+      const preview =
+        message.length > 50 ? message.substring(0, 50) + "..." : message;
+
+      await sendPushNotification(
+        user.pushtoken,
+        `💬 New Message`,
+        preview,
+        "Chat",
+        roomId
+      );
+
+      const resident = await User.findById(from).populate(
+        "resID",
+        "firstname lastname"
+      );
+
+      io.to(user._id.toString()).emit("chatUpdate", {
+        title: `💬 New Message`,
+        message: preview,
+        timestamp: new Date(),
+        roomId,
+      });
+
+      io.emit("chats", {
+        title: `💬 New Message`,
+        message: `${resident.resID.firstname} ${resident.resID.lastname}: ${preview}`,
+        timestamp: new Date(),
       });
 
       console.log("📤 Broadcasted message to room:", roomId);

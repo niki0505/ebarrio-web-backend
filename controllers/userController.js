@@ -8,7 +8,7 @@ import ActivityLog from "../models/ActivityLogs.js";
 
 export const editUser = async (req, res) => {
   try {
-    const { userID: adminID } = req.user;
+    const { userID: adminID, role } = req.user;
     const { userID } = req.params;
     const { userForm } = req.body;
 
@@ -58,11 +58,13 @@ export const editUser = async (req, res) => {
     if (user.isModified()) {
       await user.save();
 
-      await ActivityLog.insertOne({
-        userID: adminID,
-        action: "Accounts",
-        description: `User updated ${name}'s account credentials.`,
-      });
+      if (role !== "Technical Admin") {
+        await ActivityLog.insertOne({
+          userID: adminID,
+          action: "Accounts",
+          description: `User updated ${name}'s account credentials.`,
+        });
+      }
     }
 
     return res
@@ -76,7 +78,7 @@ export const editUser = async (req, res) => {
 
 export const activateUser = async (req, res) => {
   try {
-    const { userID: adminID } = req.user;
+    const { userID: adminID, role } = req.user;
     const { userID } = req.params;
     const user = await User.findById(userID)
       .populate({
@@ -99,11 +101,13 @@ export const activateUser = async (req, res) => {
       ? `${user.resID.lastname}, ${user.resID.firstname}`
       : "Unknown User";
 
-    await ActivityLog.insertOne({
-      userID: adminID,
-      action: "Accounts",
-      description: `User deactivated ${name}'s account.`,
-    });
+    if (role !== "Technical Admin") {
+      await ActivityLog.insertOne({
+        userID: adminID,
+        action: "Accounts",
+        description: `User deactivated ${name}'s account.`,
+      });
+    }
 
     await user.save();
     res.status(200).json({ message: "User activated successfully!" });
@@ -115,7 +119,7 @@ export const activateUser = async (req, res) => {
 
 export const deactivateUser = async (req, res) => {
   try {
-    const { userID: adminID } = req.user;
+    const { userID: adminID, role } = req.user;
     const { userID } = req.params;
     const user = await User.findById(userID)
       .populate({
@@ -141,11 +145,13 @@ export const deactivateUser = async (req, res) => {
 
     await user.save();
 
-    await ActivityLog.insertOne({
-      userID: adminID,
-      action: "Accounts",
-      description: `User deactivated ${name}'s account.`,
-    });
+    if (role !== "Technical Admin") {
+      await ActivityLog.insertOne({
+        userID: adminID,
+        action: "Accounts",
+        description: `User deactivated ${name}'s account.`,
+      });
+    }
     res.status(200).json({ message: "User deactivated successfully!" });
   } catch (error) {
     console.log("Error deactivating user", error);
@@ -247,11 +253,13 @@ export const createUser = async (req, res) => {
        Please log in to the app and set your new password. This token will expire in 24 hours.`,
     });
 
-    await ActivityLog.insertOne({
-      userID: userID,
-      action: "Accounts",
-      description: `User created an account for ${name}.`,
-    });
+    if (role !== "Technical Admin") {
+      await ActivityLog.insertOne({
+        userID: userID,
+        action: "Accounts",
+        description: `User created an account for ${name}.`,
+      });
+    }
 
     return res.status(200).json({
       exists: true,

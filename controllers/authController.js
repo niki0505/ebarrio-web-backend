@@ -439,7 +439,7 @@ export const checkCredentials = async (req, res) => {
     ) {
       console.log("❌ Account not found");
       return res.status(404).json({
-        message: "Kindly check your details and try again.",
+        message: "Kindly check your credentials and try again.",
       });
     }
     if (user.status === "Deactivated") {
@@ -506,7 +506,7 @@ export const checkCredentials = async (req, res) => {
         }
 
         return res.status(403).json({
-          message: "Kindly check your details and try again.",
+          message: "Kindly check your credentials and try again.",
         });
       });
 

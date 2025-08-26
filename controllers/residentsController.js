@@ -67,7 +67,7 @@ export const rejectResident = async (req, res) => {
   try {
     const { resID } = req.params;
     const { remarks } = req.body;
-    const { userID } = req.user;
+    const { userID, role } = req.user;
 
     const resident = await Resident.findById(resID);
 
@@ -94,11 +94,13 @@ export const rejectResident = async (req, res) => {
       await household.save();
     }
 
-    await ActivityLog.insertOne({
-      userID: userID,
-      action: "Residents",
-      description: `User rejected ${resident.lastname}, ${resident.firstname}`,
-    });
+    if (role !== "Technical Admin") {
+      await ActivityLog.insertOne({
+        userID: userID,
+        action: "Residents",
+        description: `User rejected ${resident.lastname}, ${resident.firstname}`,
+      });
+    }
 
     await axios.post("https://api.semaphore.co/api/v4/priority", {
       apikey: process.env.SEMAPHORE_KEY,
@@ -119,7 +121,7 @@ export const approveResident = async (req, res) => {
   try {
     const { resID } = req.params;
     const { pictureURL } = req.body;
-    const { userID } = req.user;
+    const { userID, role } = req.user;
 
     const resident = await Resident.findById(resID);
 
@@ -157,11 +159,13 @@ export const approveResident = async (req, res) => {
     household.status = "Active";
     await household.save();
 
-    await ActivityLog.insertOne({
-      userID: userID,
-      action: "Residents",
-      description: `User approved ${resident.lastname}, ${resident.firstname}`,
-    });
+    if (role !== "Technical Admin") {
+      await ActivityLog.insertOne({
+        userID: userID,
+        action: "Residents",
+        description: `User approved ${resident.lastname}, ${resident.firstname}`,
+      });
+    }
 
     await axios.post("https://api.semaphore.co/api/v4/priority", {
       apikey: process.env.SEMAPHORE_KEY,
@@ -228,15 +232,17 @@ export const printBrgyID = async (req, res) => {
 export const viewResidentDetails = async (req, res) => {
   try {
     const { resID } = req.params;
-    const { userID } = req.user;
+    const { userID, role } = req.user;
 
     const resident = await Resident.findById(resID);
 
-    await ActivityLog.insertOne({
-      userID: userID,
-      action: "Residents",
-      description: `User viewed the details of ${resident.lastname}, ${resident.firstname}.`,
-    });
+    if (role !== "Technical Admin") {
+      await ActivityLog.insertOne({
+        userID: userID,
+        action: "Residents",
+        description: `User viewed the details of ${resident.lastname}, ${resident.firstname}.`,
+      });
+    }
 
     return res.status(200).json(resident);
   } catch (error) {
@@ -248,7 +254,7 @@ export const viewResidentDetails = async (req, res) => {
 export const recoverResident = async (req, res) => {
   try {
     const { resID } = req.params;
-    const { userID } = req.user;
+    const { userID, role } = req.user;
     const resident = await Resident.findById(resID);
     const existing = await Resident.findOne({
       firstname: resident.firstname,
@@ -282,11 +288,13 @@ export const recoverResident = async (req, res) => {
     resident.status = "Active";
     await resident.save();
 
-    await ActivityLog.insertOne({
-      userID: userID,
-      action: "Residents",
-      description: `User recovered the resident profile of ${resident.lastname}, ${resident.firstname}.`,
-    });
+    if (role !== "Technical Admin") {
+      await ActivityLog.insertOne({
+        userID: userID,
+        action: "Residents",
+        description: `User recovered the resident profile of ${resident.lastname}, ${resident.firstname}.`,
+      });
+    }
 
     return res.status(200).json({
       message: "Resident has been successfully recovered.",
@@ -300,7 +308,7 @@ export const recoverResident = async (req, res) => {
 export const archiveResident = async (req, res) => {
   try {
     const { resID } = req.params;
-    const { userID } = req.user;
+    const { userID, role } = req.user;
 
     const resident = await Resident.findById(resID);
     if (!resident) {
@@ -365,11 +373,13 @@ export const archiveResident = async (req, res) => {
     resident.status = "Archived";
     await resident.save();
 
-    await ActivityLog.insertOne({
-      userID: userID,
-      action: "Residents",
-      description: `User archived the resident profile of ${resident.lastname}, ${resident.firstname}.`,
-    });
+    if (role !== "Technical Admin") {
+      await ActivityLog.insertOne({
+        userID: userID,
+        action: "Residents",
+        description: `User archived the resident profile of ${resident.lastname}, ${resident.firstname}.`,
+      });
+    }
 
     return res.status(200).json({
       message: "Resident has been successfully archived.",

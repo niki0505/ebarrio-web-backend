@@ -137,7 +137,13 @@ export const sendNotificationUpdate = async (userID, io) => {
   io.to(userID).emit("notificationUpdate", notifications);
 };
 
-export const sendPushNotification = async (pushtoken, title, body, screen) => {
+export const sendPushNotification = async (
+  pushtoken,
+  title,
+  body,
+  screen,
+  roomId = null
+) => {
   if (!pushtoken?.startsWith("ExponentPushToken")) {
     console.error("Invalid Expo push token:", pushtoken);
     return;
@@ -149,7 +155,7 @@ export const sendPushNotification = async (pushtoken, title, body, screen) => {
       sound: "default",
       title,
       body,
-      data: { screen: screen },
+      data: { screen: screen, roomId: roomId },
     });
     console.log("✅ Push notification sent! Response:", response.data);
   } catch (error) {

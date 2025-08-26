@@ -264,7 +264,7 @@ export const getAllResidents = async (req, res) => {
 
 export const createResident = async (req, res) => {
   try {
-    const { userID } = req.user;
+    const { userID, role } = req.user;
     const {
       picture,
       signature,
@@ -433,11 +433,14 @@ export const createResident = async (req, res) => {
       }
     }
 
-    await ActivityLog.insertOne({
-      userID: userID,
-      action: "Residents",
-      description: `User created a resident profile of ${resident.lastname}, ${resident.firstname}`,
-    });
+    if (role !== "Technical Admin") {
+      await ActivityLog.insertOne({
+        userID: userID,
+        action: "Residents",
+        description: `User created a resident profile of ${resident.lastname}, ${resident.firstname}`,
+      });
+    }
+
     res
       .status(200)
       .json({ message: "Resident successfully created", resID: resident._id });

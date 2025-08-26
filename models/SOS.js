@@ -53,7 +53,9 @@ const sSchema = new mongoose.Schema(
 async function assignSOSNo(doc) {
   if (
     !doc.SOSno &&
-    (doc.status === "Resolved" || doc.status === "False Alarm")
+    (doc.status === "Resolved" ||
+      doc.status === "False Alarm" ||
+      doc.status === "Cancelled")
   ) {
     const counter = await SOSCounter.findByIdAndUpdate(
       { _id: "SOSno" },
@@ -71,7 +73,9 @@ sSchema.pre("save", async function (next) {
       await assignSOSNo(this);
     } else if (
       this.isModified("status") &&
-      (this.status === "Resolved" || this.status === "False Alarm") &&
+      (this.status === "Resolved" ||
+        this.status === "False Alarm" ||
+        doc.status === "Cancelled") &&
       !this.SOSno
     ) {
       await assignSOSNo(this);
