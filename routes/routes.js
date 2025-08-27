@@ -136,6 +136,7 @@ import {
   getHousehold,
   getPendingHouseholdsCount,
   removeMember,
+  removeVehicle,
 } from "../controllers/householdController.js";
 import {
   alertResidents,
@@ -371,6 +372,11 @@ router.delete(
   "/household/:householdID/member/:memberID",
   authMiddleware,
   removeMember
+);
+router.delete(
+  "/household/:householdID/vehicle/:vehicleID",
+  authMiddleware,
+  removeVehicle
 );
 router.get("/pendinghouseholds", authMiddleware, getPendingHouseholdsCount);
 
