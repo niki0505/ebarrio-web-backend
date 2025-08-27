@@ -95,7 +95,10 @@ export const updateResident = async (req, res) => {
       haveFPmethod,
       fpmethod,
       fpstatus,
+      householdno,
+      householdposition,
       householdForm,
+      head,
     } = req.body;
 
     const { resID } = req.params;
@@ -179,19 +182,152 @@ export const updateResident = async (req, res) => {
     resident.haveFPmethod = haveFPmethod;
     resident.fpmethod = fpmethod;
     resident.fpstatus = fpstatus;
+    resident.householdno = householdno;
     await resident.save();
 
-    if (isHead) {
-      // household.members = householdForm.members;
-      // household.vehicles = householdForm.vehicles;
-      household.ethnicity = householdForm.ethnicity;
-      household.tribe = householdForm.tribe;
-      household.sociostatus = householdForm.sociostatus;
-      household.nhtsno = householdForm.nhtsno;
-      household.watersource = householdForm.watersource;
-      household.toiletfacility = householdForm.toiletfacility;
-      household.address = householdForm.address;
-      await household.save();
+    if (isHead || head) {
+      const isCurrentHeadOfTarget = household.members.some(
+        (m) =>
+          m.resID.toString() === resident._id.toString() &&
+          m.position === "Head"
+      );
+
+      console.log("isCurrentHeadOfTarget", isCurrentHeadOfTarget);
+
+      if (
+        !isCurrentHeadOfTarget &&
+        household._id.toString() === householdno.toString()
+      ) {
+        let members = [...householdForm.members];
+        if (
+          !members.some((m) => m.resID.toString() === resident._id.toString())
+        ) {
+          members.push({ resID: resident._id, position: "Head" });
+        } else {
+          // Ensure the resident is set as Head
+          members = members.map((m) =>
+            m.resID.toString() === resident._id.toString()
+              ? { ...m, position: "Head" }
+              : m
+          );
+        }
+
+        // Create the new household
+        const newHousehold = new Household({
+          ...householdForm,
+          members,
+          status: "Active",
+        });
+        await newHousehold.save();
+
+        // Update householdno for all members
+        await Promise.all(
+          members.map(({ resID }) =>
+            Resident.findByIdAndUpdate(resID, { householdno: newHousehold._id })
+          )
+        );
+
+        household.members = household.members.filter(
+          (m) =>
+            !members.some(
+              (newM) => newM.resID.toString() === m.resID.toString()
+            )
+        );
+        await household.save();
+      } else {
+        if (household._id.toString() !== householdno.toString()) {
+          // Head leaving to another household
+          const otherActiveMembers = household.members.filter(
+            (member) => member.resID.toString() !== resident._id.toString()
+          );
+
+          if (otherActiveMembers.length === 0) {
+            household.status = "Archived";
+          } else {
+            let eligibleMembers = otherActiveMembers.filter(
+              (m) => m.resID.age >= 18
+            );
+            if (!eligibleMembers.length) eligibleMembers = otherActiveMembers;
+
+            const newHead = eligibleMembers.reduce((prev, curr) =>
+              curr.resID.age > prev.resID.age ? curr : prev
+            );
+
+            household.members = household.members.map((m) => {
+              if (m.resID.toString() === newHead.resID.toString()) {
+                return { ...m, position: "Head" };
+              }
+              return m;
+            });
+
+            household.members = household.members.filter(
+              (m) => m.resID.toString() !== resident._id.toString()
+            );
+          }
+
+          await household.save();
+
+          const newHousehold = await Household.findById(householdno);
+          if (newHousehold) {
+            newHousehold.members.push({
+              resID: resident._id,
+              position: householdposition,
+            });
+            await newHousehold.save();
+          }
+        } else {
+          // Head staying, update household info
+          Object.assign(household, {
+            ethnicity: householdForm.ethnicity,
+            tribe: householdForm.tribe,
+            sociostatus: householdForm.sociostatus,
+            nhtsno: householdForm.nhtsno,
+            watersource: householdForm.watersource,
+            toiletfacility: householdForm.toiletfacility,
+            address: householdForm.address,
+          });
+          await household.save();
+        }
+      }
+    } else {
+      if (household._id.toString() !== householdno.toString()) {
+        // Non-head moving
+        const oldHousehold = await Household.findById(household._id);
+        const newHousehold = await Household.findById(householdno);
+
+        if (oldHousehold) {
+          oldHousehold.members = oldHousehold.members.filter(
+            (m) => m.resID.toString() !== resident._id.toString()
+          );
+          await oldHousehold.save();
+        }
+
+        if (newHousehold) {
+          newHousehold.members.push({
+            resID: resident._id,
+            position: householdposition,
+          });
+          await newHousehold.save();
+        }
+      } else {
+        // Non-head staying, update position if changed
+        const oldHousehold = await Household.findById(household._id);
+        if (oldHousehold) {
+          const memberIndex = oldHousehold.members.findIndex(
+            (m) => m.resID.toString() === resident._id.toString()
+          );
+
+          if (memberIndex !== -1) {
+            if (
+              oldHousehold.members[memberIndex].position !== householdposition
+            ) {
+              oldHousehold.members[memberIndex].position = householdposition;
+              await oldHousehold.save();
+              console.log(`Member position updated to ${householdposition}`);
+            }
+          }
+        }
+      }
     }
 
     if (user.empID.resID._id.toString() === resident._id.toString()) {
