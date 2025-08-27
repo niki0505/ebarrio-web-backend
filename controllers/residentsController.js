@@ -315,39 +315,56 @@ export const archiveResident = async (req, res) => {
       return res.status(404).json({ message: "Resident not found." });
     }
 
-    const mother = await Resident.exists({ mother: resID });
-    const father = await Resident.exists({ father: resID });
-    const spouse = await Resident.exists({ spouse: resID });
-    const sibling = await Resident.exists({ siblings: resID });
-    const child = await Resident.exists({ children: resID });
+    const household = await Household.findById(resident.householdno).populate(
+      "members.resID",
+      "age"
+    );
 
-    if (mother) {
-      await Resident.updateMany({ mother: resID }, { $set: { mother: null } });
-      console.log("Removed resident from mother.");
-    }
-    if (father) {
-      await Resident.updateMany({ father: resID }, { $set: { father: null } });
-      console.log("Removed resident from father.");
-    }
-    if (spouse) {
-      await Resident.updateMany({ spouse: resID }, { $set: { spouse: null } });
-      console.log("Removed resident from spouse.");
-    }
-
-    if (sibling) {
-      await Resident.updateMany(
-        { siblings: resID },
-        { $pull: { siblings: resID } }
+    if (household) {
+      // Check if resident is the household head
+      const isHead = household.members.some(
+        (member) =>
+          member.resID._id.toString() === resident._id.toString() &&
+          member.position === "Head"
       );
-      console.log("Removed resident from siblings list.");
-    }
 
-    if (child) {
-      await Resident.updateMany(
-        { children: resID },
-        { $pull: { children: resID } }
-      );
-      console.log("Removed resident from children list.");
+      if (isHead) {
+        // Get all other active members
+        const otherActiveMembers = household.members.filter(
+          (member) => member.resID._id.toString() !== resident._id.toString()
+        );
+
+        if (otherActiveMembers.length === 0) {
+          // No other members, archive household
+          household.status = "Archived";
+        } else {
+          // Pick new head: prioritize legal age (>=18), then oldest
+          let eligibleMembers = otherActiveMembers.filter(
+            (m) => m.resID.age >= 18
+          );
+          if (eligibleMembers.length === 0)
+            eligibleMembers = otherActiveMembers;
+
+          const newHead = eligibleMembers.reduce((prev, curr) =>
+            curr.resID.age > prev.resID.age ? curr : prev
+          );
+
+          // Update the position of the new head
+          household.members = household.members.map((m) => {
+            if (m.resID._id.toString() === newHead.resID._id.toString()) {
+              return { ...m.toObject(), position: "Head" };
+            }
+            return m;
+          });
+
+          // Remove the archived resident from household members
+          household.members = household.members.filter(
+            (m) => m.resID._id.toString() !== resident._id.toString()
+          );
+        }
+
+        await household.save();
+      }
     }
 
     if (resident.userID) {
@@ -370,6 +387,7 @@ export const archiveResident = async (req, res) => {
     }
 
     resident.set("brgyID", undefined);
+    resident.set("householdno", undefined);
     resident.status = "Archived";
     await resident.save();
 

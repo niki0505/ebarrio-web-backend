@@ -118,21 +118,6 @@ const resSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    mother: { type: mongoose.Schema.Types.ObjectId, ref: "Resident" },
-    father: { type: mongoose.Schema.Types.ObjectId, ref: "Resident" },
-    spouse: { type: mongoose.Schema.Types.ObjectId, ref: "Resident" },
-    siblings: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Resident",
-      },
-    ],
-    children: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Resident",
-      },
-    ],
     HOAname: {
       type: String,
     },
@@ -160,10 +145,6 @@ const resSchema = new mongoose.Schema(
       required: true,
       default: "Active",
     },
-    // is4Ps: {
-    //   type: Boolean,
-    //   default: false,
-    // },
     isSenior: {
       type: Boolean,
       default: false,
