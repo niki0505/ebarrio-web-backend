@@ -17,8 +17,15 @@ export const changeSecurityQuestions = async (req, res) => {
         .json({ message: "Hmm… that password didn’t work. Let’s try again." });
     }
 
+    if (!Array.isArray(user.securityquestions)) {
+      user.securityquestions = [];
+    }
+
     for (let i = 0; i < 2; i++) {
       if (securityquestions[i]) {
+        if (!user.securityquestions[i]) {
+          user.securityquestions[i] = { question: "", answer: "" };
+        }
         const isSame = await bcrypt.compare(
           securityquestions[i].answer,
           user.securityquestions[i].answer || ""
