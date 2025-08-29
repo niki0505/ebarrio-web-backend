@@ -97,7 +97,7 @@ export const checkUser = async (req, res) => {
   try {
     const { username } = req.params;
     const user = await User.findOne({ username: username })
-      .select("securityquestions status role")
+      .select("securityquestions status role mobilenumber")
       .populate({
         path: "empID",
         select: "resID",

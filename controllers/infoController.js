@@ -37,7 +37,7 @@ export const getAllEmployees = async (req, res) => {
 
 export const updateResident = async (req, res) => {
   try {
-    const { userID } = req.user;
+    const { userID, role } = req.user;
     const {
       picture,
       signature,
@@ -324,18 +324,20 @@ export const updateResident = async (req, res) => {
       }
     }
 
-    if (user.empID.resID._id.toString() === resident._id.toString()) {
-      await ActivityLog.insertOne({
-        userID: userID,
-        action: "Residents",
-        description: `User updated their resident profile.`,
-      });
-    } else {
-      await ActivityLog.insertOne({
-        userID: userID,
-        action: "Residents",
-        description: `User updated the details of ${resident.lastname}, ${resident.firstname}.`,
-      });
+    if (role !== "Technical Admin") {
+      if (user.empID.resID._id.toString() === resident._id.toString()) {
+        await ActivityLog.insertOne({
+          userID: userID,
+          action: "Residents",
+          description: `User updated their resident profile.`,
+        });
+      } else {
+        await ActivityLog.insertOne({
+          userID: userID,
+          action: "Residents",
+          description: `User updated the details of ${resident.lastname}, ${resident.firstname}.`,
+        });
+      }
     }
 
     res.status(200).json({ message: "Resident successfully updated" });
