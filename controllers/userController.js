@@ -195,8 +195,8 @@ export const resetPassword = async (req, res) => {
 
 export const createUser = async (req, res) => {
   try {
-    const { userID } = req.user;
-    const { username, password, resID, role } = req.body;
+    const { userID, role } = req.user;
+    const { username, password, resID } = req.body;
 
     const usernameExists = await User.findOne({
       username,
@@ -249,8 +249,7 @@ export const createUser = async (req, res) => {
     await axios.post("https://api.semaphore.co/api/v4/priority", {
       apikey: process.env.SEMAPHORE_KEY,
       number: resident.mobilenumber,
-      message: `Your barangay account is created. Use this temporary token as your password to log in: ${password}. 
-       Please log in to the app and set your new password. This token will expire in 24 hours.`,
+      message: `Your barangay account has been created.\nUsername: ${username}\nTemporary Password: ${password}\nPlease log in to the app and set your new password. This token will expire in 24 hours.`,
     });
 
     if (role !== "Technical Admin") {
