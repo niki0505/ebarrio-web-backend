@@ -222,7 +222,7 @@ export const verifyQR = async (req, res) => {
 export const saveBrgyID = async (req, res) => {
   try {
     const { resID } = req.params;
-    const { userID } = req.user;
+    const { userID, role } = req.user;
     const { idNumber, expirationDate, qrCode, qrToken } = req.body;
     const resident = await Resident.findById(resID);
     if (!resident) {
@@ -239,11 +239,13 @@ export const saveBrgyID = async (req, res) => {
 
     await resident.save();
 
-    await ActivityLog.insertOne({
-      userID: userID,
-      action: "Residents",
-      description: `User generated a new barangay ID of ${resident.lastname}, ${resident.firstname}.`,
-    });
+    if (role !== "Technical Admin") {
+      await ActivityLog.insertOne({
+        userID: userID,
+        action: "Residents",
+        description: `User generated a new barangay ID of ${resident.lastname}, ${resident.firstname}.`,
+      });
+    }
 
     return res.status(200).json({
       message: "Barangay ID is saved successfully",
