@@ -45,11 +45,13 @@ export const changeSecurityQuestions = async (req, res) => {
 
     await user.save();
 
-    await ActivityLog.insertOne({
-      userID: userID,
-      action: "Account Settings",
-      description: `User updated their security questions.`,
-    });
+    if (user.role !== "Technical Admin") {
+      await ActivityLog.insertOne({
+        userID: userID,
+        action: "Account Settings",
+        description: `User updated their security questions.`,
+      });
+    }
 
     res
       .status(200)
@@ -87,11 +89,13 @@ export const changePassword = async (req, res) => {
     user.passwordchangedat = new Date();
     await user.save();
 
-    await ActivityLog.insertOne({
-      userID: userID,
-      action: "Account Settings",
-      description: `User updated their password.`,
-    });
+    if (user.role !== "Technical Admin") {
+      await ActivityLog.insertOne({
+        userID: userID,
+        action: "Account Settings",
+        description: `User updated their password.`,
+      });
+    }
 
     res.status(200).json({ message: "Password changed successfully!" });
   } catch (error) {
@@ -126,11 +130,13 @@ export const changeUsername = async (req, res) => {
     user.username = username;
     await user.save();
 
-    await ActivityLog.insertOne({
-      userID: userID,
-      action: "Account Settings",
-      description: `User updated their username.`,
-    });
+    if (user.role !== "Technical Admin") {
+      await ActivityLog.insertOne({
+        userID: userID,
+        action: "Account Settings",
+        description: `User updated their username.`,
+      });
+    }
 
     await rds.setex(`limitUsernameChange_${userID}`, 2592000, "true");
 
