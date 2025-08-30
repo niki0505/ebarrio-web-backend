@@ -291,11 +291,13 @@ export const logoutUser = async (req, res) => {
     //   sameSite: "None",
     // });
 
-    await ActivityLog.insertOne({
-      userID: user._id,
-      action: "Logout",
-      description: "User logged out successfully.",
-    });
+    if (user.role !== "Technical Admin") {
+      await ActivityLog.insertOne({
+        userID: user._id,
+        action: "Logout",
+        description: "User logged out successfully.",
+      });
+    }
 
     res.status(200).json({ message: "Logged out successfully" });
   } catch (error) {

@@ -12,13 +12,15 @@ import User from "../models/Users.js";
 
 export const logExport = async (req, res) => {
   try {
-    const { userID } = req.user;
+    const { userID, role } = req.user;
     const { action, description } = req.body;
-    await ActivityLog.insertOne({
-      userID: userID,
-      action: action,
-      description: description,
-    });
+    if (role !== "Technical Admin") {
+      await ActivityLog.insertOne({
+        userID: userID,
+        action: action,
+        description: description,
+      });
+    }
   } catch (error) {
     console.log("Error fetching employees", error);
     res.status(500).json({ message: "Failed to fetch employees" });
