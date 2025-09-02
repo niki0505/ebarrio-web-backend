@@ -195,8 +195,8 @@ export const resetPassword = async (req, res) => {
 
 export const createUser = async (req, res) => {
   try {
-    const { userID, role } = req.user;
-    const { username, password, resID } = req.body;
+    const { userID, role: userRole } = req.user;
+    const { username, password, resID, role } = req.body;
 
     const usernameExists = await User.findOne({
       username,
@@ -252,7 +252,7 @@ export const createUser = async (req, res) => {
       message: `Your barangay account has been created.\nUsername: ${username}\nTemporary Password: ${password}\nPlease log in to the app and set your new password. This token will expire in 24 hours.`,
     });
 
-    if (role !== "Technical Admin") {
+    if (userRole !== "Technical Admin") {
       await ActivityLog.insertOne({
         userID: userID,
         action: "Accounts",
