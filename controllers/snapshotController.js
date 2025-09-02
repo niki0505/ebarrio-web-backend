@@ -26,11 +26,15 @@ export async function alertResidents(req, res) {
       status: { $nin: ["Archived", "Rejected", "Pending"] },
     }).select("mobilenumber");
 
-    const smsPromises = residents.map((resident) =>
+    const uniqueNumbers = [
+      ...new Set(residents.map((r) => r.mobilenumber).filter((num) => !!num)),
+    ];
+
+    const smsPromises = uniqueNumbers.map((number) =>
       axios.post("https://api.semaphore.co/api/v4/priority", {
         apikey: process.env.SEMAPHORE_KEY,
-        number: resident.mobilenumber,
-        message: message,
+        number,
+        message,
       })
     );
 
