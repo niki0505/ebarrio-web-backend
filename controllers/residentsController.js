@@ -364,6 +364,11 @@ export const archiveResident = async (req, res) => {
         }
 
         await household.save();
+      } else {
+        household.members = household.members.filter(
+          (m) => m.resID._id.toString() !== resident._id.toString()
+        );
+        await household.save();
       }
     }
 
