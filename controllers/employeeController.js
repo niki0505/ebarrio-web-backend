@@ -46,8 +46,9 @@ export const recoverEmployee = async (req, res) => {
 
     if (role !== "Technical Admin") {
       await ActivityLog.insertOne({
-        userID: userID,
-        action: "Employees",
+        userID,
+        action: "Recover",
+        target: "Employees",
         description: `User recovered ${resident.lastname}, ${resident.firstname}'s as employee.`,
       });
     }
@@ -89,8 +90,9 @@ export const archiveEmployee = async (req, res) => {
 
     if (role !== "Technical Admin") {
       await ActivityLog.insertOne({
-        userID: userID,
-        action: "Employees",
+        userID,
+        action: "Archive",
+        target: "Employees",
         description: `User archived ${resident.lastname}, ${resident.firstname}'s as employee.`,
       });
     }
@@ -139,8 +141,9 @@ export const editEmployee = async (req, res) => {
 
     if (role !== "Technical Admin") {
       await ActivityLog.insertOne({
-        userID: userID,
-        action: "Employees",
+        userID,
+        action: "Update",
+        target: "Employees",
         description: `User updated ${employee.resID.lastname}, ${employee.resID.firstname}'s employee profile.`,
       });
     }
@@ -183,8 +186,9 @@ export const createEmployee = async (req, res) => {
 
     if (role !== "Technical Admin") {
       await ActivityLog.insertOne({
-        userID: userID,
-        action: "Employees",
+        userID,
+        action: "Create",
+        target: "Employees",
         description: `User added ${resident.lastname}, ${resident.firstname} as employee.`,
       });
     }
@@ -223,7 +227,7 @@ export const checkPositions = async (req, res) => {
     const counts = await Employee.aggregate([
       {
         $match: {
-          status: { $ne: "Archived" }, // Exclude 'Archived' status
+          status: { $ne: "Archived" },
         },
       },
       {

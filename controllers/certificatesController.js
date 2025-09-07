@@ -43,7 +43,10 @@ export const collectedCert = async (req, res) => {
 
     await cert.save();
 
-    const user = await User.findOne({ resID: cert.resID._id });
+    const user = await User.findOne({ resID: cert.resID._id }).populate({
+      path: "resID",
+      select: "firstname lastname",
+    });
 
     const io = req.app.get("socketio");
     io.to(user._id.toString()).emit("certificateUpdate", {
@@ -66,8 +69,17 @@ export const collectedCert = async (req, res) => {
     await Notification.insertOne({
       userID: user._id,
       title: `📄 ${cert.typeofcertificate} Collected`,
-      message: `Your document request has been processed and is now available for pick up at the barangay hall. Kindly pay the fee of ${cert.amount} upon claiming.`,
+      message: `Your document has been collected. Thank you for your time.`,
       redirectTo: "Status",
+    });
+
+    await ActivityLog.insertOne({
+      userID,
+      action: "Update",
+      target: "Document Requests",
+      description: `User marked the ${cert.typeofcertificate.toLowerCase()} request of ${
+        user.resID.lastname
+      }, ${user.resID.firstname} as collected.`,
     });
 
     return res.status(200).json({
@@ -94,7 +106,10 @@ export const notifyCert = async (req, res) => {
       return res.status(404).json({ message: "Certificate not found" });
     }
 
-    const user = await User.findOne({ resID: cert.resID._id });
+    const user = await User.findOne({ resID: cert.resID._id }).populate({
+      path: "resID",
+      select: "firstname lastname",
+    });
 
     const io = req.app.get("socketio");
     io.to(user._id.toString()).emit("certificateUpdate", {
@@ -119,6 +134,15 @@ export const notifyCert = async (req, res) => {
       title: `📄 ${cert.typeofcertificate} Issued`,
       message: `Your document request has been processed and is now available for pick up at the barangay hall. Kindly pay the fee of ${cert.amount} upon claiming.`,
       redirectTo: "Status",
+    });
+
+    await ActivityLog.insertOne({
+      userID,
+      action: "Notify",
+      target: "Document Requests",
+      description: `User notified ${user.resID.lastname}, ${
+        user.resID.firstname
+      } about their ${cert.typeofcertificate.toLowerCase()} request being available for pickup.`,
     });
 
     return res.status(200).json({
@@ -178,8 +202,9 @@ export const rejectCertificateReq = async (req, res) => {
     sendNotificationUpdate(user._id.toString(), io);
 
     await ActivityLog.insertOne({
-      userID: userID,
-      action: "Document Requests",
+      userID,
+      action: "Reject",
+      target: "Document Requests",
       description: `User rejected the ${cert.typeofcertificate.toLowerCase()} request of ${
         resident.lastname
       }, ${resident.firstname}.`,
@@ -212,9 +237,10 @@ export const saveCertificateReq = async (req, res) => {
     await cert.save();
 
     await ActivityLog.insertOne({
-      userID: userID,
-      action: "Document Requests",
-      description: `User issued the ${cert.typeofcertificate.toLowerCase()} request of ${
+      userID,
+      action: "Approve",
+      target: "Document Requests",
+      description: `User approved the ${cert.typeofcertificate.toLowerCase()} request of ${
         cert.resID.lastname
       }, ${cert.resID.firstname}.`,
     });
@@ -582,6 +608,7 @@ export const getCertificate = async (req, res) => {
 
 export const saveCertificate = async (req, res) => {
   try {
+    const { userID } = req.user;
     const { certID } = req.params;
     const { qrCode } = req.body;
     const cert = await Certificate.findById(certID);
@@ -591,6 +618,15 @@ export const saveCertificate = async (req, res) => {
 
     cert.certID.qrCode = qrCode;
     await cert.save();
+
+    await ActivityLog.insertOne({
+      userID,
+      action: "Generate",
+      target: "Document Requests",
+      description: `User generated a ${cert.typeofcertificate.toLowerCase()} for ${
+        cert.resID.lastname
+      }, ${cert.resID.firstname}.`,
+    });
     return res.status(200).json({
       message: "Certificate is saved successfully",
     });

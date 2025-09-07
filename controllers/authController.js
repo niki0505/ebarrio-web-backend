@@ -202,7 +202,11 @@ export const updatedUser = async (req, res) => {
 
 export const archivedUser = async (req, res) => {
   try {
-    const { userID } = req.params;
+    const { userID } = req.user;
+
+    const user = await User.findById(userID);
+    user.status = "Archived";
+    await user.save();
     res.clearCookie("refreshToken", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -241,16 +245,6 @@ export const deactivatedUser = async (req, res) => {
       sameSite: "Strict",
     });
 
-    // res.clearCookie("refreshToken", {
-    //   httpOnly: true,
-    //   secure: true,
-    //   sameSite: "None",
-    // });
-    // res.clearCookie("accessToken", {
-    //   httpOnly: true,
-    //   secure: true,
-    //   sameSite: "None",
-    // });
     await user.save();
 
     res.status(200).json({
@@ -280,21 +274,11 @@ export const logoutUser = async (req, res) => {
       sameSite: "Strict",
     });
 
-    // res.clearCookie("refreshToken", {
-    //   httpOnly: true,
-    //   secure: true,
-    //   sameSite: "None",
-    // });
-    // res.clearCookie("accessToken", {
-    //   httpOnly: true,
-    //   secure: true,
-    //   sameSite: "None",
-    // });
-
     if (user.role !== "Technical Admin") {
       await ActivityLog.insertOne({
         userID: user._id,
         action: "Logout",
+        target: "User Accounts",
         description: "User logged out successfully.",
       });
     }
@@ -367,6 +351,7 @@ export const loginUser = async (req, res) => {
       await ActivityLog.insertOne({
         userID: user._id,
         action: "Login",
+        target: "User Accounts",
         description: "User logged in successfully.",
       });
       rds.del(`login_attempts_${user._id}`, (err) => {
@@ -488,19 +473,26 @@ export const checkCredentials = async (req, res) => {
           rds.expire(key, 1800);
         }
 
-        await ActivityLog.insertOne({
-          userID: user._id,
-          action: "Login",
-          description: "The login attempt failed due to an incorrect password.",
-        });
-
-        if (attempts > 5) {
+        if (user.role !== "Technical Admin") {
           await ActivityLog.insertOne({
             userID: user._id,
-            action: "Login",
+            action: "Failed Login",
+            target: "User Accounts",
             description:
-              "User was locked out due to many failed login attempts.",
+              "The login attempt failed due to an incorrect password.",
           });
+        }
+
+        if (attempts > 5) {
+          if (user.role !== "Technical Admin") {
+            await ActivityLog.insertOne({
+              userID: user._id,
+              action: "Failed Login",
+              target: "User Accounts",
+              description:
+                "User was locked out due to many failed login attempts.",
+            });
+          }
           return res.status(429).json({
             message:
               "Too many failed login attempts. Please try again after 30 minutes.",
@@ -686,7 +678,6 @@ export const checkIfEmployee = async (req, res) => {
 
 export const registerUser = async (req, res) => {
   try {
-    console.log("🔵 Register request:", req.body);
     const { username, password, empID, role } = req.body;
 
     const employee = await Employee.findOne({ _id: empID });
@@ -706,7 +697,7 @@ export const registerUser = async (req, res) => {
 
     employee.userID = user._id;
     await employee.save();
-    console.log("✅ User registered successfully");
+
     return res.json({ exists: true, message: "User registered successfully" });
   } catch (error) {
     console.error("Error in registerUser:", error);

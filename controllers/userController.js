@@ -61,7 +61,8 @@ export const editUser = async (req, res) => {
       if (role !== "Technical Admin") {
         await ActivityLog.insertOne({
           userID: adminID,
-          action: "Accounts",
+          action: "Update",
+          target: "User Accounts",
           description: `User updated ${name}'s account credentials.`,
         });
       }
@@ -104,8 +105,9 @@ export const activateUser = async (req, res) => {
     if (role !== "Technical Admin") {
       await ActivityLog.insertOne({
         userID: adminID,
-        action: "Accounts",
-        description: `User deactivated ${name}'s account.`,
+        action: "Update",
+        target: "User Accounts",
+        description: `User activated ${name}'s account.`,
       });
     }
 
@@ -148,7 +150,8 @@ export const deactivateUser = async (req, res) => {
     if (role !== "Technical Admin") {
       await ActivityLog.insertOne({
         userID: adminID,
-        action: "Accounts",
+        action: "Update",
+        target: "User Accounts",
         description: `User deactivated ${name}'s account.`,
       });
     }
@@ -181,7 +184,8 @@ export const resetPassword = async (req, res) => {
 
     await ActivityLog.insertOne({
       userID: user._id,
-      action: "Login",
+      action: "Password Set",
+      target: "User Accounts",
       description: `User set their password successfully.`,
     });
     return res
@@ -254,8 +258,9 @@ export const createUser = async (req, res) => {
 
     if (userRole !== "Technical Admin") {
       await ActivityLog.insertOne({
-        userID: userID,
-        action: "Accounts",
+        userID,
+        action: "Create",
+        target: "User Accounts",
         description: `User created an account for ${name}.`,
       });
     }

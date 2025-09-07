@@ -13,12 +13,13 @@ import User from "../models/Users.js";
 export const logExport = async (req, res) => {
   try {
     const { userID, role } = req.user;
-    const { action, description } = req.body;
+    const { action, target, description } = req.body;
     if (role !== "Technical Admin") {
       await ActivityLog.insertOne({
-        userID: userID,
-        action: action,
-        description: description,
+        userID,
+        action,
+        target,
+        description,
       });
     }
   } catch (error) {
@@ -381,14 +382,16 @@ export const updateResident = async (req, res) => {
     if (role !== "Technical Admin") {
       if (user.empID.resID._id.toString() === resident._id.toString()) {
         await ActivityLog.insertOne({
-          userID: userID,
-          action: "Residents",
+          userID,
+          action: "Update",
+          target: "Profile",
           description: `User updated their resident profile.`,
         });
       } else {
         await ActivityLog.insertOne({
-          userID: userID,
-          action: "Residents",
+          userID,
+          action: "Update",
+          target: "Residents",
           description: `User updated the details of ${resident.lastname}, ${resident.firstname}.`,
         });
       }
@@ -621,8 +624,9 @@ export const createResident = async (req, res) => {
 
     if (role !== "Technical Admin") {
       await ActivityLog.insertOne({
-        userID: userID,
-        action: "Residents",
+        userID,
+        action: "Create",
+        target: "Residents",
         description: `User created a resident profile of ${resident.lastname}, ${resident.firstname}`,
       });
     }

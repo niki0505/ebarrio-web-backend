@@ -96,8 +96,9 @@ export const rejectResident = async (req, res) => {
 
     if (role !== "Technical Admin") {
       await ActivityLog.insertOne({
-        userID: userID,
-        action: "Residents",
+        userID,
+        action: "Reject",
+        target: "Residents",
         description: `User rejected ${resident.lastname}, ${resident.firstname}`,
       });
     }
@@ -161,8 +162,9 @@ export const approveResident = async (req, res) => {
 
     if (role !== "Technical Admin") {
       await ActivityLog.insertOne({
-        userID: userID,
-        action: "Residents",
+        userID,
+        action: "Approve",
+        target: "Residents",
         description: `User approved ${resident.lastname}, ${resident.firstname}`,
       });
     }
@@ -182,74 +184,74 @@ export const approveResident = async (req, res) => {
   }
 };
 
-export const issueDocument = async (req, res) => {
-  try {
-    const { resID } = req.params;
-    const { typeofcertificate } = req.body;
-    const { userID } = req.user;
+// export const issueDocument = async (req, res) => {
+//   try {
+//     const { resID } = req.params;
+//     const { typeofcertificate } = req.body;
+//     const { userID } = req.user;
 
-    const resident = await Resident.findById(resID);
+//     const resident = await Resident.findById(resID);
 
-    await ActivityLog.insertOne({
-      userID: userID,
-      action: "Residents",
-      description: `User issued ${resident.lastname}, ${
-        resident.firstname
-      } a ${typeofcertificate.toLowerCase()}.`,
-    });
+//     await ActivityLog.insertOne({
+//       userID: userID,
+//       action: "Residents",
+//       description: `User issued ${resident.lastname}, ${
+//         resident.firstname
+//       } a ${typeofcertificate.toLowerCase()}.`,
+//     });
 
-    return res.status(200).json({
-      message: "Admin issued a document.",
-    });
-  } catch (error) {
-    console.error("Error in issuing a document:", error);
-    res.status(500).json({ message: "Internal server error" });
-  }
-};
+//     return res.status(200).json({
+//       message: "Admin issued a document.",
+//     });
+//   } catch (error) {
+//     console.error("Error in issuing a document:", error);
+//     res.status(500).json({ message: "Internal server error" });
+//   }
+// };
 
-export const printBrgyID = async (req, res) => {
-  try {
-    const { resID } = req.params;
-    const { userID } = req.user;
+// export const printBrgyID = async (req, res) => {
+//   try {
+//     const { resID } = req.params;
+//     const { userID } = req.user;
 
-    const resident = await Resident.findById(resID);
+//     const resident = await Resident.findById(resID);
 
-    await ActivityLog.insertOne({
-      userID: userID,
-      action: "Residents",
-      description: `User viewed the current barangay ID of ${resident.lastname}, ${resident.firstname}.`,
-    });
+//     await ActivityLog.insertOne({
+//       userID: userID,
+//       action: "Residents",
+//       description: `User viewed the current barangay ID of ${resident.lastname}, ${resident.firstname}.`,
+//     });
 
-    return res.status(200).json({
-      message: "Admin print the current barangay ID.",
-    });
-  } catch (error) {
-    console.error("Error in printing current barangay ID:", error);
-    res.status(500).json({ message: "Internal server error" });
-  }
-};
+//     return res.status(200).json({
+//       message: "Admin print the current barangay ID.",
+//     });
+//   } catch (error) {
+//     console.error("Error in printing current barangay ID:", error);
+//     res.status(500).json({ message: "Internal server error" });
+//   }
+// };
 
-export const viewResidentDetails = async (req, res) => {
-  try {
-    const { resID } = req.params;
-    const { userID, role } = req.user;
+// export const viewResidentDetails = async (req, res) => {
+//   try {
+//     const { resID } = req.params;
+//     const { userID, role } = req.user;
 
-    const resident = await Resident.findById(resID);
+//     const resident = await Resident.findById(resID);
 
-    if (role !== "Technical Admin") {
-      await ActivityLog.insertOne({
-        userID: userID,
-        action: "Residents",
-        description: `User viewed the details of ${resident.lastname}, ${resident.firstname}.`,
-      });
-    }
+//     if (role !== "Technical Admin") {
+//       await ActivityLog.insertOne({
+//         userID: userID,
+//         action: "Residents",
+//         description: `User viewed the details of ${resident.lastname}, ${resident.firstname}.`,
+//       });
+//     }
 
-    return res.status(200).json(resident);
-  } catch (error) {
-    console.error("Error in recovering resident:", error);
-    res.status(500).json({ message: "Internal server error" });
-  }
-};
+//     return res.status(200).json(resident);
+//   } catch (error) {
+//     console.error("Error in recovering resident:", error);
+//     res.status(500).json({ message: "Internal server error" });
+//   }
+// };
 
 export const recoverResident = async (req, res) => {
   try {
@@ -290,8 +292,9 @@ export const recoverResident = async (req, res) => {
 
     if (role !== "Technical Admin") {
       await ActivityLog.insertOne({
-        userID: userID,
-        action: "Residents",
+        userID,
+        action: "Recover",
+        target: "Residents",
         description: `User recovered the resident profile of ${resident.lastname}, ${resident.firstname}.`,
       });
     }
@@ -398,8 +401,9 @@ export const archiveResident = async (req, res) => {
 
     if (role !== "Technical Admin") {
       await ActivityLog.insertOne({
-        userID: userID,
-        action: "Residents",
+        userID,
+        action: "Archive",
+        target: "Residents",
         description: `User archived the resident profile of ${resident.lastname}, ${resident.firstname}.`,
       });
     }

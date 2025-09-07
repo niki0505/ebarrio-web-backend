@@ -8,9 +8,11 @@ import Notification from "../models/Notifications.js";
 import { sendNotificationUpdate } from "../utils/collectionUtils.js";
 import User from "../models/Users.js";
 import Resident from "../models/Residents.js";
+import ActivityLog from "../models/ActivityLogs.js";
 
 export const rejectCourtReq = async (req, res) => {
   try {
+    const { userID } = req.user;
     const { reservationID } = req.params;
     const { remarks } = req.body;
 
@@ -69,6 +71,13 @@ export const rejectCourtReq = async (req, res) => {
       sendNotificationUpdate(user._id.toString(), io);
     }
 
+    await ActivityLog.insertOne({
+      userID,
+      action: "Reject",
+      target: "Court Reservations",
+      description: `User rejected the reservation of ${resident.lastname}, ${resident.firstname}.`,
+    });
+
     return res.status(200).json({
       message: "Court reservation is rejected successfully",
     });
@@ -80,11 +89,25 @@ export const rejectCourtReq = async (req, res) => {
 
 export const createReservation = async (req, res) => {
   try {
+    const { userID } = req.user;
     const { reservationForm } = req.body;
     const reservation = new CourtReservation({
       ...reservationForm,
     });
     await reservation.save();
+
+    const populatedReservation = await reservation.populate({
+      path: "resID",
+      select: "firstname lastname",
+    });
+
+    await ActivityLog.insertOne({
+      userID,
+      action: "Create",
+      target: "Court Reservations",
+      description: `User created a reservation for ${populatedReservation.lastname}, ${populatedReservation.firstname}.`,
+    });
+
     return res
       .status(200)
       .json({ message: "Court reservation requested successfully!" });
@@ -96,6 +119,7 @@ export const createReservation = async (req, res) => {
 
 export const approveReservation = async (req, res) => {
   try {
+    const { userID } = req.user;
     const { reservationID } = req.params;
     const reservation = await CourtReservation.findById(reservationID);
     if (!reservation) {
@@ -167,6 +191,13 @@ export const approveReservation = async (req, res) => {
 
       sendNotificationUpdate(user._id.toString(), io);
     }
+
+    await ActivityLog.insertOne({
+      userID,
+      action: "Approve",
+      target: "Court Reservations",
+      description: `User approved the reservation of ${resident.lastname}, ${resident.firstname}.`,
+    });
 
     return res
       .status(200)

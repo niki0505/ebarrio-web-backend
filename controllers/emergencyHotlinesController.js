@@ -48,8 +48,9 @@ export const recoverEmergencyHotlines = async (req, res) => {
     await emergency.save();
 
     await ActivityLog.insertOne({
-      userID: userID,
-      action: "Emergency Hotlines",
+      userID,
+      action: "Recover",
+      target: "Emergency Hotlines",
       description: `User recovered ${emergency.name}'s contact details.`,
     });
 
@@ -78,8 +79,9 @@ export const archiveEmergencyHotlines = async (req, res) => {
     await emergency.save();
 
     await ActivityLog.insertOne({
-      userID: userID,
-      action: "Emergency Hotlines",
+      userID,
+      action: "Archive",
+      target: "Emergency Hotlines",
       description: `User archived ${emergency.name}'s contact details.`,
     });
 
@@ -135,8 +137,9 @@ export const editEmergencyHotlines = async (req, res) => {
     await emergency.save();
 
     await ActivityLog.insertOne({
-      userID: userID,
-      action: "Emergency Hotlines",
+      userID,
+      action: "Update",
+      target: "Emergency Hotlines",
       description: `User updated ${emergency.name}'s contact details.`,
     });
 
@@ -199,8 +202,9 @@ export const createEmergencyHotlines = async (req, res) => {
     await emergency.save();
 
     await ActivityLog.insertOne({
-      userID: userID,
-      action: "Emergency Hotlines",
+      userID,
+      action: "Create",
+      target: "Emergency Hotlines",
       description: `User added ${emergency.name}'s contact details.`,
     });
 
