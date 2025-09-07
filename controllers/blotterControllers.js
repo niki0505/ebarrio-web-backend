@@ -8,6 +8,7 @@ import User from "../models/Users.js";
 import { sendPushNotification } from "../utils/collectionUtils.js";
 import Notification from "../models/Notifications.js";
 import { sendNotificationUpdate } from "../utils/collectionUtils.js";
+import ActivityLog from "../models/ActivityLogs.js";
 
 export const getPendingBlottersCount = async (req, res) => {
   try {
@@ -22,6 +23,7 @@ export const getPendingBlottersCount = async (req, res) => {
 
 export const rejectBlotter = async (req, res) => {
   try {
+    const { userID } = req.user;
     const { blotterID } = req.params;
     const { remarks } = req.body;
 
@@ -64,6 +66,13 @@ export const rejectBlotter = async (req, res) => {
       sendNotificationUpdate(user._id.toString(), io);
     }
 
+    await ActivityLog.insertOne({
+      userID,
+      action: "Reject",
+      target: "Blotter Reports",
+      description: `User rejected the blotter report of ${resident.lastname}, ${resident.firstname}.`,
+    });
+
     return res.status(200).json({
       message: "Blotter is rejected successfully",
     });
@@ -75,6 +84,7 @@ export const rejectBlotter = async (req, res) => {
 
 export const settleBlotter = async (req, res) => {
   try {
+    const { userID } = req.user;
     const { blotterID } = req.params;
     const { updatedForm } = req.body;
 
@@ -123,6 +133,13 @@ export const settleBlotter = async (req, res) => {
       sendNotificationUpdate(user._id.toString(), io);
     }
 
+    await ActivityLog.insertOne({
+      userID,
+      action: "Settle",
+      target: "Blotter Reports",
+      description: `User settled the blotter report of ${resident.lastname}, ${resident.firstname}.`,
+    });
+
     return res.status(200).json({
       message: "Blotter is settled successfully",
     });
@@ -134,6 +151,7 @@ export const settleBlotter = async (req, res) => {
 
 export const editScheduleBlotter = async (req, res) => {
   try {
+    const { userID } = req.user;
     const { blotterID } = req.params;
     const { scheduleForm } = req.body;
     const blotter = await Blotter.findById(blotterID);
@@ -200,6 +218,13 @@ export const editScheduleBlotter = async (req, res) => {
       sendNotificationUpdate(user._id.toString(), io);
     }
 
+    await ActivityLog.insertOne({
+      userID,
+      action: "Update",
+      target: "Blotter Reports",
+      description: `User rescheduled the blotter report of ${resident.lastname}, ${resident.firstname} for discussion.`,
+    });
+
     return res
       .status(200)
       .json({ message: "Blotter's schedule successfully updated!" });
@@ -211,6 +236,7 @@ export const editScheduleBlotter = async (req, res) => {
 
 export const scheduleBlotter = async (req, res) => {
   try {
+    const { userID } = req.user;
     const { blotterID } = req.params;
     const { scheduleForm } = req.body;
     const blotter = await Blotter.findById(blotterID);
@@ -280,6 +306,14 @@ export const scheduleBlotter = async (req, res) => {
 
       sendNotificationUpdate(user._id.toString(), io);
     }
+
+    await ActivityLog.insertOne({
+      userID,
+      action: "Create",
+      target: "Blotter Reports",
+      description: `User scheduled the blotter report of ${resident.lastname}, ${resident.firstname} for discussion.`,
+    });
+
     return res.status(200).json({ message: "Blotter successfully scheduled!" });
   } catch (error) {
     console.error("Error in scheduling blotter:", error);
@@ -348,6 +382,7 @@ export const getBlotters = async (req, res) => {
 
 export const createBlotter = async (req, res) => {
   try {
+    const { userID } = req.user;
     const { updatedForm } = req.body;
     if (updatedForm.starttime && updatedForm.starttime !== "") {
       updatedForm.status = "Scheduled";
@@ -358,6 +393,17 @@ export const createBlotter = async (req, res) => {
     const blotter = new Blotter(updatedForm);
 
     await blotter.save();
+
+    const populatedBlotter = await blotter.populate("complainantID");
+
+    await ActivityLog.insertOne({
+      userID,
+      action: "Create",
+      target: "Blotter Reports",
+      description: populatedBlotter.complainantID
+        ? `User created a blotter report for ${populatedBlotter.complainantID.lastname}, ${populatedBlotter.complainantID.firstname}.`
+        : `User created a blotter report for ${populatedBlotter.complainantname}.`,
+    });
 
     return res.status(200).json({
       message: "Blotter is created successfully",

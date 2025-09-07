@@ -46,7 +46,8 @@ export const newPassword = async (req, res) => {
 
     await ActivityLog.insertOne({
       userID: user._id,
-      action: "Forgot Password",
+      action: "Password Reset",
+      target: "User Accounts",
       description: `User has completed password reset process.`,
     });
 

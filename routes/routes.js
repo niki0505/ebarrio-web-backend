@@ -117,10 +117,7 @@ import {
 } from "../controllers/notificationController.js";
 import {
   archiveResident,
-  issueDocument,
-  printBrgyID,
   recoverResident,
-  viewResidentDetails,
   approveResident,
   getResidentImages,
   rejectResident,
@@ -168,8 +165,8 @@ router.get("/getmobilenumber/:username", getMobileNumber);
 //LOGIN
 router.put("/login/:username", loginUser);
 router.post("/logout", logoutUser);
-router.post("/deactivateduser/:userID", deactivatedUser);
-router.post("/archiveduser/:userID", archivedUser);
+router.post("/deactivateduser/:userID", authMiddleware, deactivatedUser);
+router.post("/archiveduser/:userID", authMiddleware, archivedUser);
 router.post("/updateduser", authMiddleware, updatedUser);
 router.post("/changedpassword", authMiddleware, changedPasswordUser);
 
@@ -203,9 +200,6 @@ router.get("/getresident/:resID", authMiddleware, getResident);
 router.put("/updateresident/:resID", authMiddleware, updateResident);
 router.put("/archiveresident/:resID", authMiddleware, archiveResident);
 router.put("/recoverresident/:resID", authMiddleware, recoverResident);
-router.post("/viewresidentdetails/:resID", authMiddleware, viewResidentDetails);
-router.post("/printcurrentbrgyid/:resID", authMiddleware, printBrgyID);
-router.post("/issuedocument/:resID", authMiddleware, issueDocument);
 router.get("/pendingresidents", authMiddleware, getPendingResidentsCount);
 
 //EMPLOYEES
