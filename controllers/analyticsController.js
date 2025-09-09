@@ -1,4 +1,3 @@
-// controllers/analyticsController.js
 import axios from "axios";
 import Resident from "../models/Residents.js";
 import Blotter from "../models/Blotters.js";
@@ -8,6 +7,7 @@ import Household from "../models/Households.js";
 import Prompt from "../models/Prompts.js";
 import SOS from "../models/SOS.js";
 import Employee from "../models/Employees.js";
+import User from "../models/Users.js";
 
 export const getPrompts = async (req, res) => {
   try {
@@ -24,10 +24,26 @@ export const getPrompts = async (req, res) => {
 
 export const analyticsAI = async (req, res) => {
   try {
-    const { userID } = req.user;
+    const { userID, role } = req.user;
     const { prompt } = req.body;
 
     // FETCH DATA
+
+    const users = await User.find({ role: { $ne: "Technical Admin" } })
+      .select("resID empID username passwordchangedat role status createdAt")
+      .populate({
+        path: "resID",
+        select: "firstname lastname mobilenumber householdno",
+        populate: { path: "householdno" },
+      })
+      .populate({
+        path: "empID",
+        select: "position",
+        populate: {
+          path: "resID",
+          select: "firstname lastname mobilenumber householdno",
+        },
+      });
 
     const reports = await SOS.find()
       .populate({
@@ -234,40 +250,108 @@ export const analyticsAI = async (req, res) => {
       blotterStatusCounts[b.status] = (blotterStatusCounts[b.status] || 0) + 1;
     });
 
-    const data = {
-      summaries: {
-        residents: residentsData,
-        households: householdsData,
-        documents: {
-          total: documents.length,
-          totalAmount: totalCertificateAmount,
-          statusCounts: certificateStatusCounts,
+    const usersStatusCounts = {};
+    users.forEach((b) => {
+      usersStatusCounts[b.status] = (usersStatusCounts[b.status] || 0) + 1;
+    });
+
+    let data = {};
+
+    if (role === "Secretary") {
+      data = {
+        summaries: {
+          residents: residentsData,
+          households: householdsData,
+          documents: {
+            total: documents.length,
+            totalAmount: totalCertificateAmount,
+            statusCounts: certificateStatusCounts,
+          },
+          reservations: {
+            total: reservations.length,
+            totalAmount: totalReservationAmount,
+            statusCounts: reservationStatusCounts,
+          },
+          blotters: {
+            total: blotters.length,
+            statusCounts: blotterStatusCounts,
+          },
+          users: {
+            statusCounts: usersStatusCounts,
+          },
         },
-        reservations: {
-          total: reservations.length,
-          totalAmount: totalReservationAmount,
-          statusCounts: reservationStatusCounts,
+        raw: {
+          blotters,
+          documents,
+          reservations,
+          residents,
+          households,
+          employees,
+          reports,
+          users,
         },
-        blotters: {
-          total: blotters.length,
-          statusCounts: blotterStatusCounts,
+      };
+    } else if (role === "Clerk") {
+      data = {
+        summaries: {
+          residents: residentsData,
+          households: householdsData,
+          documents: {
+            total: documents.length,
+            totalAmount: totalCertificateAmount,
+            statusCounts: certificateStatusCounts,
+          },
+          reservations: {
+            total: reservations.length,
+            totalAmount: totalReservationAmount,
+            statusCounts: reservationStatusCounts,
+          },
         },
-      },
-      raw: {
-        blotters,
-        documents,
-        reservations,
-        residents,
-        households,
-        employees,
-        reports,
-      },
-    };
+        raw: {
+          documents,
+          reservations,
+          residents,
+          households,
+          employees,
+          reports,
+        },
+      };
+    } else if (role === "Justice") {
+      data = {
+        summaries: {
+          blotters: {
+            total: blotters.length,
+            statusCounts: blotterStatusCounts,
+          },
+        },
+        raw: {
+          blotters,
+          reports,
+        },
+      };
+    }
+
+    const history = await Prompt.find({ user: userID })
+      .sort({ createdAt: -1 })
+      .limit(5);
+
+    // Build chat-style context
+    const conversationHistory = history
+      .reverse()
+      .map(
+        (h) => `
+User: ${h.prompt}
+AI: ${h.response}
+`
+      )
+      .join("\n");
 
     // PROMPT
     const geminiPrompt = `
     You are an analytics assistant for barangay officials. 
     When answering, follow these rules strictly:
+    - "Users" always refers to the User dataset (accounts with login access, role, status).
+    - "Residents" always refers to the Resident dataset (barangay members).
     - Do NOT mention technical field names like createdAt, updatedAt, or scheduleAt.  
     - Do NOT explain your step-by-step process or how you calculated.
     - Do NOT mention or repeat raw database status labels (e.g., "Not Yet Collected", "Pending").  
@@ -275,12 +359,16 @@ export const analyticsAI = async (req, res) => {
     - Use the same language that was used in the question.  
     - Focus only on the findings, trends, and insights.   
     - Only use the dataset below to calculate. 
-    - If the dataset does not have enough information to answer, reply with "Information not available."  
+    - If the dataset does not have enough information to answer, reply with "Hmm, I couldn’t find enough information to help with that."  
     ⚡ Important: If the question asks "what should be done", "how to improve", or similar prescriptive intent, provide **recommendations, actionable steps, or advice** based on the data.  
 
 
-    Question:
+    Conversation so far:
+    ${conversationHistory}
+
+    New Question:
     ${prompt}
+  
 
     Dataset:
     ${JSON.stringify(data, null, 2)}

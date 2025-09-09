@@ -176,219 +176,6 @@ export const registerSocketEvents = (io) => {
       }
     });
 
-    // socket.on("request_chat", async () => {
-    //   if (socket.role !== "Resident") return;
-
-    //   let target = null;
-    //   let assignedStaffId = null;
-    //   let isNewChat = null;
-
-    //   const existingBotChat = await Chat.findOne({
-    //     participants: socket.userID,
-    //     isBot: true,
-    //     status: "Active",
-    //   });
-
-    //   if (existingBotChat) {
-    //     existingBotChat.status = "Ended";
-
-    //     existingBotChat.messages.push({
-    //       from: SYSTEM_USER_ID,
-    //       to: socket.userID,
-    //       message: "This chat has ended.",
-    //       timestamp: new Date(),
-    //     });
-
-    //     await existingBotChat.save();
-    //     console.log(
-    //       "☑️ Ended previous bot chat:",
-    //       existingBotChat._id.toString()
-    //     );
-    //   }
-
-    //   for (let [userId, info] of connectedUsers) {
-    //     if (info.role === "Secretary") {
-    //       target = info.socketId;
-    //       assignedStaffId = userId;
-    //       break;
-    //     }
-    //   }
-
-    //   if (!target) {
-    //     for (let [userId, info] of connectedUsers) {
-    //       if (info.role === "Clerk") {
-    //         target = info.socketId;
-    //         assignedStaffId = userId;
-    //         break;
-    //       }
-    //     }
-    //   }
-
-    //   if (!assignedStaffId) {
-    //     console.log("❌ No staff available to assign");
-    //     return;
-    //   }
-
-    //   // ✅ Try to find existing chat between them
-    //   let chat = await Chat.findOne({
-    //     participants: { $all: [socket.userID, assignedStaffId] },
-    //     status: "Active",
-    //   });
-
-    //   // ✅ If none, create a new chat
-    //   if (!chat) {
-    //     const defaultMessage = {
-    //       from: assignedStaffId,
-    //       to: socket.userID,
-    //       message:
-    //         "Your chat has been transferred to an available staff. How can we help you today?",
-    //       timestamp: new Date(),
-    //     };
-
-    //     chat = new Chat({
-    //       participants: [socket.userID, assignedStaffId],
-    //       status: "Active",
-    //       messages: [defaultMessage], // Include the default message here
-    //     });
-
-    //     await chat.save();
-    //     isNewChat = true;
-
-    //     console.log("🆕 Created new chat:", chat._id.toString());
-    //   } else {
-    //     console.log("📁 Found existing chat:", chat._id.toString());
-    //   }
-
-    //   const roomId = chat._id.toString();
-
-    //   // ✅ Make the resident join the room now (optional but helpful)
-    //   socket.join(roomId);
-    //   console.log("🚪 Resident joined room:", roomId);
-
-    //   // ✅ Tell resident the assigned staff and roomId
-    //   io.to(socket.id).emit("chat_assigned", {
-    //     _id: chat._id.toString(),
-    //     participants: chat.participants,
-    //     responder: chat.responder,
-    //     messages: chat.messages,
-    //     status: chat.status,
-    //     isCleared: chat.isCleared,
-    //     isBot: chat.isBot,
-    //     createdAt: chat.createdAt,
-    //     updatedAt: chat.updatedAt,
-    //   });
-
-    //   console.log(
-    //     "👥 Assigned staff to resident on chat start:",
-    //     assignedStaffId
-    //   );
-    // });
-
-    // socket.on("send_message", async ({ from, to, message, roomId }) => {
-    //   console.log(`📨 Message received from ${from} to ${to}:`, message);
-
-    //   const isFromResident = socket.role === "Resident";
-    //   let chat = null;
-
-    //   if (roomId) {
-    //     chat = await Chat.findById(roomId);
-    //     console.log("🔎 Found chat by roomId:", roomId);
-    //   }
-
-    //   // If no chat found by roomId, fallback to participants
-    //   if (!chat) {
-    //     chat = await Chat.findOne({
-    //       participants: { $all: [from, to] },
-    //       status: "Active",
-    //     });
-
-    //     if (chat) {
-    //       console.log("📁 Found chat by participants:", chat._id.toString());
-    //       roomId = chat._id.toString();
-    //     }
-    //   }
-
-    //   // If still no chat, create a new one
-    //   if (!chat) {
-    //     chat = new Chat({ participants: [from, to], status: "Active" });
-    //     await chat.save();
-    //     roomId = chat._id.toString();
-    //     console.log("🆕 New chat created with roomId:", roomId);
-    //   }
-
-    //   // Push the new message
-    //   chat.messages.push({ from, to, message });
-
-    //   // Auto-assign responder if needed
-    //   if (!chat.responder && socket.role !== "Resident") {
-    //     chat.responder = from;
-    //     console.log("👤 Assigned responder:", from);
-    //   }
-
-    //   // Save chat
-    //   try {
-    //     await chat.save();
-    //     console.log("✅ Chat saved to DB");
-    //   } catch (err) {
-    //     console.error("❌ Failed to save chat:", err.message);
-    //   }
-
-    //   // Join the room
-    //   socket.join(roomId);
-    //   console.log(`👥 ${from} joined room ${roomId}`);
-
-    //   if (isFromResident) {
-    //     // Find target staff to notify
-    //     let target = null;
-    //     let assignedStaffId = null;
-
-    //     for (let [userId, info] of connectedUsers) {
-    //       if (info.role === "Secretary") {
-    //         target = info.socketId;
-    //         assignedStaffId = userId;
-    //         break;
-    //       }
-    //     }
-
-    //     if (!target) {
-    //       for (let [userId, info] of connectedUsers) {
-    //         if (info.role === "Clerk") {
-    //           target = info.socketId;
-    //           assignedStaffId = userId;
-    //           break;
-    //         }
-    //       }
-    //     }
-
-    //     if (assignedStaffId && connectedUsers.has(assignedStaffId)) {
-    //       io.to(assignedStaffId).emit("receive_message", {
-    //         from,
-    //         to,
-    //         message,
-    //         timestamp: new Date(),
-    //         roomId: chat._id,
-    //       });
-    //     } else {
-    //       console.log("❗ No clerk or secretary online. Message pending.");
-    //     }
-    //   } else {
-    //     // Staff replies to resident
-    //     const residentSocket = connectedUsers.get(to);
-    //     if (residentSocket) {
-    //       io.to(residentSocket.socketId).socketsJoin(roomId);
-    //       io.to(roomId).emit("receive_message", {
-    //         from,
-    //         to,
-    //         message,
-    //         timestamp: new Date(),
-    //         roomId,
-    //       });
-
-    //       console.log("📤 Sent message to resident:", to);
-    //     }
-    //   }
-    // });
-
     socket.on("request_chat", async () => {
       if (socket.role !== "Resident") return;
 
@@ -429,7 +216,7 @@ export const registerSocketEvents = (io) => {
 
       // ✅ Always include both Secretary and Clerk
       const staffUsers = await User.find({
-        role: { $in: ["Secretary", "Clerk"] },
+        role: { $in: ["Secretary", "Clerk", "Justice"] },
         status: { $nin: ["Archived", "Deactivated"] },
       });
       if (staffUsers.length === 0) {
@@ -476,7 +263,7 @@ export const registerSocketEvents = (io) => {
       // 👥 Online staff join room
       for (let [userId, info] of connectedUsers) {
         if (
-          ["Secretary", "Clerk"].includes(info.role) &&
+          ["Secretary", "Clerk", "Justice"].includes(info.role) &&
           staffUserIDs.includes(userId)
         ) {
           io.to(info.socketId).socketsJoin(roomId);
@@ -504,103 +291,107 @@ export const registerSocketEvents = (io) => {
       );
     });
 
-    socket.on("send_message", async ({ from, to, message, roomId }) => {
-      console.log(`📨 Message received from ${from} to ${to}:`, message);
+    socket.on(
+      "send_message",
+      async ({ from, to, message, roomId }, callback) => {
+        console.log(`📨 Message received from ${from} to ${to}:`, message);
 
-      const isFromResident = socket.role === "Resident";
-      let chat = null;
+        const isFromResident = socket.role === "Resident";
+        let chat = null;
 
-      if (roomId) {
-        chat = await Chat.findById(roomId);
-        console.log("🔎 Found chat by roomId:", roomId);
-      }
-
-      // If no chat found by roomId, fallback to participants
-      if (!chat) {
-        chat = await Chat.findOne({
-          participants: { $all: [from, to] },
-          status: "Active",
-        });
-
-        if (chat) {
-          console.log("📁 Found chat by participants:", chat._id.toString());
-          roomId = chat._id.toString();
+        if (roomId) {
+          chat = await Chat.findById(roomId);
+          console.log("🔎 Found chat by roomId:", roomId);
         }
-      }
 
-      // If still no chat, create a new one
-      if (!chat) {
-        chat = new Chat({ participants: [from, to], status: "Active" });
-        await chat.save();
-        roomId = chat._id.toString();
-        console.log("🆕 New chat created with roomId:", roomId);
-      }
+        // If no chat found by roomId, fallback to participants
+        if (!chat) {
+          chat = await Chat.findOne({
+            participants: { $all: [from, to] },
+            status: "Active",
+          });
 
-      // Push the new message
-      chat.messages.push({ from, to, message });
+          if (chat) {
+            console.log("📁 Found chat by participants:", chat._id.toString());
+            roomId = chat._id.toString();
+          }
+        }
 
-      // Auto-assign responder if needed
-      if (!chat.responder && socket.role !== "Resident") {
-        chat.responder = from;
-        console.log("👤 Assigned responder:", from);
-      }
+        // If still no chat, create a new one
+        if (!chat) {
+          chat = new Chat({ participants: [from, to], status: "Active" });
+          await chat.save();
+          roomId = chat._id.toString();
+          console.log("🆕 New chat created with roomId:", roomId);
+        }
 
-      // Save chat
-      try {
-        await chat.save();
-        console.log("✅ Chat saved to DB");
-      } catch (err) {
-        console.error("❌ Failed to save chat:", err.message);
-      }
+        // Push the new message
+        chat.messages.push({ from, to, message });
 
-      // Join the room
-      socket.join(roomId);
-      const toSocket = connectedUsers.get(to)?.socketId;
-      if (toSocket) io.sockets.sockets.get(toSocket)?.join(roomId);
-      console.log(`👥 ${from} joined room ${roomId}`);
+        // Auto-assign responder if needed
+        if (!chat.responder && socket.role !== "Resident") {
+          chat.responder = from;
+          console.log("👤 Assigned responder:", from);
+        }
 
-      io.to(roomId).emit("receive_message", {
-        from,
-        to,
-        message,
-        timestamp: new Date(),
-        roomId,
-      });
+        // Save chat
+        try {
+          await chat.save();
+          console.log("✅ Chat saved to DB");
+        } catch (err) {
+          console.error("❌ Failed to save chat:", err.message);
+        }
 
-      const user = await User.findById(to);
+        // Join the room
+        socket.join(roomId);
+        const toSocket = connectedUsers.get(to)?.socketId;
+        if (toSocket) io.sockets.sockets.get(toSocket)?.join(roomId);
+        console.log(`👥 ${from} joined room ${roomId}`);
 
-      const preview =
-        message.length > 50 ? message.substring(0, 50) + "..." : message;
-
-      await sendPushNotification(
-        user.pushtoken,
-        `💬 New Message`,
-        preview,
-        "Chat",
-        roomId
-      );
-
-      const resident = await User.findById(from).populate(
-        "resID",
-        "firstname lastname"
-      );
-
-      io.to(user._id.toString()).emit("chatUpdate", {
-        title: `💬 New Message`,
-        message: preview,
-        timestamp: new Date(),
-        roomId,
-      });
-
-      if (resident.resID) {
-        io.emit("chats", {
-          title: `💬 New Message`,
-          message: `${resident.resID.firstname} ${resident.resID.lastname}: ${preview}`,
+        io.to(roomId).emit("receive_message", {
+          from,
+          to,
+          message,
           timestamp: new Date(),
+          roomId,
         });
-      }
 
-      console.log("📤 Broadcasted message to room:", roomId);
-    });
+        const user = await User.findById(to);
+
+        const preview =
+          message.length > 50 ? message.substring(0, 50) + "..." : message;
+
+        await sendPushNotification(
+          user.pushtoken,
+          `💬 New Message`,
+          preview,
+          "Chat",
+          roomId
+        );
+
+        const resident = await User.findById(from).populate(
+          "resID",
+          "firstname lastname"
+        );
+
+        io.to(user._id.toString()).emit("chatUpdate", {
+          title: `💬 New Message`,
+          message: preview,
+          timestamp: new Date(),
+          roomId,
+        });
+
+        if (resident.resID) {
+          io.emit("chats", {
+            title: `💬 New Message`,
+            message: `${resident.resID.firstname} ${resident.resID.lastname}: ${preview}`,
+            timestamp: new Date(),
+          });
+        }
+
+        console.log("📤 Broadcasted message to room:", roomId);
+        callback({ success: true });
+      }
+    );
   });
 };
