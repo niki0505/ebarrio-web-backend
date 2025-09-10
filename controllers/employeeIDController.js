@@ -232,7 +232,10 @@ export const saveEmployeeID = async (req, res) => {
     const { userID } = req.user;
     const { empID } = req.params;
     const { idNumber, expirationDate, qrCode, qrToken } = req.body;
-    const employee = await Employee.findById(empID);
+    const employee = await Employee.findById(empID).populate({
+      path: "resID",
+      select: "firstname lastname",
+    });
     if (!employee) {
       return res.status(404).json({ message: "Employee not found" });
     }
@@ -251,7 +254,7 @@ export const saveEmployeeID = async (req, res) => {
       userID,
       action: "Generate",
       target: "Employees",
-      description: `User generated a new employee ID of ${resident.lastname}, ${resident.firstname}.`,
+      description: `User generated a new employee ID of ${employee.resID.lastname}, ${employee.resID.firstname}.`,
     });
 
     return res.status(200).json({
