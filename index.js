@@ -80,8 +80,8 @@ app.set("connectedUsers", connectedUsers);
 app.use("/api", routes);
 app.use("/", qrCodeRoute);
 
-// 2 mins
-cron.schedule("*/2 * * * *", () => {
+// 10 mins
+cron.schedule("*/10 * * * *", () => {
   captureSnapshot();
 });
 
