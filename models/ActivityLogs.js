@@ -28,6 +28,7 @@ const aSchema = new mongoose.Schema(
         "Update",
         "Generate",
         "Archive",
+        "Recover",
         "Export",
         "Approve",
         "Reject",

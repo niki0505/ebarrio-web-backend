@@ -7,6 +7,7 @@ const hSchema = new mongoose.Schema(
       type: String,
       unique: true,
       match: /^HH-\d{4}$/,
+      sparse: true,
     },
     members: [
       {

@@ -57,6 +57,11 @@ export const registerSocketEvents = (io) => {
       console.log(`Socket ${socket.id} joined announcements room`);
     });
 
+    socket.on("join_sos", () => {
+      socket.join("sos");
+      console.log(`Socket ${socket.id} joined sos room`);
+    });
+
     socket.on("join_chats", () => {
       socket.join("chats");
       console.log(`Socket ${socket.id} joined chats room`);
@@ -176,7 +181,7 @@ export const registerSocketEvents = (io) => {
       }
     });
 
-    socket.on("request_chat", async () => {
+    socket.on("request_chat", async (callback) => {
       if (socket.role !== "Resident") return;
 
       let assignedStaffId = null;
@@ -289,6 +294,7 @@ export const registerSocketEvents = (io) => {
         "👥 Assigned staff to resident on chat start:",
         assignedStaffId
       );
+      callback({ success: true });
     });
 
     socket.on(
