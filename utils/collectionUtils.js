@@ -262,7 +262,23 @@ export const getPendingReservations = async () => {
 export const getReservationsUtils = async () => {
   try {
     const reservation = await CourtReservation.find().populate("resID");
-    return reservation;
+
+    const formatDatePH = (date) => {
+      return new Date(date).toLocaleString("en-PH", {
+        timeZone: "Asia/Manila",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      });
+    };
+    return reservation.map((r) => ({
+      ...r._doc,
+      createdAt: formatDatePH(r.createdAt),
+      updatedAt: formatDatePH(r.updatedAt),
+    }));
   } catch (error) {
     throw new Error("Error fetching court reservations: " + error.message);
   }

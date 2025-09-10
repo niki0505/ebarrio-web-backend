@@ -202,7 +202,7 @@ export const createAnnouncement = async (req, res) => {
           element.pushtoken,
           `📢 ${announcement.title}`,
           `${announcement.content}`,
-          "Announcement"
+          "Announcements"
         );
       }
       sendNotificationUpdate(element._id.toString(), io);
