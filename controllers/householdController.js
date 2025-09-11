@@ -6,6 +6,40 @@ import {
   getPendingHouseholds,
 } from "../utils/collectionUtils.js";
 
+export const rejectHouseholdChange = async (req, res) => {
+  try {
+    const { householdID, changeID } = req.params;
+
+    const currentHouse = await Household.findById(householdID);
+    const changeHouse = await ChangeHousehold.findById(changeID);
+
+    if (!currentHouse || !changeHouse) {
+      return res
+        .status(404)
+        .json({ message: "Household or change not found." });
+    }
+
+    // Update status and remove applied change
+    currentHouse.status = "Active";
+    currentHouse.change = currentHouse.change.filter(
+      (c) => c.changeID.toString() !== changeID
+    );
+
+    await currentHouse.save();
+    await ChangeHousehold.findByIdAndDelete(changeID);
+
+    const populatedCurrentHouse = await currentHouse.populate("members.resID");
+
+    return res.status(200).json({
+      message: "Household change successfully rejected.",
+      household: populatedCurrentHouse,
+    });
+  } catch (error) {
+    console.error("Error in rejecting household change:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 // Helper to merge vehicles safely (avoid duplicate plate numbers)
 const mergeVehicles = (currentVehicles, changeVehicles) => {
   const existingPlates = currentVehicles.map((v) => v.platenumber);
