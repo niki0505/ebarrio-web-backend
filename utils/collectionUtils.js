@@ -12,6 +12,7 @@ import ActivityLog from "../models/ActivityLogs.js";
 import FAQ from "../models/FAQs.js";
 import Household from "../models/Households.js";
 import SOS from "../models/SOS.js";
+import ChangeHousehold from "../models/ChangeHouseholds.js";
 
 export const getReportsUtils = async () => {
   try {
@@ -254,6 +255,17 @@ export const getPendingReservations = async () => {
   try {
     const court = await CourtReservation.countDocuments({ status: "Pending" });
     return court;
+  } catch (error) {
+    throw new Error("Error fetching residents: " + error.message);
+  }
+};
+
+export const getActiveSOS = async () => {
+  try {
+    const sos = await SOS.countDocuments({
+      status: { $in: ["Pending", "Ongoing"] },
+    });
+    return sos;
   } catch (error) {
     throw new Error("Error fetching residents: " + error.message);
   }

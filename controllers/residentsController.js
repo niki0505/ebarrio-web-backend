@@ -3,9 +3,223 @@ import Resident from "../models/Residents.js";
 import ActivityLog from "../models/ActivityLogs.js";
 import User from "../models/Users.js";
 import Household from "../models/Households.js";
+import ChangeResident from "../models/ChangeResident.js";
 import axios from "axios";
 import fetch from "node-fetch";
 import { getPendingResidents } from "../utils/collectionUtils.js";
+import e from "express";
+
+export const approveResidentChange = async (req, res) => {
+  try {
+    const { resID, changeID } = req.params;
+
+    const resident = await Resident.findById(resID).populate("householdno");
+    const updated = await ChangeResident.findById(changeID);
+
+    if (!resident || !updated) {
+      return res.status(404).json({ message: "Resident or change not found" });
+    }
+
+    const oldHouse = await Household.findById(resident.householdno);
+    const newHouse = await Household.findById(updated.householdno);
+
+    if (!oldHouse || !newHouse) {
+      return res
+        .status(404)
+        .json({ message: "Old or new household not found" });
+    }
+
+    // Check if resident is Head in old household
+    const isHead = oldHouse.members.some(
+      (mem) =>
+        mem.resID.toString() === resident._id.toString() &&
+        mem.position === "Head"
+    );
+
+    // Check if householdno changed (resident moved)
+    const residentHouseholdId = resident.householdno?._id
+      ? resident.householdno._id.toString()
+      : resident.householdno.toString();
+
+    // Normalize updated.householdno
+    const updatedHouseholdId = updated.householdno?._id
+      ? updated.householdno._id.toString()
+      : updated.householdno.toString();
+
+    const movedToOtherHouse = updatedHouseholdId !== residentHouseholdId;
+
+    if (updated.head === "Yes") {
+      const newhousehold = await Household.findById(updated.householdno);
+      newhousehold.status = "Active";
+      await newhousehold.save();
+      resident.householdno = newhousehold._id;
+      resident.changeID = undefined;
+      oldHouse.members = oldHouse.members.filter(
+        (mem) => mem.resID.toString() !== resident._id.toString()
+      );
+
+      for (const mem of newHouse.members) {
+        const memberResident = await Resident.findById(mem.resID);
+        if (
+          memberResident.householdno &&
+          memberResident.householdno.toString() !== newHouse._id.toString()
+        ) {
+          const oldMemHouse = await Household.findById(
+            memberResident.householdno
+          ).populate("members.resID");
+
+          if (oldMemHouse) {
+            // If they were Head in their old household → elect new Head
+            const wasHead = oldMemHouse.members.some(
+              (m) =>
+                m.resID._id.toString() === memberResident._id.toString() &&
+                m.position === "Head"
+            );
+
+            if (wasHead) {
+              // Exclude the leaving member from eligible members
+              let eligibleMembers = oldMemHouse.members.filter(
+                (m) =>
+                  m.resID._id.toString() !== memberResident._id.toString() &&
+                  m.resID.age >= 18
+              );
+
+              // If none eligible by age, pick anyone except leaving member
+              if (!eligibleMembers.length) {
+                eligibleMembers = oldMemHouse.members.filter(
+                  (m) =>
+                    m.resID._id.toString() !== memberResident._id.toString()
+                );
+              }
+
+              if (eligibleMembers.length) {
+                // Pick the oldest eligible member as new head
+                const newHead = eligibleMembers.reduce((prev, curr) =>
+                  curr.resID.age > prev.resID.age ? curr : prev
+                );
+
+                // Assign new head & remove leaving member
+                oldMemHouse.members = oldMemHouse.members
+                  .filter(
+                    (m) =>
+                      m.resID._id.toString() !== memberResident._id.toString()
+                  )
+                  .map((m) =>
+                    m.resID._id.toString() === newHead.resID._id.toString()
+                      ? { ...m, position: "Head" }
+                      : m
+                  );
+              } else {
+                // No members left → archive the household
+                oldMemHouse.status = "Archived";
+              }
+            } else {
+              // If not head, just remove the leaving member
+              oldMemHouse.members = oldMemHouse.members.filter(
+                (m) => m.resID._id.toString() !== memberResident._id.toString()
+              );
+            }
+
+            await oldMemHouse.save();
+          }
+
+          // Update their householdno
+          memberResident.householdno = newHouse._id;
+          await memberResident.save();
+        }
+      }
+    } else {
+      if (isHead && movedToOtherHouse) {
+        // --- Handle old household ---
+        const otherActiveMembers = oldHouse.members.filter(
+          (mem) => mem.resID.toString() !== resident._id.toString()
+        );
+
+        let eligibleMembers = otherActiveMembers.filter(
+          (mem) => mem.resID.age >= 18
+        );
+
+        if (!eligibleMembers.length) eligibleMembers = otherActiveMembers;
+
+        if (eligibleMembers.length) {
+          // Pick oldest as new Head
+          const newHead = eligibleMembers.reduce((prev, curr) =>
+            curr.resID.age > prev.resID.age ? curr : prev
+          );
+
+          oldHouse.members = oldHouse.members.map((mem) => {
+            if (mem.resID.toString() === newHead.resID.toString()) {
+              return { ...mem, position: "Head" };
+            }
+            return mem;
+          });
+
+          oldHouse.members = oldHouse.members.filter(
+            (mem) => mem.resID.toString() !== resident._id.toString()
+          );
+        } else {
+          // No eligible members → archive household
+
+          oldHouse.status = "Archived";
+        }
+        newHouse.members.push({
+          resID: resident._id,
+          position: updated.householdposition,
+        });
+      } else if (!isHead && movedToOtherHouse) {
+        // Remove from old household
+        oldHouse.members = oldHouse.members.filter(
+          (mem) => mem.resID.toString() !== resident._id.toString()
+        );
+
+        // Add to new household
+        newHouse.members.push({
+          resID: resident._id,
+          position: updated.householdposition,
+        });
+      } else if (!isHead && !movedToOtherHouse) {
+        // 🟢 Case C: Same household, only position changes
+        oldHouse.members.forEach((mem) => {
+          if (mem.resID.toString() === resident._id.toString()) {
+            mem.position = updated.householdposition;
+          }
+        });
+      }
+      await newHouse.save();
+    }
+
+    resident.householdno = updated.householdno;
+    resident.status = "Active";
+    resident.changeID = undefined;
+
+    await oldHouse.save();
+    await resident.save();
+
+    // --- Delete approved change record ---
+    await ChangeResident.findByIdAndDelete(changeID);
+
+    return res.status(200).json({
+      message: "Resident change successfully approved.",
+    });
+  } catch (error) {
+    console.error("Error in approving resident change:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const getResidentChange = async (req, res) => {
+  try {
+    const { changeID } = req.params;
+    const resident = await ChangeResident.findById(changeID).populate(
+      "householdno",
+      "address"
+    );
+    return res.status(200).json(resident);
+  } catch (error) {
+    console.error("Error in fetching resident change:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
 
 export const getPendingResidentsCount = async (req, res) => {
   try {
@@ -86,12 +300,6 @@ export const rejectResident = async (req, res) => {
     if (isHead) {
       household.status = "Rejected";
       await household.save();
-    } else {
-      household.members = household.members.filter(
-        (member) => member.resID.toString() !== resident._id.toString()
-      );
-      household.status = "Active";
-      await household.save();
     }
 
     if (role !== "Technical Admin") {
@@ -129,36 +337,45 @@ export const approveResident = async (req, res) => {
     resident.status = "Active";
     resident.picture = pictureURL;
 
-    await resident.save();
-
     const household = await Household.findById(resident.householdno);
 
-    const isHead = household.members.some(
-      (member) =>
-        member.resID.toString() === resident._id.toString() &&
-        member.position === "Head"
-    );
+    if (household) {
+      const isHead = household.members.some(
+        (member) =>
+          member.resID.toString() === resident._id.toString() &&
+          member.position === "Head"
+      );
 
-    if (isHead) {
-      if (Array.isArray(household.members)) {
-        const otherMembers = household.members.filter(
-          (member) =>
-            member.resID.toString() !== resident._id.toString() &&
-            member.position !== "Head"
-        );
-
-        if (otherMembers) {
-          await Promise.all(
-            otherMembers.map(({ resID }) =>
-              Resident.findByIdAndUpdate(resID, { householdno: household._id })
-            )
+      if (isHead) {
+        if (Array.isArray(household.members)) {
+          const otherMembers = household.members.filter(
+            (member) =>
+              member.resID.toString() !== resident._id.toString() &&
+              member.position !== "Head"
           );
-        }
-      }
-    }
 
-    household.status = "Active";
-    await household.save();
+          if (otherMembers.length) {
+            await Promise.all(
+              otherMembers.map(({ resID }) =>
+                Resident.findByIdAndUpdate(resID, {
+                  householdno: household._id,
+                })
+              )
+            );
+          }
+        }
+      } else {
+        household.members.push({
+          resID: resident._id,
+          position: resident.householdposition,
+        });
+        resident.householdposition = undefined;
+      }
+
+      household.status = "Active";
+      await household.save();
+    }
+    await resident.save();
 
     if (role !== "Technical Admin") {
       await ActivityLog.insertOne({
@@ -184,75 +401,6 @@ export const approveResident = async (req, res) => {
   }
 };
 
-// export const issueDocument = async (req, res) => {
-//   try {
-//     const { resID } = req.params;
-//     const { typeofcertificate } = req.body;
-//     const { userID } = req.user;
-
-//     const resident = await Resident.findById(resID);
-
-//     await ActivityLog.insertOne({
-//       userID: userID,
-//       action: "Residents",
-//       description: `User issued ${resident.lastname}, ${
-//         resident.firstname
-//       } a ${typeofcertificate.toLowerCase()}.`,
-//     });
-
-//     return res.status(200).json({
-//       message: "Admin issued a document.",
-//     });
-//   } catch (error) {
-//     console.error("Error in issuing a document:", error);
-//     res.status(500).json({ message: "Internal server error" });
-//   }
-// };
-
-// export const printBrgyID = async (req, res) => {
-//   try {
-//     const { resID } = req.params;
-//     const { userID } = req.user;
-
-//     const resident = await Resident.findById(resID);
-
-//     await ActivityLog.insertOne({
-//       userID: userID,
-//       action: "Residents",
-//       description: `User viewed the current barangay ID of ${resident.lastname}, ${resident.firstname}.`,
-//     });
-
-//     return res.status(200).json({
-//       message: "Admin print the current barangay ID.",
-//     });
-//   } catch (error) {
-//     console.error("Error in printing current barangay ID:", error);
-//     res.status(500).json({ message: "Internal server error" });
-//   }
-// };
-
-// export const viewResidentDetails = async (req, res) => {
-//   try {
-//     const { resID } = req.params;
-//     const { userID, role } = req.user;
-
-//     const resident = await Resident.findById(resID);
-
-//     if (role !== "Technical Admin") {
-//       await ActivityLog.insertOne({
-//         userID: userID,
-//         action: "Residents",
-//         description: `User viewed the details of ${resident.lastname}, ${resident.firstname}.`,
-//       });
-//     }
-
-//     return res.status(200).json(resident);
-//   } catch (error) {
-//     console.error("Error in recovering resident:", error);
-//     res.status(500).json({ message: "Internal server error" });
-//   }
-// };
-
 export const recoverResident = async (req, res) => {
   try {
     const { resID } = req.params;
@@ -262,7 +410,6 @@ export const recoverResident = async (req, res) => {
       firstname: resident.firstname,
       middlename: resident.middlename,
       lastname: resident.lastname,
-      mobilenumber: resident.mobilenumber,
       status: { $ne: "Archived" },
     });
 
@@ -324,7 +471,6 @@ export const archiveResident = async (req, res) => {
     );
 
     if (household) {
-      // Check if resident is the household head
       const isHead = household.members.some(
         (member) =>
           member.resID._id.toString() === resident._id.toString() &&
@@ -332,16 +478,13 @@ export const archiveResident = async (req, res) => {
       );
 
       if (isHead) {
-        // Get all other active members
         const otherActiveMembers = household.members.filter(
           (member) => member.resID._id.toString() !== resident._id.toString()
         );
 
         if (otherActiveMembers.length === 0) {
-          // No other members, archive household
           household.status = "Archived";
         } else {
-          // Pick new head: prioritize legal age (>=18), then oldest
           let eligibleMembers = otherActiveMembers.filter(
             (m) => m.resID.age >= 18
           );
@@ -352,7 +495,6 @@ export const archiveResident = async (req, res) => {
             curr.resID.age > prev.resID.age ? curr : prev
           );
 
-          // Update the position of the new head
           household.members = household.members.map((m) => {
             if (m.resID._id.toString() === newHead.resID._id.toString()) {
               return { ...m.toObject(), position: "Head" };
@@ -360,7 +502,6 @@ export const archiveResident = async (req, res) => {
             return m;
           });
 
-          // Remove the archived resident from household members
           household.members = household.members.filter(
             (m) => m.resID._id.toString() !== resident._id.toString()
           );
