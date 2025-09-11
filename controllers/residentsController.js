@@ -7,7 +7,42 @@ import ChangeResident from "../models/ChangeResident.js";
 import axios from "axios";
 import fetch from "node-fetch";
 import { getPendingResidents } from "../utils/collectionUtils.js";
-import e from "express";
+
+export const rejectResidentChange = async (req, res) => {
+  try {
+    const { resID, changeID } = req.params;
+
+    const resident = await Resident.findById(resID).populate("householdno");
+    const updated = await ChangeResident.findById(changeID);
+
+    if (!resident || !updated) {
+      return res.status(404).json({ message: "Resident or change not found" });
+    }
+
+    const oldHouse = await Household.findById(resident.householdno);
+    const newHouse = await Household.findById(updated.householdno);
+
+    if (!oldHouse || !newHouse) {
+      return res
+        .status(404)
+        .json({ message: "Old or new household not found" });
+    }
+
+    resident.status = "Active";
+    resident.changeID = undefined;
+
+    await resident.save();
+
+    await ChangeResident.findByIdAndDelete(changeID);
+
+    return res.status(200).json({
+      message: "Resident change successfully rejected.",
+    });
+  } catch (error) {
+    console.error("Error in approving resident change:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
 
 export const approveResidentChange = async (req, res) => {
   try {
@@ -288,19 +323,6 @@ export const rejectResident = async (req, res) => {
     resident.status = "Rejected";
 
     await resident.save();
-
-    const household = await Household.findById(resident.householdno);
-
-    const isHead = household.members.some(
-      (member) =>
-        member.resID.toString() === resident._id.toString() &&
-        member.position === "Head"
-    );
-
-    if (isHead) {
-      household.status = "Rejected";
-      await household.save();
-    }
 
     if (role !== "Technical Admin") {
       await ActivityLog.insertOne({
