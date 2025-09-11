@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import Certificate from "../models/Certificates.js";
 import {
+  getActiveSOS,
   getActivityLogs,
   getAllHouseholdUtils,
   getAnnouncementsUtils,
@@ -383,6 +384,11 @@ export const watchAllCollectionsChanges = (io) => {
       websiteNamespace.emit("dbChange", {
         type: "reports",
         data: reports,
+      });
+      const pendingCount = await getActiveSOS();
+      websiteNamespace.emit("dbChange", {
+        type: "activesos",
+        data: pendingCount,
       });
     } else if (change.operationType === "delete") {
       const reports = await getReportsUtils();

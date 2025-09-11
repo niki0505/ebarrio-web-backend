@@ -126,8 +126,76 @@ export const approveReservation = async (req, res) => {
       return res.status(404).json({ message: "Reservation not found" });
     }
 
+    const existingReservations = await CourtReservation.find({
+      status: "Approved",
+      _id: { $ne: reservationID },
+    });
+
+    let conflict = null;
+
+    const rtimesObj =
+      reservation.times instanceof Map
+        ? Object.fromEntries(reservation.times)
+        : reservation.times;
+
+    for (const [date, time] of Object.entries(rtimesObj)) {
+      const startTime = new Date(time.starttime);
+      const endTime = new Date(time.endtime);
+
+      for (const r of existingReservations) {
+        const rTimes =
+          r.times instanceof Map ? Object.fromEntries(r.times) : r.times;
+        for (const [d, t] of Object.entries(rTimes)) {
+          if (t?.starttime && t?.endtime) {
+            const reservedStart = new Date(t.starttime);
+            const reservedEnd = new Date(t.endtime);
+
+            if (startTime < reservedEnd && endTime > reservedStart) {
+              conflict = { date: d, reservedStart, reservedEnd };
+              break;
+            }
+          }
+        }
+        if (conflict) break;
+      }
+
+      if (conflict) break;
+    }
+
+    if (conflict) {
+      const optionsDate = {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        timeZone: "Asia/Manila",
+      };
+      const optionsTime = {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+        timeZone: "Asia/Manila",
+      };
+
+      const formattedDate = new Date(conflict.date).toLocaleDateString(
+        "en-US",
+        optionsDate
+      );
+      const formattedStart = conflict.reservedStart.toLocaleTimeString(
+        "en-US",
+        optionsTime
+      );
+      const formattedEnd = conflict.reservedEnd.toLocaleTimeString(
+        "en-US",
+        optionsTime
+      );
+
+      return res.status(409).json({
+        message: `Conflict with existing reservation on ${formattedDate} at ${formattedStart} - ${formattedEnd}`,
+      });
+    }
+
     const resident = await Resident.findById(reservation.resID).select(
-      "userID"
+      "userID firstname lastname"
     );
 
     reservation.status = "Approved";

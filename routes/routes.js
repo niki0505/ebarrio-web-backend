@@ -122,15 +122,19 @@ import {
   getResidentImages,
   rejectResident,
   getPendingResidentsCount,
+  getResidentChange,
+  approveResidentChange,
 } from "../controllers/residentsController.js";
 import { getLogs } from "../controllers/activityLogsController.js";
 import {
   addMember,
   addVehicle,
+  approveHouseholdChange,
   editPosition,
   editVehicle,
   getAllHousehold,
   getHousehold,
+  getHouseholdChange,
   getPendingHouseholdsCount,
   removeMember,
   removeVehicle,
@@ -201,6 +205,7 @@ router.put("/updateresident/:resID", authMiddleware, updateResident);
 router.put("/archiveresident/:resID", authMiddleware, archiveResident);
 router.put("/recoverresident/:resID", authMiddleware, recoverResident);
 router.get("/pendingresidents", authMiddleware, getPendingResidentsCount);
+router.get("/getresidentchange/:changeID", authMiddleware, getResidentChange);
 
 //EMPLOYEES
 router.get("/getemployees", authMiddleware, getAllEmployees);
@@ -373,10 +378,16 @@ router.delete(
   removeVehicle
 );
 router.get("/pendinghouseholds", authMiddleware, getPendingHouseholdsCount);
+router.get("/gethouseholdchange/:changeID", authMiddleware, getHouseholdChange);
+router.post(
+  "/approve/household/:householdID/change/:changeID",
+  approveHouseholdChange
+);
 
 router.post("/approveresident/:resID/", authMiddleware, approveResident);
 router.get("/getresidentimages/:resID/", authMiddleware, getResidentImages);
 router.post("/rejectresident/:resID", authMiddleware, rejectResident);
+router.post("/approve/resident/:resID/change/:changeID", approveResidentChange);
 
 //RIVER SNAPSHOTS
 router.get("/latestsnapshot", getLatestSnapshot);
