@@ -155,7 +155,7 @@ import {
   getFAQs,
 } from "../controllers/chatController.js";
 import { analyticsAI, getPrompts } from "../controllers/analyticsController.js";
-import { getReports } from "../controllers/SOSController.js";
+import { getActiveSOSCount, getReports } from "../controllers/SOSController.js";
 
 const router = express.Router();
 
@@ -415,4 +415,5 @@ router.get("/getprompts", authMiddleware, getPrompts);
 
 //SOS
 router.get("/getreports", authMiddleware, getReports);
+router.get("/activesos", authMiddleware, getActiveSOSCount);
 export default router;

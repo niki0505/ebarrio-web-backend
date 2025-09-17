@@ -391,6 +391,11 @@ export const watchAllCollectionsChanges = (io) => {
         data: pendingCount,
       });
     } else if (change.operationType === "delete") {
+      const pendingCount = await getActiveSOS();
+      websiteNamespace.emit("dbChange", {
+        type: "activesos",
+        data: pendingCount,
+      });
       const reports = await getReportsUtils();
       websiteNamespace.emit("dbChange", {
         type: "reports",
