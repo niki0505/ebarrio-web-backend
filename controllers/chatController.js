@@ -15,7 +15,8 @@ export const archiveFAQ = async (req, res) => {
 
     await ActivityLog.insertOne({
       userID: userID,
-      action: "FAQs",
+      action: "Archive",
+      target: "FAQs",
       description: `User archived a FAQ.`,
     });
 
@@ -42,7 +43,8 @@ export const editFAQ = async (req, res) => {
 
     await ActivityLog.insertOne({
       userID: userID,
-      action: "FAQs",
+      action: "Update",
+      target: "FAQs",
       description: `User updated a FAQ.`,
     });
 
@@ -75,7 +77,6 @@ export const endChat = async (req, res) => {
       (id) => id.toString() !== userID.toString()
     );
 
-    // Dummy ObjectId for system/bot messages
     const SYSTEM_USER_ID = "000000000000000000000000";
 
     const botMessages = [
@@ -127,7 +128,7 @@ export const getChat = async (req, res) => {
 
     const chat = await Chat.findOne({
       _id: roomId,
-      participants: userID, // ensure user is a participant
+      participants: userID,
     })
       .populate({
         path: "participants",
@@ -187,8 +188,6 @@ export const getChat = async (req, res) => {
 
 export const getChats = async (req, res) => {
   try {
-    const { userID } = req.user; // assuming auth middleware sets req.user
-
     const chats = await Chat.find({ isBot: { $ne: true } })
       .populate({
         path: "participants",
@@ -262,7 +261,8 @@ export const createFAQ = async (req, res) => {
 
     await ActivityLog.insertOne({
       userID: userID,
-      action: "FAQs",
+      action: "Create",
+      target: "FAQs",
       description: `User added new FAQ.`,
     });
 

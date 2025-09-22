@@ -13,6 +13,17 @@ import FAQ from "../models/FAQs.js";
 import Household from "../models/Households.js";
 import SOS from "../models/SOS.js";
 import ChangeHousehold from "../models/ChangeHouseholds.js";
+import Prompt from "../models/Prompts.js";
+
+export const getPromptsUtils = async (userID) => {
+  try {
+    const response = await Prompt.find({ user: userID });
+
+    return response;
+  } catch (error) {
+    throw new Error("Error fetching prompts: " + error.message);
+  }
+};
 
 export const getReportsUtils = async () => {
   try {

@@ -172,14 +172,12 @@ export const editEmployee = async (req, res) => {
         }
         const restrictedPositions = ["Secretary", "Clerk", "Justice"];
 
-        // Changes position from personnel to secretary, clerk, justice
         if (restrictedPositions.includes(position)) {
           user.status = "Archived";
           await user.save();
           employee.set("userID", undefined);
           await employee.save();
         } else {
-          // Changes position from secretary, clerk, justice to personnel
           if (
             user.role === "Secretary" ||
             user.role === "Clerk" ||
@@ -193,7 +191,6 @@ export const editEmployee = async (req, res) => {
         }
       }
     } else {
-      // Checks if they already have an account
       const existingUser = await User.findOne({
         empID: employee._id,
         role: normalizedRole,
@@ -258,10 +255,17 @@ export const createEmployee = async (req, res) => {
       });
     }
 
-    const existingEmpUser = await User.find({
+    const normalizeRole = (pos) => {
+      const personnelPositions = ["Tanod", "Kagawad", "Captain"];
+      return personnelPositions.includes(pos) ? "Personnel" : pos;
+    };
+
+    const normalizedRole = normalizeRole(formattedEmployeeForm.position);
+
+    const existingEmpUser = await User.findOne({
       empID: employee._id,
       status: "Archived",
-      role: formattedEmployeeForm.position,
+      role: normalizedRole,
     });
 
     if (existingEmpUser) {
