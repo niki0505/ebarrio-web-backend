@@ -1,5 +1,4 @@
 import mongoose from "mongoose";
-import Certificate from "../models/Certificates.js";
 import {
   getActiveSOS,
   getActivityLogs,
@@ -15,6 +14,7 @@ import {
   getPendingHouseholds,
   getPendingReservations,
   getPendingResidents,
+  getPromptsUtils,
   getReportsUtils,
   getReservationsUtils,
   getResidentsUtils,
@@ -407,6 +407,27 @@ export const watchAllCollectionsChanges = (io) => {
   });
   sosChangeStream.on("error", (error) => {
     console.error("Error in SOS change stream:", error);
+  });
+
+  //PROMPTS
+  const promptChangeStream = db.collection("prompts").watch([], {
+    fullDocument: "updateLookup",
+  });
+  promptChangeStream.on("change", async (change) => {
+    console.log("Prompts change detected:", change);
+    if (
+      change.operationType === "update" ||
+      change.operationType === "insert"
+    ) {
+      const userID = change.fullDocument.user;
+      const prompts = await getPromptsUtils(userID);
+      websiteNamespace
+        .to(userID.toString())
+        .emit("dbChange", { type: "prompts", data: prompts });
+    }
+  });
+  promptChangeStream.on("error", (error) => {
+    console.error("Error in prompts change stream:", error);
   });
 
   console.log("Watching all collections for changes...");

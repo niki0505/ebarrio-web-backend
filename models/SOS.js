@@ -65,17 +65,15 @@ async function assignSOSNo(doc) {
     doc.SOSno = counter.seq;
   }
 }
-// Pre-save hook
 sSchema.pre("save", async function (next) {
   try {
-    // If new document or status changed to "Issued" and certno not assigned yet
     if (this.isNew) {
       await assignSOSNo(this);
     } else if (
       this.isModified("status") &&
       (this.status === "Resolved" ||
         this.status === "False Alarm" ||
-        doc.status === "Cancelled") &&
+        this.status === "Cancelled") &&
       !this.SOSno
     ) {
       await assignSOSNo(this);

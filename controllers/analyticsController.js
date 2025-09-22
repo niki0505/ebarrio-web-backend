@@ -8,12 +8,13 @@ import Prompt from "../models/Prompts.js";
 import SOS from "../models/SOS.js";
 import Employee from "../models/Employees.js";
 import User from "../models/Users.js";
+import { getPromptsUtils } from "../utils/collectionUtils.js";
 
 export const getPrompts = async (req, res) => {
   try {
     const { userID } = req.user;
 
-    const response = await Prompt.find({ user: userID });
+    const response = await getPromptsUtils(userID);
 
     res.status(200).json(response);
   } catch (error) {
@@ -27,8 +28,7 @@ export const analyticsAI = async (req, res) => {
     const { userID, role } = req.user;
     const { prompt } = req.body;
 
-    // FETCH DATA
-
+    // Structure data from the database
     const users = await User.find({ role: { $ne: "Technical Admin" } })
       .select("resID empID username passwordchangedat role status createdAt")
       .populate({
@@ -257,6 +257,7 @@ export const analyticsAI = async (req, res) => {
 
     let data = {};
 
+    // Limit access to data
     if (role === "Secretary") {
       data = {
         summaries: {
@@ -335,18 +336,17 @@ export const analyticsAI = async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(5);
 
-    // Build chat-style context
     const conversationHistory = history
       .reverse()
       .map(
         (h) => `
-User: ${h.prompt}
-AI: ${h.response}
-`
+    User: ${h.prompt}
+    AI: ${h.response}
+    `
       )
       .join("\n");
 
-    // PROMPT
+    // Prompt
     const geminiPrompt = `
     You are an analytics assistant for barangay officials. 
     When answering, follow these rules strictly:
@@ -359,7 +359,7 @@ AI: ${h.response}
     - Use the same language that was used in the question.  
     - Focus only on the findings, trends, and insights.   
     - Only use the dataset below to calculate. 
-    - If the dataset does not have enough information to answer, reply with "Hmm, I couldn’t find enough information to help with that."  
+    - If the dataset does not have enough information to answer or not related to the barangay data, reply with "Hmm, I couldn’t find enough information to help with that."  
     ⚡ Important: If the question asks "what should be done", "how to improve", or similar prescriptive intent, provide **recommendations, actionable steps, or advice** based on the data.  
 
 
@@ -374,7 +374,7 @@ AI: ${h.response}
     ${JSON.stringify(data, null, 2)}
     `;
 
-    // STEP 3: Send request to Gemini API
+    // Send request to Gemini API
     const geminiResponse = await axios.post(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {

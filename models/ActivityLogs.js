@@ -61,6 +61,7 @@ const aSchema = new mongoose.Schema(
         "Password",
         "Security Questions",
         "Mobile Number",
+        "FAQs",
       ],
     },
     description: {

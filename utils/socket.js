@@ -17,6 +17,25 @@ async function markUserInactive(userId) {
 }
 
 export const registerSocketEvents = (io) => {
+  const websiteNamespace = io.of("/website");
+
+  websiteNamespace.on("connection", (socket) => {
+    console.log("User connected to /website namespace:", socket.id);
+
+    socket.on("register", async (userID, role) => {
+      socket.join(userID);
+      console.log(`Socket joined room: ${userID}`);
+
+      // Count members in this room
+      const room = socket.nsp.adapter.rooms.get(userID);
+      const memberCount = room ? room.size : 0;
+      console.log(`Room ${userID} has ${memberCount} member(s).`);
+    });
+
+    socket.on("disconnect", () => {
+      console.log("User disconnected from /website namespace:", socket.id);
+    });
+  });
   io.on("connection", (socket) => {
     console.log("User connected:", socket.id);
 
@@ -76,19 +95,19 @@ export const registerSocketEvents = (io) => {
       connectedUsers.forEach((info, userID) => {
         if (info.socketId === socket.id) {
           connectedUsers.delete(userID);
-          markUserInactive(userID); // use userID from loop
+          markUserInactive(userID);
           console.log(`User ${userID} removed from connectedUsers`);
         }
       });
     });
 
-    //CHAT
+    // CHAT
 
     const SYSTEM_USER_ID = "000000000000000000000000";
 
     socket.on("request_bot_chat", async ({ userID }) => {
       try {
-        // 🔍 Check if there's already an active staff chat
+        // Check if there's already an active staff chat
         const hasActiveStaffChat = await Chat.findOne({
           participants: new mongoose.Types.ObjectId(userID),
           isBot: false,
@@ -111,7 +130,7 @@ export const registerSocketEvents = (io) => {
           return;
         }
 
-        // 🔍 Check if an active bot chat already exists
+        // Check if an active bot chat already exists
         const existingChat = await Chat.findOne({
           isBot: true,
           participants: userID,
@@ -133,7 +152,7 @@ export const registerSocketEvents = (io) => {
           return;
         }
 
-        // 🆕 Create new bot chat
+        // Create new bot chat
         const botMessages = [
           {
             from: SYSTEM_USER_ID,
@@ -187,7 +206,7 @@ export const registerSocketEvents = (io) => {
       let assignedStaffId = null;
       let isNewChat = null;
 
-      // 🧹 End previous active bot chat
+      // End previous active bot chat
       const existingBotChat = await Chat.findOne({
         participants: socket.userID,
         isBot: true,
@@ -219,7 +238,7 @@ export const registerSocketEvents = (io) => {
         }
       }
 
-      // ✅ Always include both Secretary and Clerk
+      // Always include Secretary, Clerk, and Justice
       const staffUsers = await User.find({
         role: { $in: ["Secretary", "Clerk", "Justice"] },
         status: { $nin: ["Archived", "Deactivated"] },
@@ -230,17 +249,17 @@ export const registerSocketEvents = (io) => {
       }
 
       const staffUserIDs = staffUsers.map((user) => user._id.toString());
-      assignedStaffId = staffUserIDs[0]; // Pick first for welcome message
+      assignedStaffId = staffUserIDs[0];
 
       const participantIds = [socket.userID, ...staffUserIDs];
 
-      // 🔍 Look for existing active chat involving the resident and staff
+      // Look for existing active chat involving the resident and staff
       let chat = await Chat.findOne({
         participants: { $all: participantIds },
         status: "Active",
       });
 
-      // 🆕 If none, create one
+      // If none, create one
       if (!chat) {
         const defaultMessage = {
           from: assignedStaffId,
@@ -265,7 +284,7 @@ export const registerSocketEvents = (io) => {
 
       const roomId = chat._id.toString();
 
-      // 👥 Online staff join room
+      // Lets the Secretary, Clerk, and Justice join the room
       for (let [userId, info] of connectedUsers) {
         if (
           ["Secretary", "Clerk", "Justice"].includes(info.role) &&
@@ -275,7 +294,8 @@ export const registerSocketEvents = (io) => {
         }
       }
 
-      socket.join(roomId); // Resident joins too
+      // Resident joins too
+      socket.join(roomId);
       console.log("🚪 Resident and staff joined room:", roomId);
 
       io.to(socket.id).emit("chat_assigned", {

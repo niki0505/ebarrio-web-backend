@@ -579,7 +579,6 @@ export const createResident = async (req, res) => {
       fpstatus,
     });
     await resident.save();
-    console.log(householdForm);
     let members = [...householdForm.members];
 
     if (head === "Yes") {
