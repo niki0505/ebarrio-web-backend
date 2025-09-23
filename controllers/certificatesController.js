@@ -15,6 +15,20 @@ const aniban2logoUrl = "https://api.ebarrio.online/aniban2logo.jpg";
 const verifiedUrl = "https://api.ebarrio.online/verified.png";
 import ActivityLog from "../models/ActivityLogs.js";
 
+export const saveCertificatePDF = async (req, res) => {
+  try {
+    const { certID } = req.params;
+    const { url } = req.body;
+    const cert = await Certificate.findById(certID);
+    cert.pdf = url;
+    await cert.save();
+    return res.status(200).json({ message: "Document PDF successfully saved" });
+  } catch (error) {
+    console.error("Backend image error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 export const getPendingDocumentsCount = async (req, res) => {
   try {
     const cert = await getPendingDocuments();
