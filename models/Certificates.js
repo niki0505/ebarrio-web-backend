@@ -69,6 +69,9 @@ const certSchema = new mongoose.Schema(
     remarks: {
       type: String,
     },
+    pdf: {
+      type: String,
+    },
     status: {
       type: String,
       enum: [

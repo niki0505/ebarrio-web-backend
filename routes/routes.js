@@ -53,6 +53,7 @@ import {
   notifyCert,
   rejectCertificateReq,
   saveCertificate,
+  saveCertificatePDF,
   saveCertificateReq,
 } from "../controllers/certificatesController.js";
 import {
@@ -232,6 +233,7 @@ router.put("/savecertificate/:certID", authMiddleware, saveCertificate);
 router.get("/getcertificate/:certID", authMiddleware, getCertificate);
 router.get("/getprepared/:userID", authMiddleware, getPrepared);
 router.get("/pendingdocuments", authMiddleware, getPendingDocumentsCount);
+router.put("/savepdf/:certID", authMiddleware, saveCertificatePDF);
 
 //CERTIFICATE REQUESTS
 router.get("/getcertificates", authMiddleware, getAllCertificateRequests);
