@@ -625,7 +625,10 @@ export const saveCertificate = async (req, res) => {
     const { userID } = req.user;
     const { certID } = req.params;
     const { qrCode } = req.body;
-    const cert = await Certificate.findById(certID);
+    const cert = await Certificate.findById(certID).populate({
+      path: "resID",
+      select: "firstname lastname",
+    });
     if (!cert) {
       return res.status(404).json({ message: "Certificate not found" });
     }

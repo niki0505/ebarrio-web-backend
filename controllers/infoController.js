@@ -336,14 +336,65 @@ export const updateResident = async (req, res) => {
             });
             await newHousehold.save();
 
-            // Update householdno for all members
-            await Promise.all(
-              members.map(({ resID }) =>
-                Resident.findByIdAndUpdate(resID, {
-                  householdno: newHousehold._id,
-                })
-              )
-            );
+            // For other members
+            for (let { resID, position } of members) {
+              const res = await Resident.findById(resID);
+              if (!res) continue;
+
+              // Check if resident is already in another household
+              if (
+                res.householdno &&
+                res.householdno.toString() !== newHousehold._id.toString()
+              ) {
+                const oldHouse = await Household.findById(res.householdno);
+                if (oldHouse) {
+                  const wasHead = oldHouse.members.find(
+                    (mem) =>
+                      mem.resID.toString() === res._id.toString() &&
+                      mem.position === "Head"
+                  );
+
+                  oldHouse.members = oldHouse.members.filter(
+                    (mem) => mem.resID.toString() !== res._id.toString()
+                  );
+
+                  if (wasHead) {
+                    let eligibleMembers = [];
+                    for (let m of oldHouse.members) {
+                      const r = await Resident.findById(m.resID);
+                      if (r && r.age >= 18) eligibleMembers.push(m);
+                    }
+                    if (!eligibleMembers.length)
+                      eligibleMembers = oldHouse.members;
+
+                    if (eligibleMembers.length) {
+                      let oldest = eligibleMembers[0];
+                      let oldestRes = await Resident.findById(oldest.resID);
+                      for (let m of eligibleMembers) {
+                        const r = await Resident.findById(m.resID);
+                        if (r && r.age > oldestRes.age) {
+                          oldest = m;
+                          oldestRes = r;
+                        }
+                      }
+                      oldHouse.members = oldHouse.members.map((mem) => {
+                        if (mem.resID.toString() === oldest.resID.toString()) {
+                          return { ...mem, position: "Head" };
+                        }
+                        return mem;
+                      });
+                    } else {
+                      oldHouse.status = "Archived";
+                    }
+                  }
+
+                  await oldHouse.save();
+                }
+              }
+
+              res.householdno = newHousehold._id;
+              await res.save();
+            }
 
             household.members = household.members.filter(
               (m) =>
@@ -593,11 +644,63 @@ export const createResident = async (req, res) => {
       });
       await household.save();
 
-      await Promise.all(
-        members.map(({ resID }) =>
-          Resident.findByIdAndUpdate(resID, { householdno: household._id })
-        )
-      );
+      for (let { resID, position } of members) {
+        const res = await Resident.findById(resID);
+        if (!res) continue;
+
+        // Check if resident is already in another household
+        if (
+          res.householdno &&
+          res.householdno.toString() !== household._id.toString()
+        ) {
+          const oldHouse = await Household.findById(res.householdno);
+          if (oldHouse) {
+            const wasHead = oldHouse.members.find(
+              (mem) =>
+                mem.resID.toString() === res._id.toString() &&
+                mem.position === "Head"
+            );
+
+            oldHouse.members = oldHouse.members.filter(
+              (mem) => mem.resID.toString() !== res._id.toString()
+            );
+
+            if (wasHead) {
+              let eligibleMembers = [];
+              for (let m of oldHouse.members) {
+                const r = await Resident.findById(m.resID);
+                if (r && r.age >= 18) eligibleMembers.push(m);
+              }
+              if (!eligibleMembers.length) eligibleMembers = oldHouse.members;
+
+              if (eligibleMembers.length) {
+                let oldest = eligibleMembers[0];
+                let oldestRes = await Resident.findById(oldest.resID);
+                for (let m of eligibleMembers) {
+                  const r = await Resident.findById(m.resID);
+                  if (r && r.age > oldestRes.age) {
+                    oldest = m;
+                    oldestRes = r;
+                  }
+                }
+                oldHouse.members = oldHouse.members.map((mem) => {
+                  if (mem.resID.toString() === oldest.resID.toString()) {
+                    return { ...mem, position: "Head" };
+                  }
+                  return mem;
+                });
+              } else {
+                oldHouse.status = "Archived";
+              }
+            }
+
+            await oldHouse.save();
+          }
+        }
+
+        res.householdno = household._id;
+        await res.save();
+      }
     } else if (head === "No") {
       if (householdno && householdposition) {
         const household = await Household.findById(householdno);

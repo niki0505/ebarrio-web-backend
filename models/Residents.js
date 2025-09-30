@@ -26,11 +26,9 @@ const resSchema = new mongoose.Schema(
     ],
     picture: {
       type: String,
-      required: true,
     },
     signature: {
       type: String,
-      required: true,
     },
     firstname: {
       type: String,
