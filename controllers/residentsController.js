@@ -351,13 +351,11 @@ export const rejectResident = async (req, res) => {
 export const approveResident = async (req, res) => {
   try {
     const { resID } = req.params;
-    const { pictureURL } = req.body;
     const { userID, role } = req.user;
 
     const resident = await Resident.findById(resID);
 
     resident.status = "Active";
-    resident.picture = pictureURL;
 
     const household = await Household.findById(resident.householdno);
 
