@@ -324,7 +324,9 @@ export const getEmployeesUtils = async () => {
 
 export const getPendingResidents = async () => {
   try {
-    const residents = await Resident.countDocuments({ status: "Pending" });
+    const residents = await Resident.countDocuments({
+      status: { $in: ["Pending", "Change Requested"] },
+    });
     return residents;
   } catch (error) {
     throw new Error("Error fetching residents: " + error.message);
