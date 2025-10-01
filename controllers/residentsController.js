@@ -6,6 +6,7 @@ import Household from "../models/Households.js";
 import ChangeResident from "../models/ChangeResident.js";
 import axios from "axios";
 import fetch from "node-fetch";
+import moment from "moment";
 import { getPendingResidents } from "../utils/collectionUtils.js";
 
 export const rejectResidentChange = async (req, res) => {
@@ -221,6 +222,77 @@ export const approveResidentChange = async (req, res) => {
         });
       }
       await newHouse.save();
+    }
+
+    const updatableFields = [
+      "picture",
+      "signature",
+      "firstname",
+      "middlename",
+      "lastname",
+      "suffix",
+      "alias",
+      "salutation",
+      "sex",
+      "gender",
+      "birthdate",
+      "birthplace",
+      "civilstatus",
+      "bloodtype",
+      "religion",
+      "nationality",
+      "voter",
+      "precinct",
+      "deceased",
+      "email",
+      "mobilenumber",
+      "telephone",
+      "facebook",
+      "emergencyname",
+      "emergencymobilenumber",
+      "emergencyaddress",
+      "HOAname",
+      "employmentstatus",
+      "occupation",
+      "monthlyincome",
+      "educationalattainment",
+      "typeofschool",
+      "course",
+      "remarks",
+      // health-related
+      "isSenior",
+      "isInfant",
+      "isNewborn",
+      "isUnder5",
+      "isSchoolAge",
+      "isAdolescent",
+      "isAdolescentPregnant",
+      "isAdult",
+      "isPostpartum",
+      "isWomenOfReproductive",
+      "isPregnant",
+      "isPWD",
+      "philhealthid",
+      "philhealthtype",
+      "philhealthcategory",
+      "haveHypertension",
+      "haveDiabetes",
+      "haveTubercolosis",
+      "haveSurgery",
+      "lastmenstrual",
+      "haveFPmethod",
+      "fpmethod",
+      "fpstatus",
+    ];
+    updatableFields.forEach((field) => {
+      if (updated[field] !== undefined) {
+        resident[field] = updated[field];
+      }
+    });
+
+    if (updated.birthdate) {
+      const birthDate = moment(updated.birthdate, ["YYYY/MM/DD", "YYYY-MM-DD"]);
+      resident.age = moment().diff(birthDate, "years");
     }
 
     resident.householdno = updated.householdno;
