@@ -392,6 +392,38 @@ export const rejectResident = async (req, res) => {
 
     const resident = await Resident.findById(resID);
 
+    if (resident.householdno) {
+      const household = await Household.findById(resident.householdno);
+      if (household) {
+        const headMember = household.members.find(
+          (m) =>
+            m.resID.toString() === resident._id.toString() &&
+            m.position === "Head"
+        );
+
+        if (headMember) {
+          household.status = "Archived";
+          await household.save();
+
+          const memberIDs = household.members
+            .filter((m) => m.resID)
+            .map((m) => m.resID);
+
+          await Resident.updateMany(
+            { _id: { $in: memberIDs } },
+            { $unset: { householdno: "" } }
+          );
+        } else {
+          household.members = household.members.filter(
+            (m) => m.resID.toString() !== resident._id.toString()
+          );
+          await household.save();
+          resident.householdno = undefined;
+          await resident.save();
+        }
+      }
+    }
+
     resident.status = "Rejected";
 
     await resident.save();
@@ -451,6 +483,7 @@ export const approveResident = async (req, res) => {
               otherMembers.map(({ resID }) =>
                 Resident.findByIdAndUpdate(resID, {
                   householdno: household._id,
+                  status: "Active",
                 })
               )
             );
