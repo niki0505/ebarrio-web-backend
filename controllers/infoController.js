@@ -502,6 +502,149 @@ export const getAllResidents = async (req, res) => {
   }
 };
 
+export const createHouseholdResident = async (req, res) => {
+  try {
+    const { userID, role } = req.user;
+    const {
+      picture,
+      signature,
+      firstname,
+      middlename,
+      lastname,
+      suffix,
+      alias,
+      salutation,
+      sex,
+      gender,
+      birthdate,
+      birthplace,
+      civilstatus,
+      bloodtype,
+      religion,
+      nationality,
+      voter,
+      precinct,
+      deceased,
+      email,
+      mobilenumber,
+      telephone,
+      facebook,
+      emergencyname,
+      emergencymobilenumber,
+      emergencyaddress,
+      HOAname,
+      employmentstatus,
+      occupation,
+      monthlyincome,
+      educationalattainment,
+      typeofschool,
+      course,
+      isPregnant,
+      isSenior,
+      isInfant,
+      isNewborn,
+      isUnder5,
+      isSchoolAge,
+      isAdolescent,
+      isAdolescentPregnant,
+      isAdult,
+      isPostpartum,
+      isWomenOfReproductive,
+      isPWD,
+      philhealthid,
+      philhealthtype,
+      philhealthcategory,
+      haveHypertension,
+      haveDiabetes,
+      haveTubercolosis,
+      haveSurgery,
+      lastmenstrual,
+      haveFPmethod,
+      fpmethod,
+      fpstatus,
+    } = req.body;
+
+    const birthDate = moment(birthdate, "YYYY/MM/DD");
+    const age = moment().diff(birthDate, "years");
+    const resident = new Resident({
+      picture,
+      signature,
+      firstname,
+      middlename,
+      lastname,
+      suffix,
+      alias,
+      salutation,
+      sex,
+      gender,
+      birthdate,
+      age,
+      birthplace,
+      civilstatus,
+      bloodtype,
+      religion,
+      nationality,
+      voter,
+      precinct,
+      deceased,
+      email,
+      mobilenumber,
+      telephone,
+      facebook,
+      emergencyname,
+      emergencymobilenumber,
+      emergencyaddress,
+      HOAname,
+      employmentstatus,
+      occupation,
+      monthlyincome,
+      educationalattainment,
+      typeofschool,
+      course,
+      isPregnant,
+      isSenior,
+      isInfant,
+      isNewborn,
+      isUnder5,
+      isSchoolAge,
+      isAdolescent,
+      isAdolescentPregnant,
+      isAdult,
+      isPostpartum,
+      isWomenOfReproductive,
+      isPWD,
+      philhealthid,
+      philhealthtype,
+      philhealthcategory,
+      haveHypertension,
+      haveDiabetes,
+      haveTubercolosis,
+      haveSurgery,
+      lastmenstrual,
+      haveFPmethod,
+      fpmethod,
+      fpstatus,
+    });
+    await resident.save();
+
+    if (role !== "Technical Admin") {
+      await ActivityLog.insertOne({
+        userID,
+        action: "Create",
+        target: "Residents",
+        description: `User created a resident profile of ${resident.lastname}, ${resident.firstname}`,
+      });
+    }
+
+    res
+      .status(200)
+      .json({ message: "Resident successfully created", resID: resident._id });
+  } catch (error) {
+    console.log("Error creating resident", error);
+    res.status(500).json({ message: "Failed to create resident" });
+  }
+};
+
 export const createResident = async (req, res) => {
   try {
     const { userID, role } = req.user;
