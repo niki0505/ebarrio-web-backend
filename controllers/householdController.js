@@ -280,12 +280,69 @@ export const addMember = async (req, res) => {
   try {
     const { householdID } = req.params;
     const payload = req.body;
+    console.log("Household ID", householdID);
+    console.log("Payload", payload);
     const household = await Household.findById(householdID);
 
     household.members.push(payload);
     await household.save();
 
     const resident = await Resident.findById(payload.resID);
+
+    if (
+      resident.householdno &&
+      resident.householdno.toString() !== household._id.toString()
+    ) {
+      const oldHouse = await Household.findById(resident.householdno);
+
+      if (oldHouse) {
+        const wasHead = oldHouse.members.find(
+          (mem) =>
+            mem.resID.toString() === resident._id.toString() &&
+            mem.position === "Head"
+        );
+
+        oldHouse.members = oldHouse.members.filter(
+          (mem) => mem.resID.toString() !== resident._id.toString()
+        );
+
+        if (wasHead) {
+          let eligibleMembers = [];
+
+          for (let m of oldHouse.members) {
+            const r = await Resident.findById(m.resID);
+            if (r && r.age >= 18) eligibleMembers.push(m);
+          }
+
+          if (!eligibleMembers.length) eligibleMembers = oldHouse.members;
+
+          if (eligibleMembers.length) {
+            let oldest = eligibleMembers[0];
+            let oldestRes = await Resident.findById(oldest.resID);
+
+            for (let m of eligibleMembers) {
+              const r = await Resident.findById(m.resID);
+              if (r && r.age > oldestRes.age) {
+                oldest = m;
+                oldestRes = r;
+              }
+            }
+
+            oldHouse.members = oldHouse.members.map((mem) => {
+              if (mem.resID.toString() === oldest.resID.toString()) {
+                return { ...mem, position: "Head" };
+              }
+              return mem;
+            });
+          } else {
+            oldHouse.status = "Archived";
+          }
+        } else {
+        }
+
+        await oldHouse.save();
+      }
+    }
 
     resident.householdno = household._id;
     await resident.save();

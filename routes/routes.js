@@ -8,6 +8,7 @@ import {
   getCaptain,
   getEmployee,
   logExport,
+  createHouseholdResident,
 } from "../controllers/infoController.js";
 
 import {
@@ -209,6 +210,11 @@ router.put("/archiveresident/:resID", authMiddleware, archiveResident);
 router.put("/recoverresident/:resID", authMiddleware, recoverResident);
 router.get("/pendingresidents", authMiddleware, getPendingResidentsCount);
 router.get("/getresidentchange/:changeID", authMiddleware, getResidentChange);
+router.post(
+  "/household/createresident",
+  authMiddleware,
+  createHouseholdResident
+);
 
 //EMPLOYEES
 router.get("/getemployees", authMiddleware, getAllEmployees);
