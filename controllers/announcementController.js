@@ -21,7 +21,8 @@ export const recoverAnnouncement = async (req, res) => {
 
     await ActivityLog.insertOne({
       userID: userID,
-      action: "Announcements",
+      action: "Recover",
+      target: "Announcements",
       description: `User recovered an announcement titled ${announcement.title}`,
     });
     return res
@@ -47,7 +48,8 @@ export const editAnnouncement = async (req, res) => {
 
     await ActivityLog.insertOne({
       userID: userID,
-      action: "Announcements",
+      action: "Update",
+      target: "Announcements",
       description: `User updated an announcement titled ${updatedAnnouncement.title}`,
     });
 
@@ -81,7 +83,8 @@ export const archiveAnnouncement = async (req, res) => {
 
     await ActivityLog.insertOne({
       userID: userID,
-      action: "Announcements",
+      action: "Archive",
+      target: "Announcements",
       description: `User archived an announcement titled ${announcement.title}`,
     });
     return res
@@ -103,7 +106,8 @@ export const unpinAnnouncement = async (req, res) => {
 
     await ActivityLog.insertOne({
       userID: userID,
-      action: "Announcements",
+      action: "Unpin",
+      target: "Announcements",
       description: `User unpinned an announcement titled ${announcement.title}`,
     });
     return res
@@ -125,7 +129,8 @@ export const pinAnnouncement = async (req, res) => {
 
     await ActivityLog.insertOne({
       userID: userID,
-      action: "Announcements",
+      action: "Pin",
+      target: "Announcements",
       description: `User pinned an announcement titled ${announcement.title}`,
     });
     return res
@@ -166,7 +171,7 @@ export const createAnnouncement = async (req, res) => {
 
     const senderSocketId = connectedUsers.get(userID.userID.toString());
 
-    io.except(senderSocketId)
+    io.except(senderSocketId.socketId)
       .to("announcements")
       .emit("announcement", {
         title: `📢 ${announcement.title}`,
@@ -197,7 +202,7 @@ export const createAnnouncement = async (req, res) => {
           element.pushtoken,
           `📢 ${announcement.title}`,
           `${announcement.content}`,
-          "Announcement"
+          "Announcements"
         );
       }
       sendNotificationUpdate(element._id.toString(), io);
@@ -205,7 +210,8 @@ export const createAnnouncement = async (req, res) => {
 
     await ActivityLog.insertOne({
       userID: adminID,
-      action: "Announcements",
+      action: "Create",
+      target: "Announcements",
       description: `User posted an announcement titled ${announcement.title}`,
     });
 

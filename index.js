@@ -23,7 +23,7 @@ app.use(cookieParser());
 
 app.use(
   cors({
-    origin: "https://ebarrio.online",
+    origin: "http://localhost:3000",
     credentials: true,
   })
 );
@@ -80,10 +80,10 @@ app.set("connectedUsers", connectedUsers);
 app.use("/api", routes);
 app.use("/", qrCodeRoute);
 
-// 2 mins
-// cron.schedule("*/2 * * * *", () => {
-//   captureSnapshot();
-// });
+// 10 mins
+cron.schedule("*/10 * * * *", () => {
+  captureSnapshot();
+});
 
 // const plainPassword = "ebarriotechnicaladmin";
 // const saltRounds = 10;

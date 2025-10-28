@@ -1,6 +1,61 @@
 import FAQ from "../models/FAQs.js";
 import ActivityLog from "../models/ActivityLogs.js";
 import Chat from "../models/Chats.js";
+import { getFAQsUtils } from "../utils/collectionUtils.js";
+
+export const archiveFAQ = async (req, res) => {
+  try {
+    const { userID } = req.user;
+    const { faqID } = req.params;
+
+    const faq = await FAQ.findById(faqID);
+    faq.status = "Archived";
+
+    await faq.save();
+
+    await ActivityLog.insertOne({
+      userID: userID,
+      action: "Archive",
+      target: "FAQs",
+      description: `User archived a FAQ.`,
+    });
+
+    return res.status(200).json({
+      message: "FAQ is archived successfully",
+    });
+  } catch (error) {
+    console.error("Error in updating FAQs:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const editFAQ = async (req, res) => {
+  try {
+    const { userID } = req.user;
+    const { faqID } = req.params;
+    const { question, answer } = req.body;
+
+    const faq = await FAQ.findById(faqID);
+    faq.question = question;
+    faq.answer = answer;
+
+    await faq.save();
+
+    await ActivityLog.insertOne({
+      userID: userID,
+      action: "Update",
+      target: "FAQs",
+      description: `User updated a FAQ.`,
+    });
+
+    return res.status(200).json({
+      message: "FAQ is updated successfully",
+    });
+  } catch (error) {
+    console.error("Error in updating FAQs:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
 
 export const endChat = async (req, res) => {
   try {
@@ -22,7 +77,6 @@ export const endChat = async (req, res) => {
       (id) => id.toString() !== userID.toString()
     );
 
-    // Dummy ObjectId for system/bot messages
     const SYSTEM_USER_ID = "000000000000000000000000";
 
     const botMessages = [
@@ -74,7 +128,7 @@ export const getChat = async (req, res) => {
 
     const chat = await Chat.findOne({
       _id: roomId,
-      participants: userID, // ensure user is a participant
+      participants: userID,
     })
       .populate({
         path: "participants",
@@ -134,8 +188,6 @@ export const getChat = async (req, res) => {
 
 export const getChats = async (req, res) => {
   try {
-    const { userID } = req.user; // assuming auth middleware sets req.user
-
     const chats = await Chat.find({ isBot: { $ne: true } })
       .populate({
         path: "participants",
@@ -189,7 +241,7 @@ export const getChats = async (req, res) => {
 
 export const getFAQs = async (req, res) => {
   try {
-    const faqs = await FAQ.find();
+    const faqs = await getFAQsUtils();
 
     return res.status(200).json(faqs);
   } catch (error) {
@@ -209,7 +261,8 @@ export const createFAQ = async (req, res) => {
 
     await ActivityLog.insertOne({
       userID: userID,
-      action: "FAQs",
+      action: "Create",
+      target: "FAQs",
       description: `User added new FAQ.`,
     });
 

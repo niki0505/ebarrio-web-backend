@@ -1,5 +1,4 @@
 import Resident from "../models/Residents.js";
-import OldUser from "../models/OldUsers.js";
 import Employee from "../models/Employees.js";
 import User from "../models/Users.js";
 import { getUsersUtils } from "../utils/collectionUtils.js";
@@ -9,7 +8,7 @@ import ActivityLog from "../models/ActivityLogs.js";
 
 export const editUser = async (req, res) => {
   try {
-    const { userID: adminID } = req.user;
+    const { userID: adminID, role } = req.user;
     const { userID } = req.params;
     const { userForm } = req.body;
 
@@ -19,11 +18,11 @@ export const editUser = async (req, res) => {
     let name;
 
     if (user.resID) {
-      const resident = await Resident.findOne({ userID: userID });
+      const resident = await Resident.findOne({ userID });
       mobilenumber = resident.mobilenumber;
       name = `${resident.lastname}, ${resident.firstname}`;
     } else if (user.empID) {
-      const employee = await Employee.findOne({ userID: userID }).populate({
+      const employee = await Employee.findOne({ userID }).populate({
         path: "resID",
         select: "firstname lastname mobilenumber",
       });
@@ -31,11 +30,22 @@ export const editUser = async (req, res) => {
       name = `${employee.resID.lastname}, ${employee.resID.firstname}`;
     }
 
+    if (userForm.username) {
+      const usernameExists = await User.findOne({
+        username: userForm.username,
+        _id: { $ne: userID },
+      });
+      if (usernameExists) {
+        return res.status(409).json({ message: "Username already exists." });
+      }
+      user.username = userForm.username;
+    }
+
     if (userForm.password) {
       rds.setex(`userID_${user._id}`, 86400, userForm.password);
 
       await axios.post("https://api.semaphore.co/api/v4/priority", {
-        apikey: "46d791fbe4e880554fcad1ee958bbf33",
+        apikey: process.env.SEMAPHORE_KEY,
         number: mobilenumber,
         message: `Your barangay account has been updated.\nUsername: ${user.username}\nTemporary Password: ${userForm.password}\nPlease log in to the app and set your new password. This token will expire in 24 hours.`,
       });
@@ -43,43 +53,20 @@ export const editUser = async (req, res) => {
       user.status = "Password Not Set";
       user.passwordistoken = true;
       user.password = userForm.password;
-      await user.save();
-    } else if (userForm.username) {
-      const usernameExists = await User.findOne({
-        username: userForm.username,
-      });
-      if (usernameExists) {
-        return res.status(409).json({ message: "Username already exists" });
-      }
-      user.username = userForm.username;
-      await user.save();
-    } else {
-      const usernameExists = await User.findOne({
-        username: userForm.username,
-      });
-      if (usernameExists) {
-        return res.status(409).json({ message: "Username already exists" });
-      }
-      rds.setex(`userID_${user._id}`, 86400, userForm.password);
-
-      await axios.post("https://api.semaphore.co/api/v4/priority", {
-        apikey: "46d791fbe4e880554fcad1ee958bbf33",
-        number: mobilenumber,
-        message: `Your barangay account has been updated.\nUsername: ${userForm.username}\nTemporary Password: ${userForm.password}\nPlease log in to the app and set your new password. This token will expire in 24 hours.`,
-      });
-
-      user.username = userForm.username;
-      user.status = "Password Not Set";
-      user.password = userForm.password;
-      user.passwordistoken = true;
-      await user.save();
     }
 
-    await ActivityLog.insertOne({
-      userID: adminID,
-      action: "Accounts",
-      description: `User updated ${name}'s account credentials.`,
-    });
+    if (user.isModified()) {
+      await user.save();
+
+      if (role !== "Technical Admin") {
+        await ActivityLog.insertOne({
+          userID: adminID,
+          action: "Update",
+          target: "User Accounts",
+          description: `User updated ${name}'s account credentials.`,
+        });
+      }
+    }
 
     return res
       .status(200)
@@ -92,7 +79,7 @@ export const editUser = async (req, res) => {
 
 export const activateUser = async (req, res) => {
   try {
-    const { userID: adminID } = req.user;
+    const { userID: adminID, role } = req.user;
     const { userID } = req.params;
     const user = await User.findById(userID)
       .populate({
@@ -115,11 +102,14 @@ export const activateUser = async (req, res) => {
       ? `${user.resID.lastname}, ${user.resID.firstname}`
       : "Unknown User";
 
-    await ActivityLog.insertOne({
-      userID: adminID,
-      action: "Accounts",
-      description: `User deactivated ${name}'s account.`,
-    });
+    if (role !== "Technical Admin") {
+      await ActivityLog.insertOne({
+        userID: adminID,
+        action: "Update",
+        target: "User Accounts",
+        description: `User activated ${name}'s account.`,
+      });
+    }
 
     await user.save();
     res.status(200).json({ message: "User activated successfully!" });
@@ -131,7 +121,7 @@ export const activateUser = async (req, res) => {
 
 export const deactivateUser = async (req, res) => {
   try {
-    const { userID: adminID } = req.user;
+    const { userID: adminID, role } = req.user;
     const { userID } = req.params;
     const user = await User.findById(userID)
       .populate({
@@ -157,11 +147,14 @@ export const deactivateUser = async (req, res) => {
 
     await user.save();
 
-    await ActivityLog.insertOne({
-      userID: adminID,
-      action: "Accounts",
-      description: `User deactivated ${name}'s account.`,
-    });
+    if (role !== "Technical Admin") {
+      await ActivityLog.insertOne({
+        userID: adminID,
+        action: "Update",
+        target: "User Accounts",
+        description: `User deactivated ${name}'s account.`,
+      });
+    }
     res.status(200).json({ message: "User deactivated successfully!" });
   } catch (error) {
     console.log("Error deactivating user", error);
@@ -191,7 +184,8 @@ export const resetPassword = async (req, res) => {
 
     await ActivityLog.insertOne({
       userID: user._id,
-      action: "Login",
+      action: "Password Set",
+      target: "User Accounts",
       description: `User set their password successfully.`,
     });
     return res
@@ -205,7 +199,7 @@ export const resetPassword = async (req, res) => {
 
 export const createUser = async (req, res) => {
   try {
-    const { userID } = req.user;
+    const { userID, role: userRole } = req.user;
     const { username, password, resID, role } = req.body;
 
     const usernameExists = await User.findOne({
@@ -257,17 +251,19 @@ export const createUser = async (req, res) => {
     rds.setex(`userID_${user._id}`, 86400, password);
 
     await axios.post("https://api.semaphore.co/api/v4/priority", {
-      apikey: "46d791fbe4e880554fcad1ee958bbf33",
+      apikey: process.env.SEMAPHORE_KEY,
       number: resident.mobilenumber,
-      message: `Your barangay account is created. Use this temporary token as your password to log in: ${password}. 
-       Please log in to the app and set your new password. This token will expire in 24 hours.`,
+      message: `Your barangay account has been created.\nUsername: ${username}\nTemporary Password: ${password}\nPlease log in to the app and set your new password. This token will expire in 24 hours.`,
     });
 
-    await ActivityLog.insertOne({
-      userID: userID,
-      action: "Accounts",
-      description: `User created an account for ${name}.`,
-    });
+    if (userRole !== "Technical Admin") {
+      await ActivityLog.insertOne({
+        userID,
+        action: "Create",
+        target: "User Accounts",
+        description: `User created an account for ${name}.`,
+      });
+    }
 
     return res.status(200).json({
       exists: true,
@@ -276,16 +272,6 @@ export const createUser = async (req, res) => {
   } catch (error) {
     console.error("Error in creating acccount:", error);
     res.status(500).json({ message: "Internal server error" });
-  }
-};
-
-export const getAllOldUsers = async (req, res) => {
-  try {
-    const users = await OldUser.find();
-    res.status(200).json(users);
-  } catch (error) {
-    console.log("Error fetching old users", error);
-    res.status(500).json({ message: "Failed to fetch old users" });
   }
 };
 

@@ -41,11 +41,13 @@ export const newPassword = async (req, res) => {
     const user = await User.findOne({ username: username });
 
     user.password = newPassword;
+    user.passwordchangedat = new Date();
     await user.save();
 
     await ActivityLog.insertOne({
       userID: user._id,
-      action: "Forgot Password",
+      action: "Password Reset",
+      target: "User Accounts",
       description: `User has completed password reset process.`,
     });
 
@@ -67,7 +69,7 @@ export const verifySecurityQuestion = async (req, res) => {
     }
 
     if (!user.securityquestions || user.securityquestions.length === 0) {
-      return res.status(400).json({ message: "No security questions found" });
+      return res.status(400).json({ message: "No security questions found." });
     }
 
     const question = user.securityquestions.find(
@@ -75,14 +77,16 @@ export const verifySecurityQuestion = async (req, res) => {
     );
 
     const isMatch = await bcrypt.compare(
-      securityquestion.answer,
+      securityquestion.answer.trim().toLowerCase(),
       question.answer
     );
 
     if (isMatch) {
       res.status(200).json({ message: "Security question is verified" });
     } else {
-      return res.status(400).json({ message: "Incorrect answer" });
+      return res.status(400).json({
+        message: "We couldn’t verify your answer. Please check and try again.",
+      });
     }
   } catch (error) {
     console.log("Error verifying security question", error);
@@ -94,7 +98,7 @@ export const checkUser = async (req, res) => {
   try {
     const { username } = req.params;
     const user = await User.findOne({ username: username })
-      .select("securityquestions status role")
+      .select("securityquestions status role mobilenumber")
       .populate({
         path: "empID",
         select: "resID",
@@ -109,11 +113,12 @@ export const checkUser = async (req, res) => {
       user.resID ||
       user.role === "Official" ||
       user.role === "Resident" ||
-      user.status === "Archived"
+      user.status === "Archived" ||
+      user.status === "Password Not Set"
     ) {
       console.log("❌ Account not found");
       return res.status(404).json({
-        message: "Account not found.",
+        message: "No account found. Please check your credentials.",
       });
     }
     if (user.status === "Deactivated") {
@@ -130,7 +135,9 @@ export const checkUser = async (req, res) => {
     }
 
     if (!user) {
-      return res.status(404).json({ message: "User not found." });
+      return res
+        .status(404)
+        .json({ message: "No account found. Please check your credentials." });
     }
 
     res.status(200).json(user);

@@ -39,6 +39,7 @@ export const detectSession = async (req, res) => {
             role: decodedRefresh.role,
             name: decodedRefresh.name,
             picture: decodedRefresh.picture,
+            resID: decodedRefresh.resID,
           },
           process.env.ACCESS_SECRET,
           {
@@ -88,6 +89,7 @@ export const refreshAccessToken = async (req, res) => {
             role: decodedRefresh.role,
             name: decodedRefresh.name,
             picture: decodedRefresh.picture,
+            resID: decodedRefresh.resID,
           },
           process.env.ACCESS_SECRET,
           {
@@ -141,6 +143,34 @@ export const checkRefreshToken = async (req, res) => {
   }
 };
 
+export const changedPasswordUser = async (req, res) => {
+  try {
+    const { userID } = req.user;
+
+    const user = await User.findById(userID);
+    user.status = "Inactive";
+    await user.save();
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
+    });
+    res.clearCookie("accessToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict",
+    });
+
+    res.status(200).json({
+      message:
+        "You've been logged out because your account credentials has been updated. If this is unexpected, please contact the admin.",
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 export const updatedUser = async (req, res) => {
   try {
     const { userID } = req.user;
@@ -172,7 +202,11 @@ export const updatedUser = async (req, res) => {
 
 export const archivedUser = async (req, res) => {
   try {
-    const { userID } = req.params;
+    const { userID } = req.user;
+
+    const user = await User.findById(userID);
+    user.status = "Archived";
+    await user.save();
     res.clearCookie("refreshToken", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -211,16 +245,6 @@ export const deactivatedUser = async (req, res) => {
       sameSite: "Strict",
     });
 
-    // res.clearCookie("refreshToken", {
-    //   httpOnly: true,
-    //   secure: true,
-    //   sameSite: "None",
-    // });
-    // res.clearCookie("accessToken", {
-    //   httpOnly: true,
-    //   secure: true,
-    //   sameSite: "None",
-    // });
     await user.save();
 
     res.status(200).json({
@@ -250,22 +274,14 @@ export const logoutUser = async (req, res) => {
       sameSite: "Strict",
     });
 
-    // res.clearCookie("refreshToken", {
-    //   httpOnly: true,
-    //   secure: true,
-    //   sameSite: "None",
-    // });
-    // res.clearCookie("accessToken", {
-    //   httpOnly: true,
-    //   secure: true,
-    //   sameSite: "None",
-    // });
-
-    await ActivityLog.insertOne({
-      userID: user._id,
-      action: "Logout",
-      description: "User logged out successfully.",
-    });
+    if (user.role !== "Technical Admin") {
+      await ActivityLog.insertOne({
+        userID: user._id,
+        action: "Logout",
+        target: "User Accounts",
+        description: "User logged out successfully.",
+      });
+    }
 
     res.status(200).json({ message: "Logged out successfully" });
   } catch (error) {
@@ -294,6 +310,7 @@ export const loginUser = async (req, res) => {
           role: user.role,
           name: `${user.empID.resID.firstname} ${user.empID.resID.lastname}`,
           picture: user.empID.resID.picture,
+          resID: user.empID.resID._id.toString(),
         },
         ACCESS_SECRET,
         {
@@ -309,6 +326,7 @@ export const loginUser = async (req, res) => {
           role: user.role,
           name: `${user.empID.resID.firstname} ${user.empID.resID.lastname}`,
           picture: user.empID.resID.picture,
+          resID: user.empID.resID._id.toString(),
         },
         REFRESH_SECRET,
         {
@@ -333,6 +351,7 @@ export const loginUser = async (req, res) => {
       await ActivityLog.insertOne({
         userID: user._id,
         action: "Login",
+        target: "User Accounts",
         description: "User logged in successfully.",
       });
       rds.del(`login_attempts_${user._id}`, (err) => {
@@ -407,7 +426,7 @@ export const checkCredentials = async (req, res) => {
     ) {
       console.log("❌ Account not found");
       return res.status(404).json({
-        message: "Account not found.",
+        message: "Kindly check your credentials and try again.",
       });
     }
     if (user.status === "Deactivated") {
@@ -454,19 +473,26 @@ export const checkCredentials = async (req, res) => {
           rds.expire(key, 1800);
         }
 
-        await ActivityLog.insertOne({
-          userID: user._id,
-          action: "Login",
-          description: "The login attempt failed due to an incorrect password.",
-        });
-
-        if (attempts > 5) {
+        if (user.role !== "Technical Admin") {
           await ActivityLog.insertOne({
             userID: user._id,
-            action: "Login",
+            action: "Failed Login",
+            target: "User Accounts",
             description:
-              "User was locked out due to many failed login attempts.",
+              "The login attempt failed due to an incorrect password.",
           });
+        }
+
+        if (attempts > 5) {
+          if (user.role !== "Technical Admin") {
+            await ActivityLog.insertOne({
+              userID: user._id,
+              action: "Failed Login",
+              target: "User Accounts",
+              description:
+                "User was locked out due to many failed login attempts.",
+            });
+          }
           return res.status(429).json({
             message:
               "Too many failed login attempts. Please try again after 30 minutes.",
@@ -474,7 +500,7 @@ export const checkCredentials = async (req, res) => {
         }
 
         return res.status(403).json({
-          message: "Invalid credentials.",
+          message: "Kindly check your credentials and try again.",
         });
       });
 
@@ -531,9 +557,9 @@ export const verifyOTP = async (req, res) => {
       }
 
       if (!storedOTP) {
-        return res
-          .status(400)
-          .json({ message: "OTP has expired or does not exist" });
+        return res.status(400).json({
+          message: "We couldn’t verify that code. Please check and try again.",
+        });
       }
 
       if (storedOTP === OTP.toString()) {
@@ -552,7 +578,7 @@ export const sendOTP = async (req, res) => {
   try {
     const { username, mobilenumber } = req.body;
     const response = await axios.post("https://api.semaphore.co/api/v4/otp", {
-      apikey: "46d791fbe4e880554fcad1ee958bbf33",
+      apikey: process.env.SEMAPHORE_KEY,
       number: mobilenumber,
       message:
         "Your one time password is {otp}. Please use it within 5 minutes.",
@@ -568,12 +594,21 @@ export const sendOTP = async (req, res) => {
 
 export const checkUsername = async (req, res) => {
   try {
+    const { userID } = req.user;
     const { username } = req.params;
 
-    const user = await User.findOne({ username });
+    const isLimited = await rds.get(`limitUsernameChange_${userID}`);
+
+    if (isLimited) {
+      return res.status(403).json({
+        message: "You can only change your username once every 30 days.",
+      });
+    }
+
+    const user = await User.findOne({ username, _id: { $ne: userID } });
 
     if (user) {
-      return res.status(409).json({ message: "Username is already taken" });
+      return res.status(409).json({ message: "Username is already taken." });
     }
     return res.status(200).json({ message: "Username does not exist yet" });
   } catch (error) {
@@ -643,7 +678,6 @@ export const checkIfEmployee = async (req, res) => {
 
 export const registerUser = async (req, res) => {
   try {
-    console.log("🔵 Register request:", req.body);
     const { username, password, empID, role } = req.body;
 
     const employee = await Employee.findOne({ _id: empID });
@@ -663,7 +697,7 @@ export const registerUser = async (req, res) => {
 
     employee.userID = user._id;
     await employee.save();
-    console.log("✅ User registered successfully");
+
     return res.json({ exists: true, message: "User registered successfully" });
   } catch (error) {
     console.error("Error in registerUser:", error);

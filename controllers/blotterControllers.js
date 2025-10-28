@@ -1,13 +1,29 @@
 import Blotter from "../models/Blotters.js";
-import { getBlottersUtils } from "../utils/collectionUtils.js";
+import {
+  getBlottersUtils,
+  getPendingBlotters,
+} from "../utils/collectionUtils.js";
 import Resident from "../models/Residents.js";
 import User from "../models/Users.js";
 import { sendPushNotification } from "../utils/collectionUtils.js";
 import Notification from "../models/Notifications.js";
 import { sendNotificationUpdate } from "../utils/collectionUtils.js";
+import ActivityLog from "../models/ActivityLogs.js";
+
+export const getPendingBlottersCount = async (req, res) => {
+  try {
+    const blotter = await getPendingBlotters();
+
+    return res.status(200).json(blotter);
+  } catch (error) {
+    console.error("Error in fetching court reservations:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
 
 export const rejectBlotter = async (req, res) => {
   try {
+    const { userID } = req.user;
     const { blotterID } = req.params;
     const { remarks } = req.body;
 
@@ -23,7 +39,7 @@ export const rejectBlotter = async (req, res) => {
     if (resident && resident.userID) {
       const user = await User.findById(resident.userID);
       const io = req.app.get("socketio");
-      io.to(user._id).emit("blotterUpdate", {
+      io.to(user._id.toString()).emit("blotterUpdate", {
         title: `❌ Blotter Rejected`,
         message: `Your blotter report has been rejected. Kindly see the remarks for the reason.`,
         timestamp: blotter.updatedAt,
@@ -50,6 +66,13 @@ export const rejectBlotter = async (req, res) => {
       sendNotificationUpdate(user._id.toString(), io);
     }
 
+    await ActivityLog.insertOne({
+      userID,
+      action: "Reject",
+      target: "Blotter Reports",
+      description: `User rejected the blotter report of ${resident.lastname}, ${resident.firstname}.`,
+    });
+
     return res.status(200).json({
       message: "Blotter is rejected successfully",
     });
@@ -61,6 +84,7 @@ export const rejectBlotter = async (req, res) => {
 
 export const settleBlotter = async (req, res) => {
   try {
+    const { userID } = req.user;
     const { blotterID } = req.params;
     const { updatedForm } = req.body;
 
@@ -82,7 +106,7 @@ export const settleBlotter = async (req, res) => {
     if (resident && resident.userID) {
       const user = await User.findById(resident.userID);
       const io = req.app.get("socketio");
-      io.to(user._id).emit("blotterUpdate", {
+      io.to(user._id.toString()).emit("blotterUpdate", {
         title: `✅ Blotter Settled`,
         message: `Your blotter report has been settled.`,
         timestamp: blotter.updatedAt,
@@ -109,6 +133,13 @@ export const settleBlotter = async (req, res) => {
       sendNotificationUpdate(user._id.toString(), io);
     }
 
+    await ActivityLog.insertOne({
+      userID,
+      action: "Settle",
+      target: "Blotter Reports",
+      description: `User settled the blotter report of ${resident.lastname}, ${resident.firstname}.`,
+    });
+
     return res.status(200).json({
       message: "Blotter is settled successfully",
     });
@@ -120,6 +151,7 @@ export const settleBlotter = async (req, res) => {
 
 export const editScheduleBlotter = async (req, res) => {
   try {
+    const { userID } = req.user;
     const { blotterID } = req.params;
     const { scheduleForm } = req.body;
     const blotter = await Blotter.findById(blotterID);
@@ -135,8 +167,18 @@ export const editScheduleBlotter = async (req, res) => {
     const startTime = new Date(blotter.starttime);
     const endTime = new Date(blotter.endtime);
 
-    const dateOptions = { year: "numeric", month: "short", day: "numeric" };
-    const timeOptions = { hour: "numeric", minute: "numeric", hour12: true };
+    const dateOptions = {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      timeZone: "Asia/Manila",
+    };
+    const timeOptions = {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+      timeZone: "Asia/Manila",
+    };
 
     const formattedDate = startTime.toLocaleDateString("en-US", dateOptions);
     const formattedStartTime = startTime.toLocaleTimeString(
@@ -149,7 +191,7 @@ export const editScheduleBlotter = async (req, res) => {
     if (resident.userID) {
       const user = await User.findById(resident.userID);
       const io = req.app.get("socketio");
-      io.to(user._id).emit("blotterUpdate", {
+      io.to(user._id.toString()).emit("blotterUpdate", {
         title: `📅 Blotter Update`,
         message: `Your blotter report has been rescheduled for discussion on ${formattedDate} from ${formattedStartTime} to ${formattedEndTime}. `,
         timestamp: blotter.updatedAt,
@@ -176,6 +218,13 @@ export const editScheduleBlotter = async (req, res) => {
       sendNotificationUpdate(user._id.toString(), io);
     }
 
+    await ActivityLog.insertOne({
+      userID,
+      action: "Update",
+      target: "Blotter Reports",
+      description: `User rescheduled the blotter report of ${resident.lastname}, ${resident.firstname} for discussion.`,
+    });
+
     return res
       .status(200)
       .json({ message: "Blotter's schedule successfully updated!" });
@@ -187,6 +236,7 @@ export const editScheduleBlotter = async (req, res) => {
 
 export const scheduleBlotter = async (req, res) => {
   try {
+    const { userID } = req.user;
     const { blotterID } = req.params;
     const { scheduleForm } = req.body;
     const blotter = await Blotter.findById(blotterID);
@@ -206,8 +256,18 @@ export const scheduleBlotter = async (req, res) => {
     const startTime = new Date(blotter.starttime);
     const endTime = new Date(blotter.endtime);
 
-    const dateOptions = { year: "numeric", month: "short", day: "numeric" };
-    const timeOptions = { hour: "numeric", minute: "numeric", hour12: true };
+    const dateOptions = {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      timeZone: "Asia/Manila",
+    };
+    const timeOptions = {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+      timeZone: "Asia/Manila",
+    };
 
     const formattedDate = startTime.toLocaleDateString("en-US", dateOptions);
     const formattedStartTime = startTime.toLocaleTimeString(
@@ -220,7 +280,7 @@ export const scheduleBlotter = async (req, res) => {
     if (resident && resident.userID) {
       const user = await User.findById(resident.userID);
       const io = req.app.get("socketio");
-      io.to(user._id).emit("blotterUpdate", {
+      io.to(user._id.toString()).emit("blotterUpdate", {
         title: `📅 Blotter Update`,
         message: `Your blotter report has been scheduled for discussion on ${formattedDate} from ${formattedStartTime} to ${formattedEndTime}. `,
         timestamp: blotter.updatedAt,
@@ -246,6 +306,14 @@ export const scheduleBlotter = async (req, res) => {
 
       sendNotificationUpdate(user._id.toString(), io);
     }
+
+    await ActivityLog.insertOne({
+      userID,
+      action: "Create",
+      target: "Blotter Reports",
+      description: `User scheduled the blotter report of ${resident.lastname}, ${resident.firstname} for discussion.`,
+    });
+
     return res.status(200).json({ message: "Blotter successfully scheduled!" });
   } catch (error) {
     console.error("Error in scheduling blotter:", error);
@@ -257,11 +325,23 @@ export const getBlotter = async (req, res) => {
   try {
     const { blotterID } = req.params;
     const blotter = await Blotter.findById(blotterID)
-      .populate(
-        "complainantID",
-        "firstname middlename lastname signature address mobilenumber"
-      )
-      .populate("subjectID", "firstname middlename lastname signature address")
+      .populate({
+        path: "complainantID",
+        select:
+          "firstname middlename lastname signature householdno mobilenumber",
+        populate: {
+          path: "householdno",
+          select: "address",
+        },
+      })
+      .populate({
+        path: "subjectID",
+        select: "firstname middlename lastname signature householdno",
+        populate: {
+          path: "householdno",
+          select: "address",
+        },
+      })
       .populate("witnessID", "firstname middlename lastname signature");
 
     const formatDatePH = (date) => {
@@ -302,6 +382,7 @@ export const getBlotters = async (req, res) => {
 
 export const createBlotter = async (req, res) => {
   try {
+    const { userID } = req.user;
     const { updatedForm } = req.body;
     if (updatedForm.starttime && updatedForm.starttime !== "") {
       updatedForm.status = "Scheduled";
@@ -312,6 +393,17 @@ export const createBlotter = async (req, res) => {
     const blotter = new Blotter(updatedForm);
 
     await blotter.save();
+
+    const populatedBlotter = await blotter.populate("complainantID");
+
+    await ActivityLog.insertOne({
+      userID,
+      action: "Create",
+      target: "Blotter Reports",
+      description: populatedBlotter.complainantID
+        ? `User created a blotter report for ${populatedBlotter.complainantID.lastname}, ${populatedBlotter.complainantID.firstname}.`
+        : `User created a blotter report for ${populatedBlotter.complainantname}.`,
+    });
 
     return res.status(200).json({
       message: "Blotter is created successfully",

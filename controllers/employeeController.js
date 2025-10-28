@@ -7,7 +7,7 @@ import ActivityLog from "../models/ActivityLogs.js";
 export const recoverEmployee = async (req, res) => {
   try {
     const { empID } = req.params;
-    const { userID } = req.user;
+    const { userID, role } = req.user;
 
     const emp = await Employee.findById(empID);
 
@@ -21,7 +21,16 @@ export const recoverEmployee = async (req, res) => {
         .json({ message: "This person is already an active employee." });
     }
 
-    const resident = await Resident.findById(emp.resID);
+    const resident = await Resident.findOne({
+      _id: emp.resID,
+      status: "Active",
+    });
+
+    if (!resident) {
+      return res
+        .status(409)
+        .json({ message: "This person is not a registered resident." });
+    }
 
     if (resident.userID) {
       const user = await User.findById(resident.userID);
@@ -33,7 +42,11 @@ export const recoverEmployee = async (req, res) => {
 
     if (emp.userID) {
       const user = await User.findById(emp.userID);
-      user.status = "Inactive";
+      if (!user.passwordistoken) {
+        user.status = "Inactive";
+      } else {
+        user.status = "Password Not Set";
+      }
       await user.save();
     }
 
@@ -44,11 +57,14 @@ export const recoverEmployee = async (req, res) => {
 
     await emp.save();
 
-    await ActivityLog.insertOne({
-      userID: userID,
-      action: "Employees",
-      description: `User recovered ${resident.lastname}, ${resident.firstname}'s as employee.`,
-    });
+    if (role !== "Technical Admin") {
+      await ActivityLog.insertOne({
+        userID,
+        action: "Recover",
+        target: "Employees",
+        description: `User recovered ${resident.lastname}, ${resident.firstname}'s as employee.`,
+      });
+    }
 
     return res.status(200).json({
       message: "Employee has been successfully recovered.",
@@ -62,7 +78,7 @@ export const recoverEmployee = async (req, res) => {
 export const archiveEmployee = async (req, res) => {
   try {
     const { empID } = req.params;
-    const { userID } = req.user;
+    const { userID, role } = req.user;
 
     const emp = await Employee.findById(empID);
     if (!emp) {
@@ -77,6 +93,23 @@ export const archiveEmployee = async (req, res) => {
       await user.save();
     }
 
+    const existingResUser = await User.findOne({
+      resID: resident._id,
+      role: "Resident",
+      status: "Archived",
+    });
+
+    if (existingResUser) {
+      if (!existingResUser.passwordistoken) {
+        existingResUser.status = "Inactive";
+      } else {
+        existingResUser.status = "Password Not Set";
+      }
+      resident.set("userID", existingResUser._id);
+
+      await existingResUser.save();
+    }
+
     resident.set("empID", undefined);
     await resident.save();
 
@@ -85,11 +118,14 @@ export const archiveEmployee = async (req, res) => {
 
     await emp.save();
 
-    await ActivityLog.insertOne({
-      userID: userID,
-      action: "Employees",
-      description: `User archived ${resident.lastname}, ${resident.firstname}'s as employee.`,
-    });
+    if (role !== "Technical Admin") {
+      await ActivityLog.insertOne({
+        userID,
+        action: "Archive",
+        target: "Employees",
+        description: `User archived ${resident.lastname}, ${resident.firstname}'s as employee.`,
+      });
+    }
 
     return res.status(200).json({
       message: "Employee has been successfully archived.",
@@ -103,7 +139,7 @@ export const archiveEmployee = async (req, res) => {
 export const editEmployee = async (req, res) => {
   try {
     const { empID } = req.params;
-    const { userID } = req.user;
+    const { userID, role } = req.user;
     const { position, chairmanship } = req.body;
     const employee = await Employee.findById(empID).populate({
       path: "resID",
@@ -114,30 +150,73 @@ export const editEmployee = async (req, res) => {
       return res.status(404).json({ message: "Employee not found" });
     }
 
+    const oldPosition = employee.position;
     employee.position = position;
     if (chairmanship) {
       employee.chairmanship = chairmanship;
     }
     await employee.save();
 
+    const normalizeRole = (pos) => {
+      const personnelPositions = ["Tanod", "Kagawad", "Captain"];
+      return personnelPositions.includes(pos) ? "Personnel" : pos;
+    };
+
+    const normalizedRole = normalizeRole(position);
+
     if (employee.userID) {
       const user = await User.findById(employee.userID);
       if (user) {
-        const positionRoleMap = {
-          Secretary: "Secretary",
-          Clerk: "Clerk",
-          Justice: "Justice",
-        };
-        user.role = positionRoleMap[position] || "Official";
-        await user.save();
+        if (oldPosition === position) {
+          return;
+        }
+        const restrictedPositions = ["Secretary", "Clerk", "Justice"];
+
+        if (restrictedPositions.includes(position)) {
+          user.status = "Archived";
+          await user.save();
+          employee.set("userID", undefined);
+          await employee.save();
+        } else {
+          if (
+            user.role === "Secretary" ||
+            user.role === "Clerk" ||
+            user.role === "Justice"
+          ) {
+            user.status = "Archived";
+            await user.save();
+            employee.set("userID", undefined);
+            await employee.save();
+          }
+        }
+      }
+    } else {
+      const existingUser = await User.findOne({
+        empID: employee._id,
+        role: normalizedRole,
+        status: "Archived",
+      });
+
+      if (existingUser) {
+        if (!existingUser.passwordistoken) {
+          existingUser.status = "Inactive";
+        } else {
+          existingUser.status = "Password Not Set";
+        }
+        await existingUser.save();
+        employee.set("userID", existingUser._id);
+        await employee.save();
       }
     }
 
-    await ActivityLog.insertOne({
-      userID: userID,
-      action: "Employees",
-      description: `User updated ${employee.resID.lastname}, ${employee.resID.firstname}'s employee profile.`,
-    });
+    if (role !== "Technical Admin") {
+      await ActivityLog.insertOne({
+        userID,
+        action: "Update",
+        target: "Employees",
+        description: `User updated ${employee.resID.lastname}, ${employee.resID.firstname}'s employee profile.`,
+      });
+    }
     res
       .status(200)
       .json({ message: "Employee position updated successfully!" });
@@ -149,7 +228,7 @@ export const editEmployee = async (req, res) => {
 
 export const createEmployee = async (req, res) => {
   try {
-    const { userID } = req.user;
+    const { userID, role } = req.user;
     const { formattedEmployeeForm } = req.body;
     const resident = await Resident.findOne({
       _id: formattedEmployeeForm.resID,
@@ -163,6 +242,41 @@ export const createEmployee = async (req, res) => {
       resID: resIDasObjectId,
       ...formattedEmployeeForm,
     });
+
+    const existingEmp = await Employee.findOne({
+      resID: resIDasObjectId,
+      status: "Archived",
+      position: formattedEmployeeForm.position,
+    });
+
+    if (existingEmp) {
+      return res.status(409).json({
+        message: `An archived employee already exists with the ${formattedEmployeeForm.position.toLowerCase()} position. Please recover their archived record instead of creating a new one.`,
+      });
+    }
+
+    const normalizeRole = (pos) => {
+      const personnelPositions = ["Tanod", "Kagawad", "Captain"];
+      return personnelPositions.includes(pos) ? "Personnel" : pos;
+    };
+
+    const normalizedRole = normalizeRole(formattedEmployeeForm.position);
+
+    const existingEmpUser = await User.findOne({
+      empID: employee._id,
+      status: "Archived",
+      role: normalizedRole,
+    });
+
+    if (existingEmpUser) {
+      if (!existingEmpUser.passwordistoken) {
+        existingEmpUser.status = "Inactive";
+      } else {
+        existingEmpUser.status = "Password Not Set";
+      }
+      employee.set("userID", existingEmpUser._id);
+      await existingEmpUser.save();
+    }
     await employee.save();
 
     if (resident.userID) {
@@ -175,11 +289,14 @@ export const createEmployee = async (req, res) => {
     resident.empID = employee._id;
     await resident.save();
 
-    await ActivityLog.insertOne({
-      userID: userID,
-      action: "Employees",
-      description: `User added ${resident.lastname}, ${resident.firstname} as employee.`,
-    });
+    if (role !== "Technical Admin") {
+      await ActivityLog.insertOne({
+        userID,
+        action: "Create",
+        target: "Employees",
+        description: `User added ${resident.lastname}, ${resident.firstname} as employee.`,
+      });
+    }
     res.status(200).json({ empID: employee._id });
   } catch (error) {
     console.log("Error creating employee", error);
@@ -215,7 +332,7 @@ export const checkPositions = async (req, res) => {
     const counts = await Employee.aggregate([
       {
         $match: {
-          status: { $ne: "Archived" }, // Exclude 'Archived' status
+          status: { $ne: "Archived" },
         },
       },
       {

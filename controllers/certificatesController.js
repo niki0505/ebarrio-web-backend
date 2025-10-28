@@ -5,6 +5,7 @@ import Certificate from "../models/Certificates.js";
 import QRCode from "qrcode";
 import {
   getFormattedCertificates,
+  getPendingDocuments,
   sendNotificationUpdate,
   sendPushNotification,
 } from "../utils/collectionUtils.js";
@@ -13,6 +14,30 @@ const bgUrl = "https://api.ebarrio.online/qr-bg.png";
 const aniban2logoUrl = "https://api.ebarrio.online/aniban2logo.jpg";
 const verifiedUrl = "https://api.ebarrio.online/verified.png";
 import ActivityLog from "../models/ActivityLogs.js";
+
+export const saveCertificatePDF = async (req, res) => {
+  try {
+    const { certID } = req.params;
+    const { url } = req.body;
+    const cert = await Certificate.findById(certID);
+    cert.pdf = url;
+    await cert.save();
+    return res.status(200).json({ message: "Document PDF successfully saved" });
+  } catch (error) {
+    console.error("Backend image error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const getPendingDocumentsCount = async (req, res) => {
+  try {
+    const cert = await getPendingDocuments();
+    return res.status(200).json(cert);
+  } catch (error) {
+    console.error("Backend image error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
 
 export const collectedCert = async (req, res) => {
   try {
@@ -32,10 +57,13 @@ export const collectedCert = async (req, res) => {
 
     await cert.save();
 
-    const user = await User.findOne({ resID: cert.resID._id });
+    const user = await User.findOne({ resID: cert.resID._id }).populate({
+      path: "resID",
+      select: "firstname lastname",
+    });
 
     const io = req.app.get("socketio");
-    io.to(user._id).emit("certificateUpdate", {
+    io.to(user._id.toString()).emit("certificateUpdate", {
       title: `📄 ${cert.typeofcertificate} Collected`,
       message: `Your document has been collected. Thank you for your time.`,
       timestamp: cert.updatedAt,
@@ -55,8 +83,17 @@ export const collectedCert = async (req, res) => {
     await Notification.insertOne({
       userID: user._id,
       title: `📄 ${cert.typeofcertificate} Collected`,
-      message: `Your document request has been processed and is now available for pick up at the barangay hall. Kindly pay the fee of ${cert.amount} upon claiming.`,
+      message: `Your document has been collected. Thank you for your time.`,
       redirectTo: "Status",
+    });
+
+    await ActivityLog.insertOne({
+      userID,
+      action: "Update",
+      target: "Document Requests",
+      description: `User marked the ${cert.typeofcertificate.toLowerCase()} request of ${
+        user.resID.lastname
+      }, ${user.resID.firstname} as collected.`,
     });
 
     return res.status(200).json({
@@ -83,10 +120,13 @@ export const notifyCert = async (req, res) => {
       return res.status(404).json({ message: "Certificate not found" });
     }
 
-    const user = await User.findOne({ resID: cert.resID._id });
+    const user = await User.findOne({ resID: cert.resID._id }).populate({
+      path: "resID",
+      select: "firstname lastname",
+    });
 
     const io = req.app.get("socketio");
-    io.to(user._id).emit("certificateUpdate", {
+    io.to(user._id.toString()).emit("certificateUpdate", {
       title: `📄 ${cert.typeofcertificate} Issued`,
       message: `Your document request has been processed and is now available for pick up at the barangay hall. Kindly pay the fee of ${cert.amount} upon claiming.`,
       timestamp: cert.updatedAt,
@@ -108,6 +148,15 @@ export const notifyCert = async (req, res) => {
       title: `📄 ${cert.typeofcertificate} Issued`,
       message: `Your document request has been processed and is now available for pick up at the barangay hall. Kindly pay the fee of ${cert.amount} upon claiming.`,
       redirectTo: "Status",
+    });
+
+    await ActivityLog.insertOne({
+      userID,
+      action: "Notify",
+      target: "Document Requests",
+      description: `User notified ${user.resID.lastname}, ${
+        user.resID.firstname
+      } about their ${cert.typeofcertificate.toLowerCase()} request being available for pickup.`,
     });
 
     return res.status(200).json({
@@ -140,7 +189,7 @@ export const rejectCertificateReq = async (req, res) => {
     await cert.save();
 
     const io = req.app.get("socketio");
-    io.to(user._id).emit("certificateUpdate", {
+    io.to(user._id.toString()).emit("certificateUpdate", {
       title: `❌ ${cert.typeofcertificate} Rejected`,
       message: `Your document request has been rejected. Kindly see the remarks for the reason.`,
       timestamp: cert.updatedAt,
@@ -167,8 +216,9 @@ export const rejectCertificateReq = async (req, res) => {
     sendNotificationUpdate(user._id.toString(), io);
 
     await ActivityLog.insertOne({
-      userID: userID,
-      action: "Document Requests",
+      userID,
+      action: "Reject",
+      target: "Document Requests",
       description: `User rejected the ${cert.typeofcertificate.toLowerCase()} request of ${
         resident.lastname
       }, ${resident.firstname}.`,
@@ -201,9 +251,10 @@ export const saveCertificateReq = async (req, res) => {
     await cert.save();
 
     await ActivityLog.insertOne({
-      userID: userID,
-      action: "Document Requests",
-      description: `User issued the ${cert.typeofcertificate.toLowerCase()} request of ${
+      userID,
+      action: "Approve",
+      target: "Document Requests",
+      description: `User approved the ${cert.typeofcertificate.toLowerCase()} request of ${
         cert.resID.lastname
       }, ${cert.resID.firstname}.`,
     });
@@ -538,7 +589,13 @@ export const getPrepared = async (req, res) => {
 export const getCertificate = async (req, res) => {
   try {
     const { certID } = req.params;
-    const cert = await Certificate.findById(certID).populate("resID");
+    const cert = await Certificate.findById(certID).populate({
+      path: "resID",
+      populate: {
+        path: "householdno",
+        select: "address",
+      },
+    });
 
     const formatDatePH = (date) => {
       return new Date(date).toLocaleString("en-PH", {
@@ -565,15 +622,28 @@ export const getCertificate = async (req, res) => {
 
 export const saveCertificate = async (req, res) => {
   try {
+    const { userID } = req.user;
     const { certID } = req.params;
     const { qrCode } = req.body;
-    const cert = await Certificate.findById(certID);
+    const cert = await Certificate.findById(certID).populate({
+      path: "resID",
+      select: "firstname lastname",
+    });
     if (!cert) {
       return res.status(404).json({ message: "Certificate not found" });
     }
 
     cert.certID.qrCode = qrCode;
     await cert.save();
+
+    await ActivityLog.insertOne({
+      userID,
+      action: "Generate",
+      target: "Document Requests",
+      description: `User generated a ${cert.typeofcertificate.toLowerCase()} for ${
+        cert.resID.lastname
+      }, ${cert.resID.firstname}.`,
+    });
     return res.status(200).json({
       message: "Certificate is saved successfully",
     });

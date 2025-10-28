@@ -3,6 +3,63 @@ import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
 import { bucket } from "../firebaseAdmin.js";
+import Resident from "../models/Residents.js";
+import { rds } from "../index.js";
+import axios from "axios";
+import ActivityLog from "../models/ActivityLogs.js";
+
+export async function alertResidents(req, res) {
+  try {
+    const { userID } = req.user;
+    const { message } = req.body;
+
+    const cooldown = await rds.get("limitAlert");
+    if (cooldown) {
+      const secondsLeft = await rds.ttl("limitAlert");
+      const minutesLeft = Math.ceil(secondsLeft / 60); // Round up
+
+      return res.status(429).json({
+        message: `Alert already sent. Please wait ${minutesLeft} minute(s) before sending again.`,
+      });
+    }
+
+    const residents = await Resident.find({
+      status: { $nin: ["Archived", "Rejected", "Pending"] },
+    }).select("mobilenumber");
+
+    const uniqueNumbers = [
+      ...new Set(residents.map((r) => r.mobilenumber).filter((num) => !!num)),
+    ];
+
+    const smsPromises = uniqueNumbers.map((number) =>
+      axios.post("https://api.semaphore.co/api/v4/priority", {
+        apikey: process.env.SEMAPHORE_KEY,
+        number,
+        message,
+      })
+    );
+
+    await Promise.all(smsPromises);
+
+    await rds.setex(`limitAlert`, 600, "true");
+
+    await ActivityLog.insertOne({
+      userID,
+      action: "Notify",
+      target: "River Snapshots",
+      description: `User alerted residents about the water level.`,
+    });
+
+    return res.status(200).json({
+      message: "Residents have been successfully alerted.",
+    });
+  } catch (err) {
+    console.error("❌ Failed to get alert residents:", err);
+    res
+      .status(500)
+      .json({ error: "Failed to alert residents", details: err.message });
+  }
+}
 
 export async function getLatestSnapshot(req, res) {
   try {
@@ -80,8 +137,6 @@ export async function getLatestSnapshot(req, res) {
         };
       })
     );
-
-    console.log(historyData);
     return res.status(200).json({
       latest: { url: latest.publicUrl(), datetime: latestDatetime },
       history: historyData,

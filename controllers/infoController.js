@@ -1,6 +1,5 @@
 import Resident from "../models/Residents.js";
 import mongoose from "mongoose";
-import OldResident from "../models/OldResidents.js";
 import Employee from "../models/Employees.js";
 import ActivityLog from "../models/ActivityLogs.js";
 import moment from "moment";
@@ -13,13 +12,16 @@ import User from "../models/Users.js";
 
 export const logExport = async (req, res) => {
   try {
-    const { userID } = req.user;
-    const { action, description } = req.body;
-    await ActivityLog.insertOne({
-      userID: userID,
-      action: action,
-      description: description,
-    });
+    const { userID, role } = req.user;
+    const { action, target, description } = req.body;
+    if (role !== "Technical Admin") {
+      await ActivityLog.insertOne({
+        userID,
+        action,
+        target,
+        description,
+      });
+    }
   } catch (error) {
     console.log("Error fetching employees", error);
     res.status(500).json({ message: "Failed to fetch employees" });
@@ -38,7 +40,7 @@ export const getAllEmployees = async (req, res) => {
 
 export const updateResident = async (req, res) => {
   try {
-    const { userID } = req.user;
+    const { userID, role } = req.user;
     const {
       picture,
       signature,
@@ -66,12 +68,6 @@ export const updateResident = async (req, res) => {
       emergencyname,
       emergencymobilenumber,
       emergencyaddress,
-      address,
-      mother,
-      father,
-      spouse,
-      siblings,
-      children,
       HOAname,
       employmentstatus,
       occupation,
@@ -79,7 +75,6 @@ export const updateResident = async (req, res) => {
       educationalattainment,
       typeofschool,
       course,
-      // is4Ps,
       isPregnant,
       isSenior,
       isInfant,
@@ -91,9 +86,7 @@ export const updateResident = async (req, res) => {
       isAdult,
       isPostpartum,
       isWomenOfReproductive,
-      // isChild,
       isPWD,
-      // isSoloParent,
       philhealthid,
       philhealthtype,
       philhealthcategory,
@@ -105,7 +98,10 @@ export const updateResident = async (req, res) => {
       haveFPmethod,
       fpmethod,
       fpstatus,
+      householdno,
+      householdposition,
       householdForm,
+      head,
     } = req.body;
 
     const { resID } = req.params;
@@ -131,26 +127,6 @@ export const updateResident = async (req, res) => {
         select: "_id",
       },
     });
-
-    const motherAsObjectId = mother
-      ? new mongoose.Types.ObjectId(mother)
-      : null;
-    const fatherAsObjectId = father
-      ? new mongoose.Types.ObjectId(father)
-      : null;
-    const spouseAsObjectId = spouse
-      ? new mongoose.Types.ObjectId(spouse)
-      : null;
-
-    const siblingsAsObjectIds =
-      siblings && siblings.length > 0
-        ? siblings.map((siblingId) => new mongoose.Types.ObjectId(siblingId))
-        : [];
-
-    const childrenAsObjectIds =
-      children && children.length > 0
-        ? children.map((childrenId) => new mongoose.Types.ObjectId(childrenId))
-        : [];
 
     resident.picture = picture;
     resident.signature = signature;
@@ -179,12 +155,6 @@ export const updateResident = async (req, res) => {
     resident.emergencyname = emergencyname;
     resident.emergencymobilenumber = emergencymobilenumber;
     resident.emergencyaddress = emergencyaddress;
-    resident.address = address;
-    resident.mother = motherAsObjectId;
-    resident.father = fatherAsObjectId;
-    resident.spouse = spouseAsObjectId;
-    resident.siblings = siblingsAsObjectIds;
-    resident.children = childrenAsObjectIds;
     resident.HOAname = HOAname;
     resident.employmentstatus = employmentstatus;
     resident.occupation = occupation;
@@ -193,7 +163,6 @@ export const updateResident = async (req, res) => {
     resident.typeofschool = typeofschool;
     resident.course = course;
     resident.isSenior = isSenior;
-    // resident.is4Ps = is4Ps;
     resident.isInfant = isInfant;
     resident.isNewborn = isNewborn;
     resident.isUnder5 = isUnder5;
@@ -203,10 +172,8 @@ export const updateResident = async (req, res) => {
     resident.isAdult = isAdult;
     resident.isPostpartum = isPostpartum;
     resident.isWomenOfReproductive = isWomenOfReproductive;
-    // resident.isChild = isChild;
     resident.isPWD = isPWD;
     resident.isPregnant = isPregnant;
-    // resident.isSoloParent = isSoloParent;
     resident.philhealthid = philhealthid;
     resident.philhealthtype = philhealthtype;
     resident.philhealthcategory = philhealthcategory;
@@ -218,32 +185,267 @@ export const updateResident = async (req, res) => {
     resident.haveFPmethod = haveFPmethod;
     resident.fpmethod = fpmethod;
     resident.fpstatus = fpstatus;
+    resident.householdno = householdno;
     await resident.save();
 
-    if (isHead) {
-      // household.members = householdForm.members;
-      // household.vehicles = householdForm.vehicles;
-      household.ethnicity = householdForm.ethnicity;
-      household.tribe = householdForm.tribe;
-      household.sociostatus = householdForm.sociostatus;
-      household.nhtsno = householdForm.nhtsno;
-      household.watersource = householdForm.watersource;
-      household.toiletfacility = householdForm.toiletfacility;
-      await household.save();
+    if (!household) {
+      if (householdno) {
+        // Assign to an existing household
+        const newHousehold = await Household.findById(householdno);
+        if (newHousehold) {
+          newHousehold.members.push({
+            resID: resident._id,
+            position: householdposition || "Member",
+          });
+          await newHousehold.save();
+
+          await Resident.findByIdAndUpdate(resident._id, {
+            householdno: newHousehold._id,
+          });
+        }
+      } else if (head === "Yes") {
+        let members = [...householdForm.members];
+        if (
+          !members.some((m) => m.resID.toString() === resident._id.toString())
+        ) {
+          members.push({ resID: resident._id, position: "Head" });
+        } else {
+          members = members.map((m) =>
+            m.resID.toString() === resident._id.toString()
+              ? { ...m, position: "Head" }
+              : m
+          );
+        }
+
+        // Create the new household
+        const newHousehold = new Household({
+          ...householdForm,
+          members,
+          status: "Active",
+        });
+        await newHousehold.save();
+
+        // Update householdno for all members
+        await Promise.all(
+          members.map(({ resID }) =>
+            Resident.findByIdAndUpdate(resID, {
+              householdno: newHousehold._id,
+            })
+          )
+        );
+      }
+    } else {
+      if (isHead) {
+        if (household._id.toString() !== householdno.toString()) {
+          // Head leaving to another household
+          const otherActiveMembers = household.members.filter(
+            (member) => member.resID.toString() !== resident._id.toString()
+          );
+
+          if (otherActiveMembers.length === 0) {
+            household.status = "Archived";
+          } else {
+            let eligibleMembers = otherActiveMembers.filter(
+              (m) => m.resID.age >= 18
+            );
+            if (!eligibleMembers.length) eligibleMembers = otherActiveMembers;
+
+            const newHead = eligibleMembers.reduce((prev, curr) =>
+              curr.resID.age > prev.resID.age ? curr : prev
+            );
+
+            household.members = household.members.map((m) => {
+              if (m.resID.toString() === newHead.resID.toString()) {
+                return { ...m, position: "Head" };
+              }
+              return m;
+            });
+
+            household.members = household.members.filter(
+              (m) => m.resID.toString() !== resident._id.toString()
+            );
+          }
+
+          await household.save();
+
+          const newHousehold = await Household.findById(householdno);
+          if (newHousehold) {
+            newHousehold.members.push({
+              resID: resident._id,
+              position: householdposition,
+            });
+            await newHousehold.save();
+          }
+        } else {
+          // Head staying, update household info
+          Object.assign(household, {
+            ethnicity: householdForm.ethnicity,
+            tribe: householdForm.tribe,
+            sociostatus: householdForm.sociostatus,
+            nhtsno: householdForm.nhtsno,
+            watersource: householdForm.watersource,
+            toiletfacility: householdForm.toiletfacility,
+            address: householdForm.address,
+          });
+          await household.save();
+        }
+      } else {
+        if (household._id.toString() !== householdno.toString()) {
+          // Non-head moving
+          const oldHousehold = await Household.findById(household._id);
+          const newHousehold = await Household.findById(householdno);
+
+          if (oldHousehold) {
+            oldHousehold.members = oldHousehold.members.filter(
+              (m) => m.resID.toString() !== resident._id.toString()
+            );
+            await oldHousehold.save();
+          }
+
+          if (newHousehold) {
+            newHousehold.members.push({
+              resID: resident._id,
+              position: householdposition,
+            });
+            await newHousehold.save();
+          }
+        } else {
+          // Head but they are not currently the head of the householdno, means they want to create new household
+          if (head === "Yes") {
+            let members = [...householdForm.members];
+            if (
+              !members.some(
+                (m) => m.resID.toString() === resident._id.toString()
+              )
+            ) {
+              members.push({ resID: resident._id, position: "Head" });
+            } else {
+              // Ensure the resident is set as Head
+              members = members.map((m) =>
+                m.resID.toString() === resident._id.toString()
+                  ? { ...m, position: "Head" }
+                  : m
+              );
+            }
+
+            // Create the new household
+            const newHousehold = new Household({
+              ...householdForm,
+              members,
+              status: "Active",
+            });
+            await newHousehold.save();
+
+            // For other members
+            for (let { resID, position } of members) {
+              const res = await Resident.findById(resID);
+              if (!res) continue;
+
+              // Check if resident is already in another household
+              if (
+                res.householdno &&
+                res.householdno.toString() !== newHousehold._id.toString()
+              ) {
+                const oldHouse = await Household.findById(res.householdno);
+                if (oldHouse) {
+                  const wasHead = oldHouse.members.find(
+                    (mem) =>
+                      mem.resID.toString() === res._id.toString() &&
+                      mem.position === "Head"
+                  );
+
+                  oldHouse.members = oldHouse.members.filter(
+                    (mem) => mem.resID.toString() !== res._id.toString()
+                  );
+
+                  if (wasHead) {
+                    let eligibleMembers = [];
+                    for (let m of oldHouse.members) {
+                      const r = await Resident.findById(m.resID);
+                      if (r && r.age >= 18) eligibleMembers.push(m);
+                    }
+                    if (!eligibleMembers.length)
+                      eligibleMembers = oldHouse.members;
+
+                    if (eligibleMembers.length) {
+                      let oldest = eligibleMembers[0];
+                      let oldestRes = await Resident.findById(oldest.resID);
+                      for (let m of eligibleMembers) {
+                        const r = await Resident.findById(m.resID);
+                        if (r && r.age > oldestRes.age) {
+                          oldest = m;
+                          oldestRes = r;
+                        }
+                      }
+                      oldHouse.members = oldHouse.members.map((mem) => {
+                        if (mem.resID.toString() === oldest.resID.toString()) {
+                          return { ...mem, position: "Head" };
+                        }
+                        return mem;
+                      });
+                    } else {
+                      oldHouse.status = "Archived";
+                    }
+                  }
+
+                  await oldHouse.save();
+                }
+              }
+
+              res.householdno = newHousehold._id;
+              await res.save();
+            }
+
+            household.members = household.members.filter(
+              (m) =>
+                !members.some(
+                  (newM) => newM.resID.toString() === m.resID.toString()
+                )
+            );
+            await household.save();
+          } else {
+            // Non-head staying, update position if changed
+            const oldHousehold = await Household.findById(household._id);
+            if (oldHousehold) {
+              const memberIndex = oldHousehold.members.findIndex(
+                (m) => m.resID.toString() === resident._id.toString()
+              );
+
+              if (memberIndex !== -1) {
+                if (
+                  oldHousehold.members[memberIndex].position !==
+                  householdposition
+                ) {
+                  oldHousehold.members[memberIndex].position =
+                    householdposition;
+                  await oldHousehold.save();
+                  console.log(
+                    `Member position updated to ${householdposition}`
+                  );
+                }
+              }
+            }
+          }
+        }
+      }
     }
 
-    if (user.empID.resID._id.toString() === resident._id.toString()) {
-      await ActivityLog.insertOne({
-        userID: userID,
-        action: "Residents",
-        description: `User updated their resident profile.`,
-      });
-    } else {
-      await ActivityLog.insertOne({
-        userID: userID,
-        action: "Residents",
-        description: `User updated the details of ${resident.lastname}, ${resident.firstname}.`,
-      });
+    if (role !== "Technical Admin") {
+      if (user.empID.resID._id.toString() === resident._id.toString()) {
+        await ActivityLog.insertOne({
+          userID,
+          action: "Update",
+          target: "Profile",
+          description: `User updated their resident profile.`,
+        });
+      } else {
+        await ActivityLog.insertOne({
+          userID,
+          action: "Update",
+          target: "Residents",
+          description: `User updated the details of ${resident.lastname}, ${resident.firstname}.`,
+        });
+      }
     }
 
     res.status(200).json({ message: "Resident successfully updated" });
@@ -267,7 +469,9 @@ export const getEmployee = async (req, res) => {
 export const getResident = async (req, res) => {
   try {
     const { resID } = req.params;
-    const residents = await Resident.findOne({ _id: resID }).populate("brgyID");
+    const residents = await Resident.findOne({ _id: resID })
+      .populate("brgyID")
+      .populate("householdno", "address");
     res.status(200).json(residents);
   } catch (error) {
     console.log("Error fetching residents", error);
@@ -288,16 +492,6 @@ export const getCaptain = async (req, res) => {
   }
 };
 
-export const getAllOldResidents = async (req, res) => {
-  try {
-    const residents = await OldResident.find();
-    res.status(200).json(residents);
-  } catch (error) {
-    console.log("Error fetching residents", error);
-    res.status(500).json({ message: "Failed to fetch residents" });
-  }
-};
-
 export const getAllResidents = async (req, res) => {
   try {
     const residents = await getResidentsUtils();
@@ -308,9 +502,9 @@ export const getAllResidents = async (req, res) => {
   }
 };
 
-export const createResident = async (req, res) => {
+export const createHouseholdResident = async (req, res) => {
   try {
-    const { userID } = req.user;
+    const { userID, role } = req.user;
     const {
       picture,
       signature,
@@ -338,12 +532,6 @@ export const createResident = async (req, res) => {
       emergencyname,
       emergencymobilenumber,
       emergencyaddress,
-      address,
-      mother,
-      father,
-      spouse,
-      siblings,
-      children,
       HOAname,
       employmentstatus,
       occupation,
@@ -351,12 +539,9 @@ export const createResident = async (req, res) => {
       educationalattainment,
       typeofschool,
       course,
-      head,
-      // is4Ps,
       isPregnant,
       isSenior,
       isInfant,
-      // isChild,
       isNewborn,
       isUnder5,
       isSchoolAge,
@@ -366,10 +551,6 @@ export const createResident = async (req, res) => {
       isPostpartum,
       isWomenOfReproductive,
       isPWD,
-      // isSoloParent,
-      householdForm,
-      householdno,
-      householdposition,
       philhealthid,
       philhealthtype,
       philhealthcategory,
@@ -385,27 +566,6 @@ export const createResident = async (req, res) => {
 
     const birthDate = moment(birthdate, "YYYY/MM/DD");
     const age = moment().diff(birthDate, "years");
-
-    const motherAsObjectId = mother
-      ? new mongoose.Types.ObjectId(mother)
-      : null;
-    const fatherAsObjectId = father
-      ? new mongoose.Types.ObjectId(father)
-      : null;
-    const spouseAsObjectId = spouse
-      ? new mongoose.Types.ObjectId(spouse)
-      : null;
-
-    const siblingsAsObjectIds =
-      siblings && siblings.length > 0
-        ? siblings.map((siblingId) => new mongoose.Types.ObjectId(siblingId))
-        : [];
-
-    const childrenAsObjectIds =
-      children && children.length > 0
-        ? children.map((childrenId) => new mongoose.Types.ObjectId(childrenId))
-        : [];
-
     const resident = new Resident({
       picture,
       signature,
@@ -434,12 +594,6 @@ export const createResident = async (req, res) => {
       emergencyname,
       emergencymobilenumber,
       emergencyaddress,
-      address,
-      mother: motherAsObjectId,
-      father: fatherAsObjectId,
-      spouse: spouseAsObjectId,
-      siblings: siblingsAsObjectIds,
-      children: childrenAsObjectIds,
       HOAname,
       employmentstatus,
       occupation,
@@ -447,10 +601,8 @@ export const createResident = async (req, res) => {
       educationalattainment,
       typeofschool,
       course,
-      // is4Ps,
       isPregnant,
       isSenior,
-      // isChild,
       isInfant,
       isNewborn,
       isUnder5,
@@ -461,7 +613,6 @@ export const createResident = async (req, res) => {
       isPostpartum,
       isWomenOfReproductive,
       isPWD,
-      // isSoloParent,
       philhealthid,
       philhealthtype,
       philhealthcategory,
@@ -475,7 +626,153 @@ export const createResident = async (req, res) => {
       fpstatus,
     });
     await resident.save();
-    console.log(householdForm);
+
+    if (role !== "Technical Admin") {
+      await ActivityLog.insertOne({
+        userID,
+        action: "Create",
+        target: "Residents",
+        description: `User created a resident profile of ${resident.lastname}, ${resident.firstname}`,
+      });
+    }
+
+    res
+      .status(200)
+      .json({ message: "Resident successfully created", resID: resident._id });
+  } catch (error) {
+    console.log("Error creating resident", error);
+    res.status(500).json({ message: "Failed to create resident" });
+  }
+};
+
+export const createResident = async (req, res) => {
+  try {
+    const { userID, role } = req.user;
+    const {
+      picture,
+      signature,
+      firstname,
+      middlename,
+      lastname,
+      suffix,
+      alias,
+      salutation,
+      sex,
+      gender,
+      birthdate,
+      birthplace,
+      civilstatus,
+      bloodtype,
+      religion,
+      nationality,
+      voter,
+      precinct,
+      deceased,
+      email,
+      mobilenumber,
+      telephone,
+      facebook,
+      emergencyname,
+      emergencymobilenumber,
+      emergencyaddress,
+      HOAname,
+      employmentstatus,
+      occupation,
+      monthlyincome,
+      educationalattainment,
+      typeofschool,
+      course,
+      head,
+      isPregnant,
+      isSenior,
+      isInfant,
+      isNewborn,
+      isUnder5,
+      isSchoolAge,
+      isAdolescent,
+      isAdolescentPregnant,
+      isAdult,
+      isPostpartum,
+      isWomenOfReproductive,
+      isPWD,
+      householdForm,
+      householdno,
+      householdposition,
+      philhealthid,
+      philhealthtype,
+      philhealthcategory,
+      haveHypertension,
+      haveDiabetes,
+      haveTubercolosis,
+      haveSurgery,
+      lastmenstrual,
+      haveFPmethod,
+      fpmethod,
+      fpstatus,
+    } = req.body;
+
+    const birthDate = moment(birthdate, "YYYY/MM/DD");
+    const age = moment().diff(birthDate, "years");
+    const resident = new Resident({
+      picture,
+      signature,
+      firstname,
+      middlename,
+      lastname,
+      suffix,
+      alias,
+      salutation,
+      sex,
+      gender,
+      birthdate,
+      age,
+      birthplace,
+      civilstatus,
+      bloodtype,
+      religion,
+      nationality,
+      voter,
+      precinct,
+      deceased,
+      email,
+      mobilenumber,
+      telephone,
+      facebook,
+      emergencyname,
+      emergencymobilenumber,
+      emergencyaddress,
+      HOAname,
+      employmentstatus,
+      occupation,
+      monthlyincome,
+      educationalattainment,
+      typeofschool,
+      course,
+      isPregnant,
+      isSenior,
+      isInfant,
+      isNewborn,
+      isUnder5,
+      isSchoolAge,
+      isAdolescent,
+      isAdolescentPregnant,
+      isAdult,
+      isPostpartum,
+      isWomenOfReproductive,
+      isPWD,
+      philhealthid,
+      philhealthtype,
+      philhealthcategory,
+      haveHypertension,
+      haveDiabetes,
+      haveTubercolosis,
+      haveSurgery,
+      lastmenstrual,
+      haveFPmethod,
+      fpmethod,
+      fpstatus,
+    });
+    await resident.save();
     let members = [...householdForm.members];
 
     if (head === "Yes") {
@@ -490,11 +787,63 @@ export const createResident = async (req, res) => {
       });
       await household.save();
 
-      await Promise.all(
-        members.map(({ resID }) =>
-          Resident.findByIdAndUpdate(resID, { householdno: household._id })
-        )
-      );
+      for (let { resID, position } of members) {
+        const res = await Resident.findById(resID);
+        if (!res) continue;
+
+        // Check if resident is already in another household
+        if (
+          res.householdno &&
+          res.householdno.toString() !== household._id.toString()
+        ) {
+          const oldHouse = await Household.findById(res.householdno);
+          if (oldHouse) {
+            const wasHead = oldHouse.members.find(
+              (mem) =>
+                mem.resID.toString() === res._id.toString() &&
+                mem.position === "Head"
+            );
+
+            oldHouse.members = oldHouse.members.filter(
+              (mem) => mem.resID.toString() !== res._id.toString()
+            );
+
+            if (wasHead) {
+              let eligibleMembers = [];
+              for (let m of oldHouse.members) {
+                const r = await Resident.findById(m.resID);
+                if (r && r.age >= 18) eligibleMembers.push(m);
+              }
+              if (!eligibleMembers.length) eligibleMembers = oldHouse.members;
+
+              if (eligibleMembers.length) {
+                let oldest = eligibleMembers[0];
+                let oldestRes = await Resident.findById(oldest.resID);
+                for (let m of eligibleMembers) {
+                  const r = await Resident.findById(m.resID);
+                  if (r && r.age > oldestRes.age) {
+                    oldest = m;
+                    oldestRes = r;
+                  }
+                }
+                oldHouse.members = oldHouse.members.map((mem) => {
+                  if (mem.resID.toString() === oldest.resID.toString()) {
+                    return { ...mem, position: "Head" };
+                  }
+                  return mem;
+                });
+              } else {
+                oldHouse.status = "Archived";
+              }
+            }
+
+            await oldHouse.save();
+          }
+        }
+
+        res.householdno = household._id;
+        await res.save();
+      }
     } else if (head === "No") {
       if (householdno && householdposition) {
         const household = await Household.findById(householdno);
@@ -518,11 +867,15 @@ export const createResident = async (req, res) => {
       }
     }
 
-    await ActivityLog.insertOne({
-      userID: userID,
-      action: "Residents",
-      description: `User created a resident profile of ${resident.lastname}, ${resident.firstname}`,
-    });
+    if (role !== "Technical Admin") {
+      await ActivityLog.insertOne({
+        userID,
+        action: "Create",
+        target: "Residents",
+        description: `User created a resident profile of ${resident.lastname}, ${resident.firstname}`,
+      });
+    }
+
     res
       .status(200)
       .json({ message: "Resident successfully created", resID: resident._id });

@@ -1,13 +1,18 @@
 import CourtReservation from "../models/CourtReservations.js";
-import { getReservationsUtils } from "../utils/collectionUtils.js";
+import {
+  getPendingReservations,
+  getReservationsUtils,
+} from "../utils/collectionUtils.js";
 import { sendPushNotification } from "../utils/collectionUtils.js";
 import Notification from "../models/Notifications.js";
 import { sendNotificationUpdate } from "../utils/collectionUtils.js";
 import User from "../models/Users.js";
 import Resident from "../models/Residents.js";
+import ActivityLog from "../models/ActivityLogs.js";
 
 export const rejectCourtReq = async (req, res) => {
   try {
+    const { userID } = req.user;
     const { reservationID } = req.params;
     const { remarks } = req.body;
 
@@ -39,7 +44,7 @@ export const rejectCourtReq = async (req, res) => {
     if (resident.userID) {
       const user = await User.findById(resident.userID);
       const io = req.app.get("socketio");
-      io.to(user._id).emit("reservationUpdate", {
+      io.to(user._id.toString()).emit("reservationUpdate", {
         title: `❌ Court Reservation Request Rejected`,
         message: `Your court reservation request scheduled on ${formattedDate} from ${formattedStartTime} to ${formattedEndTime} has been rejected. Kindly see the remarks for the reason. `,
         timestamp: court.updatedAt,
@@ -66,6 +71,13 @@ export const rejectCourtReq = async (req, res) => {
       sendNotificationUpdate(user._id.toString(), io);
     }
 
+    await ActivityLog.insertOne({
+      userID,
+      action: "Reject",
+      target: "Court Reservations",
+      description: `User rejected the reservation of ${resident.lastname}, ${resident.firstname}.`,
+    });
+
     return res.status(200).json({
       message: "Court reservation is rejected successfully",
     });
@@ -77,11 +89,25 @@ export const rejectCourtReq = async (req, res) => {
 
 export const createReservation = async (req, res) => {
   try {
+    const { userID } = req.user;
     const { reservationForm } = req.body;
     const reservation = new CourtReservation({
       ...reservationForm,
     });
     await reservation.save();
+
+    const populatedReservation = await reservation.populate({
+      path: "resID",
+      select: "firstname lastname",
+    });
+
+    await ActivityLog.insertOne({
+      userID,
+      action: "Create",
+      target: "Court Reservations",
+      description: `User created a reservation for ${populatedReservation.lastname}, ${populatedReservation.firstname}.`,
+    });
+
     return res
       .status(200)
       .json({ message: "Court reservation requested successfully!" });
@@ -93,14 +119,83 @@ export const createReservation = async (req, res) => {
 
 export const approveReservation = async (req, res) => {
   try {
+    const { userID } = req.user;
     const { reservationID } = req.params;
     const reservation = await CourtReservation.findById(reservationID);
     if (!reservation) {
       return res.status(404).json({ message: "Reservation not found" });
     }
 
+    const existingReservations = await CourtReservation.find({
+      status: "Approved",
+      _id: { $ne: reservationID },
+    });
+
+    let conflict = null;
+
+    const rtimesObj =
+      reservation.times instanceof Map
+        ? Object.fromEntries(reservation.times)
+        : reservation.times;
+
+    for (const [date, time] of Object.entries(rtimesObj)) {
+      const startTime = new Date(time.starttime);
+      const endTime = new Date(time.endtime);
+
+      for (const r of existingReservations) {
+        const rTimes =
+          r.times instanceof Map ? Object.fromEntries(r.times) : r.times;
+        for (const [d, t] of Object.entries(rTimes)) {
+          if (t?.starttime && t?.endtime) {
+            const reservedStart = new Date(t.starttime);
+            const reservedEnd = new Date(t.endtime);
+
+            if (startTime < reservedEnd && endTime > reservedStart) {
+              conflict = { date: d, reservedStart, reservedEnd };
+              break;
+            }
+          }
+        }
+        if (conflict) break;
+      }
+
+      if (conflict) break;
+    }
+
+    if (conflict) {
+      const optionsDate = {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        timeZone: "Asia/Manila",
+      };
+      const optionsTime = {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+        timeZone: "Asia/Manila",
+      };
+
+      const formattedDate = new Date(conflict.date).toLocaleDateString(
+        "en-US",
+        optionsDate
+      );
+      const formattedStart = conflict.reservedStart.toLocaleTimeString(
+        "en-US",
+        optionsTime
+      );
+      const formattedEnd = conflict.reservedEnd.toLocaleTimeString(
+        "en-US",
+        optionsTime
+      );
+
+      return res.status(409).json({
+        message: `Conflict with existing reservation on ${formattedDate} at ${formattedStart} - ${formattedEnd}`,
+      });
+    }
+
     const resident = await Resident.findById(reservation.resID).select(
-      "userID"
+      "userID firstname lastname"
     );
 
     reservation.status = "Approved";
@@ -138,7 +233,7 @@ export const approveReservation = async (req, res) => {
     if (resident.userID) {
       const user = await User.findById(resident.userID);
       const io = req.app.get("socketio");
-      io.to(user._id).emit("reservationUpdate", {
+      io.to(user._id.toString()).emit("reservationUpdate", {
         title: `📅 Court Reservation Update`,
         message: `Your court reservation request scheduled on ${formattedSchedule} has been approved. `,
         timestamp: reservation.updatedAt,
@@ -165,6 +260,13 @@ export const approveReservation = async (req, res) => {
       sendNotificationUpdate(user._id.toString(), io);
     }
 
+    await ActivityLog.insertOne({
+      userID,
+      action: "Approve",
+      target: "Court Reservations",
+      description: `User approved the reservation of ${resident.lastname}, ${resident.firstname}.`,
+    });
+
     return res
       .status(200)
       .json({ message: "Court reservation successfully approved" });
@@ -174,14 +276,11 @@ export const approveReservation = async (req, res) => {
   }
 };
 
-export const getPendingReservations = async (req, res) => {
+export const getPendingReservationsCount = async (req, res) => {
   try {
-    const reservations = await getReservationsUtils();
-    const pending = reservations.filter(
-      (reservation) => reservation.status === "Pending"
-    );
+    const reservations = await getPendingReservations();
 
-    return res.status(200).json({ pendingCount: pending.length });
+    return res.status(200).json(reservations);
   } catch (error) {
     console.error("Error in fetching court reservations:", error);
     res.status(500).json({ message: "Internal server error" });

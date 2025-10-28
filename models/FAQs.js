@@ -5,6 +5,12 @@ const fSchema = new mongoose.Schema(
   {
     question: { type: String, required: true },
     answer: { type: String, required: true },
+    status: {
+      type: String,
+      enum: ["Active", "Archived"],
+      required: true,
+      default: "Active",
+    },
   },
   { versionKey: false, timestamps: true }
 );

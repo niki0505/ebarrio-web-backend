@@ -26,9 +26,11 @@ const resSchema = new mongoose.Schema(
     ],
     picture: {
       type: String,
+      required: true,
     },
     signature: {
       type: String,
+      required: true,
     },
     firstname: {
       type: String,
@@ -116,9 +118,6 @@ const resSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    HOAname: {
-      type: String,
-    },
     employmentstatus: {
       type: String,
     },
@@ -131,21 +130,8 @@ const resSchema = new mongoose.Schema(
     educationalattainment: {
       type: String,
     },
-    typeofschool: {
-      type: String,
-    },
     course: {
       type: String,
-    },
-    status: {
-      type: String,
-      enum: ["Active", "Archived", "Pending", "Rejected", "Change Requested"],
-      required: true,
-      default: "Active",
-    },
-    changeID: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "ChangeResident",
     },
     isSenior: {
       type: Boolean,
@@ -222,9 +208,9 @@ const resSchema = new mongoose.Schema(
     fpstatus: { type: String },
     householdno: { type: mongoose.Schema.Types.ObjectId, ref: "Household" },
     householdposition: { type: String },
+    head: { type: String },
     userID: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     empID: { type: mongoose.Schema.Types.ObjectId, ref: "Employee" },
-    remarks: { type: String },
   },
   { versionKey: false }
 );
@@ -232,6 +218,6 @@ const resSchema = new mongoose.Schema(
 resSchema.methods.updateAge = function () {
   this.age = moment().diff(moment(this.birthdate), "years");
 };
-const Resident = mongoose.model("Resident", resSchema);
+const ChangeResident = mongoose.model("ChangeResident", resSchema);
 
-export default Resident;
+export default ChangeResident;

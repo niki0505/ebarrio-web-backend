@@ -2,15 +2,16 @@ import Resident from "../models/Residents.js";
 import QRCode from "qrcode";
 
 import ActivityLog from "../models/ActivityLogs.js";
-const bgUrl = "http://localhost:5000/qr-bg.png";
-const aniban2logoUrl = "http://localhost:5000/aniban2logo.jpg";
-const verifiedUrl = "http://localhost:5000/verified.png";
-
+const bgUrl = "https://api.ebarrio.online/qr-bg.png";
+const aniban2logoUrl = "https://api.ebarrio.online/aniban2logo.jpg";
+const verifiedUrl = "https://api.ebarrio.online/verified.png";
 
 export const verifyQR = async (req, res) => {
   try {
     const { qrToken } = req.params;
-    const resident = await Resident.findOne({ "brgyID.qrToken": qrToken });
+    const resident = await Resident.findOne({
+      "brgyID.qrToken": qrToken,
+    }).populate("householdno", "address");
     if (!resident) {
       return res.send(`
         <html>
@@ -206,7 +207,7 @@ export const verifyQR = async (req, res) => {
             <strong>Name:</strong> ${resident.firstname} ${resident.lastname}
           </p>
           <p style="font-size: 14px; text-transform: uppercase;">
-            <strong>Address:</strong> ${resident.address}
+            <strong>Address:</strong> ${resident.householdno?.address}
           </p>
         </div>
       </body>
@@ -239,8 +240,9 @@ export const saveBrgyID = async (req, res) => {
     await resident.save();
 
     await ActivityLog.insertOne({
-      userID: userID,
-      action: "Residents",
+      userID,
+      action: "Generate",
+      target: "Residents",
       description: `User generated a new barangay ID of ${resident.lastname}, ${resident.firstname}.`,
     });
 

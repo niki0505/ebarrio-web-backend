@@ -1,3 +1,4 @@
+import ActivityLog from "../models/ActivityLogs.js";
 import Employee from "../models/Employees.js";
 import QRCode from "qrcode";
 const bgUrl = "https://api.ebarrio.online/qr-bg.png";
@@ -228,9 +229,13 @@ export const verifyEmployeeQR = async (req, res) => {
 
 export const saveEmployeeID = async (req, res) => {
   try {
+    const { userID } = req.user;
     const { empID } = req.params;
     const { idNumber, expirationDate, qrCode, qrToken } = req.body;
-    const employee = await Employee.findById(empID);
+    const employee = await Employee.findById(empID).populate({
+      path: "resID",
+      select: "firstname lastname",
+    });
     if (!employee) {
       return res.status(404).json({ message: "Employee not found" });
     }
@@ -244,6 +249,13 @@ export const saveEmployeeID = async (req, res) => {
     });
 
     await employee.save();
+
+    await ActivityLog.insertOne({
+      userID,
+      action: "Generate",
+      target: "Employees",
+      description: `User generated a new employee ID of ${employee.resID.lastname}, ${employee.resID.firstname}.`,
+    });
 
     return res.status(200).json({
       message: "Employee ID is saved successfully",
