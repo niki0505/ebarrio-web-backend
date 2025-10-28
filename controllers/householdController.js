@@ -236,6 +236,7 @@ export const removeVehicle = async (req, res) => {
 export const removeMember = async (req, res) => {
   try {
     const { householdID, memberID } = req.params;
+    console.log("householdID",householdID)
     const household = await Household.findById(householdID);
 
     const member = household.members.find((m) => m._id.toString() === memberID);
